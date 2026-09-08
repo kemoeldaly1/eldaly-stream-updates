@@ -5379,7 +5379,7 @@ async function openSoundLibrary(p353) {
     }, 400);
   });
   setTimeout(() => v516.focus(), 100);
-  f57("");
+  f57("airhorn");
 }
 window.openSoundLibrary = openSoundLibrary;
 async function initTTS() {
