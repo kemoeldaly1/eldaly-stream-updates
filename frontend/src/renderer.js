@@ -5381,6 +5381,7 @@ async function openSoundLibrary(p353) {
   setTimeout(() => v516.focus(), 100);
   f57("");
 }
+window.openSoundLibrary = openSoundLibrary;
 async function initTTS() {
   const v531 = document.getElementById("tts-enabled");
   const v532 = document.getElementById("tts-voice-select");
