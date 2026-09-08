@@ -27,7 +27,7 @@ jobs:
         working-directory: frontend
 
       - name: Build installer
-        run: npm run build
+        run: npm run build -- --publish never
         working-directory: frontend
 
       - name: Upload release assets
