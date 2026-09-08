@@ -938,6 +938,7 @@ function setupIPC() {
         "curl",
         [
           "-s",
+          "-f",
           "--max-time",
           "120",
           "-L",
@@ -996,7 +997,7 @@ function setupIPC() {
         );
         const results = [];
         const seen = new Set();
-        const re = /onclick="play\('([^']+)',\s*'[^']*',\s*'([^']*)'\)"\s+title="Play\s+([^"]+)"/g;
+        const re = /onclick\s*=\s*"play\(\s*'([^']+)'\s*,\s*'[^']*'\s*,\s*'([^']*)'\s*\)"[\s\S]*?title\s*=\s*"Play\s+([^\"]+)"/gi;
         let m;
         while ((m = re.exec(out)) && results.length < 50) {
           const sound = m[1].startsWith("http") ? m[1] : "https://www.myinstants.com" + m[1];
