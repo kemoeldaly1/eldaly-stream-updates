@@ -987,16 +987,12 @@ function setupIPC() {
   // الرسمي فالباك إند بسكرابينج صفحة البحث) — ولو السيرفر مش متاح نجرب curl محلي
   ipcMain.handle("system:searchSounds", async (event, query, page = 1) => {
     const viaServer = async () => {
-      const r = await fetch(
-        BACKEND_URL +
-          "/api/system/sounds?query=" +
+      const j = await apiFetch(
+        "/api/system/sounds?query=" +
           encodeURIComponent(query || "") +
           "&page=" +
           (page || 1),
-        { signal: AbortSignal.timeout(15000) },
       );
-      if (!r.ok) return null;
-      const j = await r.json();
       if (j && j.error) return null;
       return j;
     };
