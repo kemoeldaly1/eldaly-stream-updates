@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Auction</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:rgba(16,8,10,.92);--card:rgba(36,18,22,.94);--line:rgba(255,255,255,.12);--text:#f8f8ff;--muted:#d2c4c7;--gold:#f7b500;--silver:#b8b8b8;--bronze:#d28a4f;--accent:#ff475f}
+*{box-sizing:border-box}
+body{margin:0;width:100vw;height:100vh;overflow:hidden;font-family:'Inter',sans-serif;color:var(--text);background:transparent;display:flex;align-items:center;justify-content:center}
+.stage{width:460px;height:auto;min-height:400px;transform-origin:center}
+.wrap{width:100%;padding:18px;position:relative;display:flex;flex-direction:column;gap:12px;border-radius:20px;background:radial-gradient(120% 80% at 0 0,rgba(255,56,79,.16),transparent 55%),radial-gradient(120% 80% at 100% 100%,rgba(100,14,20,.26),transparent 55%),var(--bg);border:1px solid var(--line);box-shadow:0 18px 55px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06)}
+.style-2 .wrap{background:radial-gradient(120% 80% at 0 0,rgba(0,200,255,.12),transparent 55%),radial-gradient(120% 80% at 100% 100%,rgba(168,85,247,.16),transparent 55%),var(--bg);border-color:rgba(0,200,255,.2)}
+.style-3 .wrap{background:linear-gradient(135deg,rgba(255,45,85,.15),rgba(168,85,247,.15),rgba(37,244,238,.15)),var(--bg)}
+.title{text-align:center;font-size:18px;font-weight:800;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.timer{text-align:center;font-size:56px;line-height:1;font-weight:900;letter-spacing:1px;padding:16px 8px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.07);text-shadow:0 0 22px rgba(255,69,95,.45)}
+.timer.warn{color:#ffe786}.timer.danger{color:#ff9bbf;animation:pulse .8s ease-in-out infinite alternate}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.03)}}
+.board{display:flex;flex-direction:column;gap:8px}
+.row{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;border:1px solid var(--line);background:var(--card);min-height:50px;transition:all .3s ease}
+.row.placeholder{opacity:.5}
+.row.rank-1{background:linear-gradient(90deg,rgba(247,181,0,.28),rgba(247,181,0,.08));border-color:rgba(247,181,0,.45)}
+.row.rank-2{background:linear-gradient(90deg,rgba(184,184,184,.2),rgba(184,184,184,.06));border-color:rgba(184,184,184,.4)}
+.row.rank-3{background:linear-gradient(90deg,rgba(210,138,79,.2),rgba(210,138,79,.06));border-color:rgba(210,138,79,.42)}
+.badge{width:88px;min-height:32px;display:flex;align-items:center;gap:8px}
+.rank-num{width:26px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);color:#fff;font-size:14px;font-weight:900;flex-shrink:0}
+.rank-1 .rank-num{background:rgba(247,181,0,.3);color:#f7b500}
+.rank-2 .rank-num{background:rgba(184,184,184,.3);color:#ddd}
+.rank-3 .rank-num{background:rgba(210,138,79,.3);color:#d28a4f}
+.badge-avatar{width:50px;height:50px;border-radius:50%;border:2px solid rgba(255,255,255,.35);object-fit:cover;background:#2a2a2a;flex-shrink:0}
+.name{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.score{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:0 12px;font-weight:800;font-size:25px;background:rgba(255,214,46,.16);color:#ffd64d;border:1px solid rgba(255,214,46,.34)}
+.status{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:16px;font-weight:600;padding:2px}
+.status strong{color:#fff}
+.winner-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(0,0,0,.3),rgba(0,0,0,.86));backdrop-filter:blur(13px);z-index:10}
+.winner-overlay.show{display:flex;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.winner-box{text-align:center;border-radius:28px;padding:26px 32px 22px;border:1px solid rgba(53,255,132,.38);background:linear-gradient(158deg,rgb(66 113 80 / 97%),rgb(0,0,0));box-shadow:0 26px 60px rgba(0,0,0,.58),0 0 70px rgba(53,255,132,.42);animation:winPulse 1.5s ease-in-out infinite;display:flex;flex-direction:column;align-items:center}
+@keyframes winPulse{0%,100%{box-shadow:0 26px 60px rgba(0,0,0,.58),0 0 70px rgba(53,255,132,.42)}50%{box-shadow:0 30px 70px rgba(0,0,0,.6),0 0 100px rgba(53,255,132,.6)}}
+.win-crown{font-size:48px;margin-bottom:8px;animation:crownB 1.1s ease-in-out infinite}
+@keyframes crownB{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}}
+.win-avatar{width:120px;height:120px;border-radius:50%;border:4px solid rgba(53,255,132,.6);object-fit:cover;background:#1d1d1d;margin:8px auto}
+.win-name{font-size:28px;font-weight:900;color:#4ade80;text-shadow:0 0 20px rgba(53,255,132,.6);margin-top:8px}
+.win-label{font-size:32px;font-weight:900;color:#ffd700;margin-top:4px;text-shadow:0 0 16px rgba(255,215,0,.8)}
+</style>
+</head>
+<body>
+<div class="stage style-1" id="stage">
+  <div class="wrap">
+    <div class="title" id="title">تحدي top1</div>
+    <div class="timer" id="timer">01:00</div>
+    <div class="board" id="board"></div>
+    <div class="status"><span>الحالة: <strong id="statusText">متوقف</strong></span><span id="participants">مشاركين: 0</span></div>
+  </div>
+</div>
+<div class="winner-overlay" id="winOverlay">
+  <div class="winner-box" id="winBox">
+    <div class="win-crown">👑</div>
+    <img class="win-avatar" id="winAvatar" alt="">
+    <div class="win-name" id="winName">—</div>
+    <div class="win-label">WIN 🏆</div>
+  </div>
+</div>
+<script>
+(function(){
+let cfg={};try{cfg=JSON.parse('__INITIAL_CONFIG__')}catch(e){}
+const board=document.getElementById('board'),timerEl=document.getElementById('timer'),titleEl=document.getElementById('title'),statusText=document.getElementById('statusText'),partEl=document.getElementById('participants'),stage=document.getElementById('stage'),winOverlay=document.getElementById('winOverlay'),winAvatar=document.getElementById('winAvatar'),winName=document.getElementById('winName');
+let slots=5,duration=60,timeLeft=60,running=false,autoRepeat=true,winnerTime=10,participants={},timer=null,timeExtMode='none',timeExtSec=10,timeExtGift='',timeExtGifts=[],timeExtCoins=100;
+function apply(c){
+  cfg=c;
+  stage.className='stage '+(c.style||'style-1');
+  titleEl.textContent=c.title||'تحدي top1';
+  slots=parseInt(c.slots)||5;
+  duration=parseInt(c.duration)||60;
+  winnerTime=parseInt(c.winnerTime)||10;
+  autoRepeat=c.autoRepeat!=='no';
+  timeExtMode=c.timeExtMode||'none';
+  timeExtSec=parseInt(c.timeExtSec)||10;
+  timeExtGift=c.timeExtGift||'';
+  timeExtGifts=c.timeExtGifts||[];
+  // Migrate old single gift to array
+  if(timeExtGifts.length===0&&timeExtGift){timeExtGifts=[{name:timeExtGift,seconds:timeExtSec}]}
+  timeExtCoins=parseInt(c.timeExtCoins)||100;
+  resetAuction();
+}
+function fmtTime(s){const m=Math.floor(s/60);const sec=s%60;return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')}
+function renderBoard(){
+  const sorted=Object.values(participants).sort((a,b)=>b.coins-a.coins).slice(0,slots);
+  let html='';
+  for(let i=0;i<slots;i++){
+    const p=sorted[i];const rank=i+1;
+    const rc=rank<=3?'rank-'+rank:'';
+    if(p){
+      html+=`<div class="row ${rc}"><div class="badge"><span class="rank-num">${rank}</span><img class="badge-avatar" src="${p.avatar||''}" onerror="this.style.display='none'" alt=""></div><div class="name">${esc(p.user)}</div><div class="score">${p.coins}</div></div>`;
+    } else {
+      html+=`<div class="row placeholder ${rc}"><div class="badge"><span class="rank-num">${rank}</span></div><div class="name" style="opacity:.3">—</div><div class="score" style="opacity:.3">0</div></div>`;
+    }
+  }
+  board.innerHTML=html;
+  partEl.textContent='مشاركين: '+Object.keys(participants).length;
+}
+function startAuction(){
+  if(running)return;running=true;timeLeft=duration;
+  participants={};renderBoard();
+  statusText.textContent='جاري';statusText.style.color='#4ade80';
+  timer=setInterval(()=>{
+    timeLeft--;timerEl.textContent=fmtTime(Math.max(0,timeLeft));
+    if(timeLeft<=10){timerEl.className='timer danger'}else if(timeLeft<=30){timerEl.className='timer warn'}else{timerEl.className='timer'}
+    if(timeLeft<=0){clearInterval(timer);timer=null;running=false;endAuction()}
+  },1000);
+}
+function resetAuction(){
+  if(timer){clearInterval(timer);timer=null}
+  running=false;timeLeft=duration;participants={};
+  timerEl.textContent=fmtTime(duration);timerEl.className='timer';
+  statusText.textContent='متوقف';statusText.style.color='#ffd27d';
+  winOverlay.classList.remove('show');renderBoard();
+}
+function endAuction(){
+  statusText.textContent='انتهى';statusText.style.color='#ffd27d';
+  const sorted=Object.values(participants).sort((a,b)=>b.coins-a.coins);
+  if(sorted.length>0){
+    const w=sorted[0];winAvatar.src=w.avatar||'';winName.textContent=w.user;
+    winOverlay.classList.add('show');
+    setTimeout(()=>{winOverlay.classList.remove('show');if(autoRepeat)setTimeout(()=>startAuction(),2000)},winnerTime*1000);
+  } else {if(autoRepeat)setTimeout(()=>startAuction(),2000)}
+}
+function handleGift(data){
+  if(!running)return;
+  const user=data.uniqueId||data.nickname||'Unknown';
+  const coins=(data.diamondCount||0)*(data.repeatCount||1);
+  if(!participants[user])participants[user]={user,coins:0,avatar:data.profilePictureUrl||data.avatar||''};
+  if(!participants[user].avatar&&(data.profilePictureUrl||data.avatar))participants[user].avatar=data.profilePictureUrl||data.avatar;
+  participants[user].coins+=coins;
+  // Time extension
+  if(timeExtMode==='any-gift')timeLeft+=timeExtSec;
+  else if(timeExtMode==='specific-gift'){
+    const gn=(data.giftName||'').toLowerCase();
+    for(const tg of timeExtGifts){if(tg.name.toLowerCase()===gn){timeLeft+=(tg.seconds||timeExtSec);break}}
+  }
+  else if(timeExtMode==='coin-threshold'&&coins>=timeExtCoins)timeLeft+=timeExtSec;
+  timerEl.textContent=fmtTime(Math.max(0,timeLeft));
+  renderBoard();
+}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+if(cfg&&Object.keys(cfg).length>0)apply(cfg);else{renderBoard();timerEl.textContent=fmtTime(duration)}
+const es=new EventSource('/widgets/stream');
+es.onmessage=(e)=>{try{const m=JSON.parse(e.data);
+  if(m.type==='config'&&m.id==='auction')apply(m.config);
+  if(m.type==='gift')handleGift(m.data);
+  if(m.type==='ext-auction'){const d=m.data;if(d.action==='start')startAuction();if(d.action==='reset')resetAuction()}
+}catch(err){}};
+// Fit stage
+function fit(){const s=stage;const sx=(window.innerWidth-16)/460;const sy=(window.innerHeight-16)/620;const sc=Math.max(.1,Math.min(1,sx,sy));s.style.transform='scale('+sc+')'}
+window.addEventListener('resize',fit);fit();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Activity Feed</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-card: rgba(15, 18, 36, 0.8);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.45);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: transparent !important;
+  }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-primary);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Pinned Header Bar */
+  #feed-header-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(10, 12, 22, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    z-index: 10;
+    flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+
+  /* Top 3 Leaders Row Layout */
+  #leaders-row {
+    display: flex;
+    gap: 6px;
+    justify-content: space-between;
+  }
+
+  .leader-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .leader-badge {
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 2px;
+  }
+
+  .leader-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .leader-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+    font-size: 9px;
+    width: 100%;
+  }
+
+  .rank-num {
+    font-weight: 800;
+    font-size: 9px;
+    min-width: 8px;
+    text-align: center;
+  }
+  .rank-1 .rank-num { color: #facc15; }
+  .rank-2 .rank-num { color: #9ca3af; }
+  .rank-3 .rank-num { color: #d97706; }
+
+  .leader-avatar {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 0.5px solid rgba(255, 255, 255, 0.2);
+    object-fit: cover;
+  }
+
+  .leader-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    color: #ffffff;
+    max-width: 45px;
+    text-align: left;
+  }
+
+  .leader-score {
+    font-weight: 700;
+    font-size: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 1px;
+  }
+
+  /* Recent Gifts Stream Row */
+  #recent-gifts-row {
+    width: 100%;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+  }
+
+  #recent-gifts-list {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    width: 100%;
+    scroll-behavior: smooth;
+  }
+
+  #recent-gifts-list::-webkit-scrollbar {
+    display: none; /* Hide scrollbars for absolute clean look */
+  }
+
+  .recent-gift-bubble {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    animation: slideInGift 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    flex-shrink: 0;
+  }
+
+  @keyframes slideInGift {
+    from { opacity: 0; transform: scale(0.8) translateX(-10px); }
+    to { opacity: 1; transform: scale(1) translateX(0); }
+  }
+
+  .rg-user-avatar {
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .rg-username {
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+    max-width: 50px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .rg-gift-icon {
+    object-fit: contain;
+  }
+
+  .rg-count {
+    font-weight: 800;
+    color: #facc15;
+  }
+
+  /* Pinned Lateral Earnings Widget */
+  #earnings-counter {
+    position: fixed;
+    z-index: 50;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 12px;
+    background: rgba(13, 15, 23, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+  }
+
+  /* Automatically slide earnings card to left when settings opens so it doesn't get covered! */
+  body.settings-open #earnings-counter {
+    transform: translateX(-400px);
+  }
+
+  .earnings-title {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+
+  .earnings-coins {
+    font-size: 13px;
+    font-weight: 800;
+    color: #facc15;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .earnings-usd {
+    font-size: 14px;
+    font-weight: 800;
+    color: #10b981;
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+  }
+
+  /* Main Container */
+  #feed-container {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px;
+    scroll-behavior: smooth;
+    transition: margin-right 0.3s ease;
+  }
+
+  /* Shrink feed when settings are open to see everything perfectly on the left */
+  body.settings-open #feed-container {
+    margin-right: 420px;
+  }
+
+  /* Scrollbar Styling */
+  #feed-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  #feed-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+  }
+  #feed-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+  }
+  #feed-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Feed Item Styling */
+  .feed-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-style: solid;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    transform-origin: left center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+  }
+
+  @keyframes slideIn {
+    0% {
+      opacity: 0;
+      transform: translateX(-30px) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+
+  .feed-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+  }
+
+  /* Expanded Layout Support */
+  .feed-item.layout-expanded {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px !important;
+  }
+
+  .feed-item.layout-expanded .item-header-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .feed-item.layout-expanded .item-message-row {
+    width: 100%;
+    padding-left: 44px; /* Align perfectly below avatar */
+  }
+
+  /* Event Badge Icon */
+  .badge-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+
+  .gift-img-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    animation: giftPulse 1.2s infinite alternate ease-in-out;
+  }
+  @keyframes giftPulse {
+    0% { transform: scale(0.95); }
+    100% { transform: scale(1.15); }
+  }
+
+  /* Avatar */
+  .user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+  }
+
+  .avatar-fallback {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-secondary);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  /* Content Text */
+  .item-content {
+    flex: 1;
+    word-break: break-word;
+  }
+
+  .user-name {
+    font-weight: 700;
+    margin-right: 4px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  .action-text {
+    font-weight: 500;
+  }
+
+  .chat-msg {
+    margin-top: 2px;
+    font-weight: 400;
+  }
+
+  .gift-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(250, 204, 21, 0.12);
+    border: 1px solid rgba(250, 204, 21, 0.3);
+    color: #fbbf24;
+    padding: 1px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  /* Floating Settings Button */
+  #settings-toggle {
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(15, 18, 36, 0.6);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+    opacity: 0.1;
+  }
+
+  #settings-toggle:hover {
+    opacity: 1;
+    background: rgba(15, 18, 36, 0.9);
+    color: #ffffff;
+    transform: rotate(45deg);
+  }
+
+  /* Slide-out Sidebar Settings Panel */
+  #settings-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: 400px;
+    background: rgba(13, 15, 23, 0.92);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(25px);
+    z-index: 200;
+    flex-direction: column;
+    box-shadow: -10px 0 40px rgba(0,0,0,0.5);
+    animation: slideLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes slideLeft {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+
+  .settings-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .settings-header h3 {
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .settings-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  .settings-close:hover {
+    color: #ffffff;
+  }
+
+  /* Tabs System */
+  .tab-buttons {
+    display: flex;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 12px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .tab-btn:hover {
+    color: #ffffff;
+    background: rgba(255,255,255,0.04);
+  }
+
+  .tab-btn.active {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.08);
+    border-bottom: 2px solid #3b82f6;
+  }
+
+  .tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .tab-pane {
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .tab-pane.active {
+    display: flex;
+  }
+
+  .settings-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #3b82f6;
+    font-weight: 700;
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+
+  /* Form layouts */
+  .form-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-group label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .form-input {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: #ffffff;
+    font-size: 12px;
+    outline: none;
+    width: 100%;
+  }
+
+  .form-input:focus {
+    border-color: #3b82f6;
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.02);
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .checkbox-row label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .checkbox-row input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: #3b82f6;
+  }
+
+  /* Color Row */
+  .color-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.02);
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .color-row label {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .color-inputs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .color-inputs input[type="color"] {
+    border: none;
+    background: none;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .color-opacity-slider {
+    width: 60px;
+    cursor: pointer;
+    accent-color: #3b82f6;
+  }
+
+  /* Event Theme Accordion styling */
+  .theme-accordion {
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .accordion-header {
+    background: rgba(255,255,255,0.03);
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .accordion-header:hover {
+    background: rgba(255,255,255,0.06);
+  }
+
+  .accordion-body {
+    display: none;
+    padding: 10px;
+    background: rgba(0,0,0,0.15);
+    border-top: 1px solid rgba(255,255,255,0.04);
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .accordion-body.open {
+    display: flex;
+  }
+
+  .settings-footer {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    background: #0d0f17;
+    display: flex;
+    gap: 8px;
+  }
+
+  .save-btn {
+    flex: 1;
+    background: #3b82f6;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .save-btn:hover {
+    background: #2563eb;
+  }
+
+  .cancel-btn {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+</style>
+</head>
+<body>
+
+<!-- Settings Toggle Button -->
+<div id="settings-toggle" title="Settings">⚙️</div>
+
+<!-- Floating Earnings Counter -->
+<div id="earnings-counter">
+  <div class="earnings-title">LIVE Earnings</div>
+  <div class="earnings-coins" id="earn-coins-block">
+    <span id="earnings-coins-val">0</span>
+  </div>
+  <div class="earnings-usd" id="earnings-usd-val">$0.00</div>
+</div>
+
+<!-- Pinned Header Bar containing Top Leaders & Recent Gifts -->
+<div id="feed-header-bar">
+  <!-- Top Leaders Row -->
+  <div id="leaders-row">
+    <!-- Top Gifters -->
+    <div class="leader-card" id="lc-gifter">
+      <div class="leader-badge">🏆 Top Gifters</div>
+      <div class="leader-list" id="lc-gift-list"></div>
+    </div>
+    
+    <!-- Top Likers -->
+    <div class="leader-card" id="lc-liker">
+      <div class="leader-badge">🏆 Top Likers</div>
+      <div class="leader-list" id="lc-like-list"></div>
+    </div>
+
+    <!-- Top Commenters -->
+    <div class="leader-card" id="lc-commenter">
+      <div class="leader-badge">🏆 Top Commenters</div>
+      <div class="leader-list" id="lc-chat-list"></div>
+    </div>
+  </div>
+
+  <!-- Recent Gifts Stream -->
+  <div id="recent-gifts-row">
+    <div id="recent-gifts-list">
+      <!-- Recent gifts bubbles will slide in here -->
+    </div>
+  </div>
+</div>
+
+<!-- Activity Feed List Container -->
+<div id="feed-container">
+  <!-- Items will be inserted here dynamically -->
+</div>
+
+<!-- Slide-out Sidebar Settings Panel -->
+<div id="settings-modal">
+  <div class="settings-card">
+    <div class="settings-header">
+      <h3>⚙️ Feed Config & Live Preview</h3>
+      <button class="settings-close" id="btn-close-modal">&times;</button>
+    </div>
+
+    <!-- Tab navigation -->
+    <div class="tab-buttons">
+      <button class="tab-btn active" onclick="switchTab('tab-general')">⚙️ Layout & Gifts</button>
+      <button class="tab-btn" onclick="switchTab('tab-fonts')">✏️ Typography</button>
+      <button class="tab-btn" onclick="switchTab('tab-themes')">🎨 Earnings & Themes</button>
+    </div>
+
+    <!-- Scrollable Tab Content Container -->
+    <div class="tab-content">
+      
+      <!-- TAB 1: Layout & Sizing -->
+      <div class="tab-pane active" id="tab-general">
+        <h4 class="settings-section-title">Overlay Elements</h4>
+        <div class="checkbox-row"><label for="cfg-show-leaders">Show Top Leaders Bar</label><input type="checkbox" id="cfg-show-leaders" class="live-input"></div>
+        <div class="checkbox-row"><label for="cfg-show-recent-gifts">Show Recent Gifts Bar</label><input type="checkbox" id="cfg-show-recent-gifts" class="live-input"></div>
+
+        <h4 class="settings-section-title">🏆 Top Leaders Customizer</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-leaders-limit">Max Leaders Count</label>
+            <select id="cfg-leaders-limit" class="form-input live-input" style="background:#161925; color:#fff;">
+              <option value="1">1 (Top 1 Only)</option>
+              <option value="2">2 (Top 2)</option>
+              <option value="3">3 (Top 3)</option>
+              <option value="5">5 (Top 5)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cfg-leaders-font-size">Font Size (px)</label>
+            <input type="number" id="cfg-leaders-font-size" class="form-input live-input" min="6" max="24" value="9">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-leaders-avatar-size">Avatar Size (px)</label>
+            <input type="number" id="cfg-leaders-avatar-size" class="form-input live-input" min="6" max="32" value="12">
+          </div>
+          <div class="form-group">
+            <label for="cfg-leaders-padding">Row Spacing/Padding (px)</label>
+            <input type="number" id="cfg-leaders-padding" class="form-input live-input" min="0" max="12" value="2">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-leaders-card-padding">Card Margin/Padding (px)</label>
+            <input type="number" id="cfg-leaders-card-padding" class="form-input live-input" min="2" max="20" value="6">
+          </div>
+        </div>
+        
+        <h4 class="settings-section-title">Horizontal Gifts Bar Customizer</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-rg-padding">Bubble Padding (px)</label>
+            <input type="number" id="cfg-rg-padding" class="form-input live-input" min="1" max="16" value="3">
+          </div>
+          <div class="form-group">
+            <label for="cfg-rg-font-size">Font Size (px)</label>
+            <input type="number" id="cfg-rg-font-size" class="form-input live-input" min="7" max="24" value="10">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-rg-icon-size">Gift Icon Size (px)</label>
+            <input type="number" id="cfg-rg-icon-size" class="form-input live-input" min="8" max="48" value="14">
+          </div>
+          <div class="form-group">
+            <label for="cfg-rg-avatar-size">Avatar Size (px)</label>
+            <input type="number" id="cfg-rg-avatar-size" class="form-input live-input" min="8" max="48" value="12">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-recent-gifts-limit">Max Gift Bubbles</label>
+            <input type="number" id="cfg-recent-gifts-limit" class="form-input live-input" min="3" max="50" value="10">
+          </div>
+          <div class="form-group">
+            <label for="cfg-card-width">Feed Card Width (px or 100%)</label>
+            <input type="text" id="cfg-card-width" class="form-input live-input" value="100%">
+          </div>
+        </div>
+
+        <h4 class="settings-section-title">Feed Layout Customizer</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-display-layout">Feed Display Layout</label>
+            <select id="cfg-display-layout" class="form-input live-input" style="background:#161925; color:#fff;">
+              <option value="standard">Standard (Side by Side)</option>
+              <option value="expanded">Expanded (Wrapped Below)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cfg-card-padding">Card Padding (px)</label>
+            <input type="number" id="cfg-card-padding" class="form-input live-input" min="4" max="30" value="10">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-line-height">Line Height</label>
+            <input type="number" id="cfg-line-height" class="form-input live-input" step="0.1" min="1.0" max="2.5" value="1.4">
+          </div>
+          <div class="form-group">
+            <label for="cfg-border-radius">Border Radius (px)</label>
+            <input type="number" id="cfg-border-radius" class="form-input live-input" min="0" max="40" value="12">
+          </div>
+        </div>
+
+        <h4 class="settings-section-title">Visibility Options</h4>
+        <div class="checkbox-row"><label for="cfg-show-chat">Show Chat Comments</label><input type="checkbox" id="cfg-show-chat" class="live-input"></div>
+        <div class="checkbox-row"><label for="cfg-show-follow">Show New Followers</label><input type="checkbox" id="cfg-show-follow" class="live-input"></div>
+        <div class="checkbox-row"><label for="cfg-show-share">Show Shares</label><input type="checkbox" id="cfg-show-share" class="live-input"></div>
+        <div class="checkbox-row"><label for="cfg-show-gift">Show Gifts</label><input type="checkbox" id="cfg-show-gift" class="live-input"></div>
+        <div class="checkbox-row"><label for="cfg-show-subscribe">Show Subscriptions</label><input type="checkbox" id="cfg-show-subscribe" class="live-input"></div>
+        <div class="checkbox-row"><label for="cfg-show-join">Show Joins (Spammy)</label><input type="checkbox" id="cfg-show-join" class="live-input"></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-max-items">Max Items in Feed</label>
+            <input type="number" id="cfg-max-items" class="form-input live-input" min="5" max="200" value="50">
+          </div>
+          <div class="form-group">
+            <label for="cfg-border-width">Border Width (px)</label>
+            <input type="number" id="cfg-border-width" class="form-input live-input" min="0" max="8" value="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-border-color">Border Color</label>
+            <input type="text" id="cfg-border-color" class="form-input live-input" value="rgba(255, 255, 255, 0.08)">
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Typography -->
+      <div class="tab-pane" id="tab-fonts">
+        <h4 class="settings-section-title">Font Sizes (px)</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-font-size-name">Username Font Size</label>
+            <input type="number" id="cfg-font-size-name" class="form-input live-input" min="8" max="32" value="14">
+          </div>
+          <div class="form-group">
+            <label for="cfg-font-size-action">Action Text Font Size</label>
+            <input type="number" id="cfg-font-size-action" class="form-input live-input" min="8" max="32" value="14">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-font-size-chat">Chat Message Font Size</label>
+            <input type="number" id="cfg-font-size-chat" class="form-input live-input" min="8" max="32" value="14">
+          </div>
+        </div>
+
+        <h4 class="settings-section-title">Global Colors</h4>
+        <div class="color-row">
+          <label for="cfg-color-name">Username Text Color</label>
+          <div class="color-inputs"><input type="color" id="cfg-color-name" class="live-input"></div>
+        </div>
+        <div class="color-row">
+          <label for="cfg-color-action">Action Text Color</label>
+          <div class="color-inputs"><input type="color" id="cfg-color-action" class="live-input"></div>
+        </div>
+      </div>
+
+      <!-- TAB 3: Earnings & Themes -->
+      <div class="tab-pane" id="tab-themes">
+        <h4 class="settings-section-title">💰 Earnings Widget Settings</h4>
+        <div class="checkbox-row">
+          <label for="cfg-show-earnings">Show Floating Earnings</label>
+          <input type="checkbox" id="cfg-show-earnings" class="live-input">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-earnings-pos">Widget Position</label>
+            <select id="cfg-earnings-pos" class="form-input live-input" style="background:#161925; color:#fff;">
+              <option value="bottom-right">Bottom Right</option>
+              <option value="bottom-left">Bottom Left</option>
+              <option value="top-right">Top Right (Below Header)</option>
+              <option value="top-left">Top Left (Below Header)</option>
+            </select>
+          </div>
+        </div>
+        <div class="color-row">
+          <label>Widget Background</label>
+          <div class="color-inputs">
+            <input type="color" id="cfg-earn-bg-color" class="live-input">
+            <input type="range" class="color-opacity-slider live-input" id="cfg-earn-bg-opacity" min="0" max="1" step="0.05">
+          </div>
+        </div>
+
+        <h4 class="settings-section-title">🎨 Chat Styles</h4>
+        <!-- Chat Accordion -->
+        <div class="theme-accordion">
+          <div class="accordion-header" onclick="toggleAccordion('acc-chat')">💬 Chat Event Style <span>▼</span></div>
+          <div class="accordion-body" id="acc-chat">
+            <div class="color-row">
+              <label>Card Background</label>
+              <div class="color-inputs">
+                <input type="color" id="cfg-bg-chat-color" class="live-input">
+                <input type="range" class="color-opacity-slider live-input" id="cfg-bg-chat-opacity" min="0" max="1" step="0.05">
+              </div>
+            </div>
+            <div class="color-row">
+              <label>Left Stripe Color</label>
+              <div class="color-inputs"><input type="color" id="cfg-border-left-chat" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Badge Background</label>
+              <div class="color-inputs"><input type="color" id="cfg-badge-chat" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Chat Message Text</label>
+              <div class="color-inputs"><input type="color" id="cfg-color-chat-msg" class="live-input"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Follow Accordion -->
+        <div class="theme-accordion">
+          <div class="accordion-header" onclick="toggleAccordion('acc-follow')">👤 Follow Event Style <span>▼</span></div>
+          <div class="accordion-body" id="acc-follow">
+            <div class="color-row">
+              <label>Card Background</label>
+              <div class="color-inputs">
+                <input type="color" id="cfg-bg-follow-color" class="live-input">
+                <input type="range" class="color-opacity-slider live-input" id="cfg-bg-follow-opacity" min="0" max="1" step="0.05">
+              </div>
+            </div>
+            <div class="color-row">
+              <label>Left Stripe Color</label>
+              <div class="color-inputs"><input type="color" id="cfg-border-left-follow" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Badge Background</label>
+              <div class="color-inputs"><input type="color" id="cfg-badge-follow" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Action Text Color</label>
+              <div class="color-inputs"><input type="color" id="cfg-color-follow-text" class="live-input"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Share Accordion -->
+        <div class="theme-accordion">
+          <div class="accordion-header" onclick="toggleAccordion('acc-share')">🔄 Share Event Style <span>▼</span></div>
+          <div class="accordion-body" id="acc-share">
+            <div class="color-row">
+              <label>Card Background</label>
+              <div class="color-inputs">
+                <input type="color" id="cfg-bg-share-color" class="live-input">
+                <input type="range" class="color-opacity-slider live-input" id="cfg-bg-share-opacity" min="0" max="1" step="0.05">
+              </div>
+            </div>
+            <div class="color-row">
+              <label>Left Stripe Color</label>
+              <div class="color-inputs"><input type="color" id="cfg-border-left-share" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Badge Background</label>
+              <div class="color-inputs"><input type="color" id="cfg-badge-share" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Action Text Color</label>
+              <div class="color-inputs"><input type="color" id="cfg-color-share-text" class="live-input"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gift Accordion -->
+        <div class="theme-accordion">
+          <div class="accordion-header" onclick="toggleAccordion('acc-gift')">🎁 Gift Event Style <span>▼</span></div>
+          <div class="accordion-body" id="acc-gift">
+            <div class="color-row">
+              <label>Card Background</label>
+              <div class="color-inputs">
+                <input type="color" id="cfg-bg-gift-color" class="live-input">
+                <input type="range" class="color-opacity-slider live-input" id="cfg-bg-gift-opacity" min="0" max="1" step="0.05">
+              </div>
+            </div>
+            <div class="color-row">
+              <label>Left Stripe Color</label>
+              <div class="color-inputs"><input type="color" id="cfg-border-left-gift" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Badge Background</label>
+              <div class="color-inputs"><input type="color" id="cfg-badge-gift" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Action Text Color</label>
+              <div class="color-inputs"><input type="color" id="cfg-color-gift-text" class="live-input"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subscribe Accordion -->
+        <div class="theme-accordion">
+          <div class="accordion-header" onclick="toggleAccordion('acc-subscribe')">⭐ Subscribe Event Style <span>▼</span></div>
+          <div class="accordion-body" id="acc-subscribe">
+            <div class="color-row">
+              <label>Card Background</label>
+              <div class="color-inputs">
+                <input type="color" id="cfg-bg-subscribe-color" class="live-input">
+                <input type="range" class="color-opacity-slider live-input" id="cfg-bg-subscribe-opacity" min="0" max="1" step="0.05">
+              </div>
+            </div>
+            <div class="color-row">
+              <label>Left Stripe Color</label>
+              <div class="color-inputs"><input type="color" id="cfg-border-left-subscribe" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Badge Background</label>
+              <div class="color-inputs"><input type="color" id="cfg-badge-subscribe" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Action Text Color</label>
+              <div class="color-inputs"><input type="color" id="cfg-color-subscribe-text" class="live-input"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Join Accordion -->
+        <div class="theme-accordion">
+          <div class="accordion-header" onclick="toggleAccordion('acc-join')">👋 Join Event Style <span>▼</span></div>
+          <div class="accordion-body" id="acc-join">
+            <div class="color-row">
+              <label>Card Background</label>
+              <div class="color-inputs">
+                <input type="color" id="cfg-bg-join-color" class="live-input">
+                <input type="range" class="color-opacity-slider live-input" id="cfg-bg-join-opacity" min="0" max="1" step="0.05">
+              </div>
+            </div>
+            <div class="color-row">
+              <label>Left Stripe Color</label>
+              <div class="color-inputs"><input type="color" id="cfg-border-left-join" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Badge Background</label>
+              <div class="color-inputs"><input type="color" id="cfg-badge-join" class="live-input"></div>
+            </div>
+            <div class="color-row">
+              <label>Action Text Color</label>
+              <div class="color-inputs"><input type="color" id="cfg-color-join-text" class="live-input"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="settings-footer">
+      <button class="cancel-btn" id="btn-cancel-settings">Cancel</button>
+      <button class="save-btn" id="btn-save-settings">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ تنقية البيانات الخارجية (أسماء/صور مشاهدين) — ضد XSS ═══
+function esc(s){const d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML.replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function safeUrl(u){u=String(u||'');return /^(https?:|data:image\/)/i.test(u)?u.replace(/"/g,'%22').replace(/'/g,'%27'):'';}
+// TikTok Music Gold Coin SVG definition
+const coinSvg = `
+<svg viewBox="0 0 24 24" style="width:13px; height:13px; margin-left:3px; vertical-align:middle; display:inline-block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));">
+  <circle cx="12" cy="12" r="10" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/>
+  <circle cx="12" cy="12" r="7" fill="#fef08a"/>
+  <path d="M12.5 6v7.5c0 1.38-1.12 2.5-2.5 2.5s-2.5-1.12-2.5-2.5 1.12-2.5 2.5-2.5c.34 0 .66.07.96.19V9.13A4.475 4.475 0 0 0 10 9c-2.48 0-4.5 2.02-4.5 4.5S7.52 18 10 18c2.2 0 4.02-1.59 4.4-3.67.06-.33.1-.67.1-1.01V8.5a3.48 3.48 0 0 0 2-1.07v-1.8a5.45 5.45 0 0 1-2 1.37V6h-2z" fill="#b45309"/>
+</svg>
+`;
+
+// Switch Tabs
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  
+  // Find clicked button
+  event.target.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// Toggle Accordions
+function toggleAccordion(id) {
+  const panel = document.getElementById(id);
+  const isOpen = panel.classList.contains('open');
+  document.querySelectorAll('.accordion-body').forEach(b => b.classList.remove('open'));
+  if (!isOpen) {
+    panel.classList.add('open');
+  }
+}
+
+(function() {
+  const container = document.getElementById('feed-container');
+  const toggleBtn = document.getElementById('settings-toggle');
+  const modal = document.getElementById('settings-modal');
+  const closeModalBtn = document.getElementById('btn-close-modal');
+  const cancelBtn = document.getElementById('btn-cancel-settings');
+  const saveBtn = document.getElementById('btn-save-settings');
+
+  // Config settings state with comprehensive defaults
+  let config = {
+    // Visibility
+    showChat: true,
+    showFollow: true,
+    showShare: true,
+    showGift: true,
+    showSubscribe: true,
+    showJoin: false,
+    maxItems: 50,
+
+    // Header overlays
+    showLeadersBar: true,
+    showRecentGiftsBar: true,
+    recentGiftsLimit: 10,
+    
+    // Top Leaders Bar customizer
+    leadersLimit: 3,
+    leadersFontSize: 9,
+    leadersAvatarSize: 12,
+    leadersPadding: 2,
+    leadersCardPadding: 6,
+    
+    // Recent gifts customizer
+    recentGiftsPadding: 3,
+    recentGiftsFontSize: 10,
+    recentGiftsIconSize: 14,
+    recentGiftsAvatarSize: 12,
+
+    // Earnings widget customizer
+    showEarningsCounter: true,
+    earningsPosition: 'bottom-right', // 'bottom-right', 'bottom-left', 'top-right', 'top-left'
+    earningsBgColor: '#0d0f17',
+    earningsBgOpacity: 0.85,
+
+    // General & Shape
+    cardWidth: '100%',
+    cardPadding: 10,
+    lineHeight: 1.4,
+    displayLayout: 'standard', // 'standard' or 'expanded'
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    
+    // Typography
+    fontSizeName: 14,
+    fontSizeAction: 14,
+    fontSizeChat: 14,
+    colorName: '#ffffff',
+    colorAction: '#b3b3b3',
+
+    // Chat Theme
+    bgChatColor: '#0f1224',
+    bgChatOpacity: 0.8,
+    borderLeftChat: '#3b82f6',
+    badgeChat: '#3b82f6',
+    colorChatMsg: '#e5e7eb',
+
+    // Follow Theme
+    bgFollowColor: '#0f1224',
+    bgFollowOpacity: 0.8,
+    borderLeftFollow: '#10b981',
+    badgeFollow: '#10b981',
+    colorFollowText: '#10b981',
+
+    // Share Theme
+    bgShareColor: '#0f1224',
+    bgShareOpacity: 0.8,
+    borderLeftShare: '#a855f7',
+    badgeShare: '#a855f7',
+    colorShareText: '#a855f7',
+
+    // Gift Theme
+    bgGiftColor: '#0f1224',
+    bgGiftOpacity: 0.8,
+    borderLeftGift: '#f59e0b',
+    badgeGift: '#f59e0b',
+    colorGiftText: '#fbbf24',
+
+    // Subscribe Theme
+    bgSubscribeColor: '#0f1224',
+    bgSubscribeOpacity: 0.8,
+    borderLeftSubscribe: '#ec4899',
+    badgeSubscribe: '#ec4899',
+    colorSubscribeText: '#ec4899',
+
+    // Join Theme
+    bgJoinColor: '#0f1224',
+    bgJoinOpacity: 0.8,
+    borderLeftJoin: '#14b8a6',
+    badgeJoin: '#14b8a6',
+    colorJoinText: '#14b8a6'
+  };
+
+  // Keep backup of initial config for reverting unsaved changes
+  let initialConfigBackup = { ...config };
+
+  // Helper to convert hex to rgba
+  function hexToRgba(hex, opacity) {
+    const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+    return result 
+      ? `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${opacity})`
+      : `rgba(15, 18, 36, ${opacity})`;
+  }
+
+  // Dynamic style application
+  function applyTheme() {
+    let style = document.getElementById('dynamic-theme');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'dynamic-theme';
+      document.head.appendChild(style);
+    }
+    
+    // Compute RGBA colors
+    const bgChat = hexToRgba(config.bgChatColor, config.bgChatOpacity);
+    const bgFollow = hexToRgba(config.bgFollowColor, config.bgFollowOpacity);
+    const bgShare = hexToRgba(config.bgShareColor, config.bgShareOpacity);
+    const bgGift = hexToRgba(config.bgGiftColor, config.bgGiftOpacity);
+    const bgSubscribe = hexToRgba(config.bgSubscribeColor, config.bgSubscribeOpacity);
+    const bgJoin = hexToRgba(config.bgJoinColor, config.bgJoinOpacity);
+
+    // Apply header elements visibility
+    const headerBar = document.getElementById('feed-header-bar');
+    const leadersRow = document.getElementById('leaders-row');
+    const recentGiftsRow = document.getElementById('recent-gifts-row');
+
+    if (!config.showLeadersBar && !config.showRecentGiftsBar) {
+      headerBar.style.display = 'none';
+    } else {
+      headerBar.style.display = 'flex';
+      leadersRow.style.display = config.showLeadersBar ? 'flex' : 'none';
+      recentGiftsRow.style.display = config.showRecentGiftsBar ? 'block' : 'none';
+    }
+
+    // Apply floating earnings widget positioning & styling
+    const earnWidget = document.getElementById('earnings-counter');
+    if (config.showEarningsCounter) {
+      earnWidget.style.display = 'flex';
+      // Set background
+      earnWidget.style.background = hexToRgba(config.earningsBgColor, config.earningsBgOpacity);
+      
+      // Reset position styles
+      earnWidget.style.top = 'auto';
+      earnWidget.style.bottom = 'auto';
+      earnWidget.style.left = 'auto';
+      earnWidget.style.right = 'auto';
+
+      if (config.earningsPosition === 'top-left') {
+        earnWidget.style.top = config.showLeadersBar || config.showRecentGiftsBar ? '110px' : '12px';
+        earnWidget.style.left = '12px';
+      } else if (config.earningsPosition === 'top-right') {
+        earnWidget.style.top = config.showLeadersBar || config.showRecentGiftsBar ? '110px' : '12px';
+        earnWidget.style.right = '12px';
+      } else if (config.earningsPosition === 'bottom-left') {
+        earnWidget.style.bottom = '12px';
+        earnWidget.style.left = '12px';
+      } else {
+        // default bottom-right
+        earnWidget.style.bottom = '12px';
+        earnWidget.style.right = '12px';
+      }
+    } else {
+      earnWidget.style.display = 'none';
+    }
+
+    const computedWidth = config.cardWidth === '100%' ? '100%' : `${parseInt(config.cardWidth) || 400}px`;
+
+    style.textContent = `
+      .feed-item {
+        max-width: ${computedWidth} !important;
+        padding: ${config.cardPadding}px !important;
+        border-radius: ${config.borderRadius}px !important;
+        border-width: ${config.borderWidth}px !important;
+        border-color: ${config.borderColor} !important;
+      }
+      .item-content {
+        line-height: ${config.lineHeight} !important;
+      }
+      .user-name {
+        font-size: ${config.fontSizeName}px !important;
+        color: ${config.colorName} !important;
+      }
+      .action-text {
+        font-size: ${config.fontSizeAction}px !important;
+        color: ${config.colorAction} !important;
+      }
+      .chat-msg {
+        font-size: ${config.fontSizeChat}px !important;
+      }
+      
+      /* Recent gifts custom scaling styling */
+      .recent-gift-bubble {
+        padding: ${config.recentGiftsPadding}px ${config.recentGiftsPadding * 2}px !important;
+        font-size: ${config.recentGiftsFontSize}px !important;
+        border-radius: ${config.recentGiftsFontSize + 4}px !important;
+      }
+      .rg-gift-icon {
+        width: ${config.recentGiftsIconSize}px !important;
+        height: ${config.recentGiftsIconSize}px !important;
+      }
+      .rg-user-avatar {
+        width: ${config.recentGiftsAvatarSize}px !important;
+        height: ${config.recentGiftsAvatarSize}px !important;
+      }
+
+      /* Chat Theme */
+      .feed-item.type-chat { background: ${bgChat} !important; }
+      .feed-item.type-chat::before { background: ${config.borderLeftChat} !important; }
+      .type-chat .badge-icon { background: ${config.badgeChat} !important; }
+      .type-chat .chat-msg { color: ${config.colorChatMsg} !important; }
+
+      /* Follow Theme */
+      .feed-item.type-follow { background: ${bgFollow} !important; }
+      .feed-item.type-follow::before { background: ${config.borderLeftFollow} !important; }
+      .type-follow .badge-icon { background: ${config.badgeFollow} !important; }
+      .type-follow .action-text { color: ${config.colorFollowText} !important; }
+
+      /* Share Theme */
+      .feed-item.type-share { background: ${bgShare} !important; }
+      .feed-item.type-share::before { background: ${config.borderLeftShare} !important; }
+      .type-share .badge-icon { background: ${config.badgeShare} !important; }
+      .type-share .action-text { color: ${config.colorShareText} !important; }
+
+      /* Gift Theme */
+      .feed-item.type-gift { background: ${bgGift} !important; }
+      .feed-item.type-gift::before { background: ${config.borderLeftGift} !important; }
+      .type-gift .badge-icon { background: ${config.badgeGift} !important; }
+      .type-gift .action-text { color: ${config.colorGiftText} !important; }
+
+      /* Subscribe Theme */
+      .feed-item.type-subscribe { background: ${bgSubscribe} !important; }
+      .feed-item.type-subscribe::before { background: ${config.borderLeftSubscribe} !important; }
+      .type-subscribe .badge-icon { background: ${config.badgeSubscribe} !important; }
+      .type-subscribe .action-text { color: ${config.colorSubscribeText} !important; }
+
+      /* Join Theme */
+      .feed-item.type-join { background: ${bgJoin} !important; }
+      .feed-item.type-join::before { background: ${config.borderLeftJoin} !important; }
+      .type-join .badge-icon { background: ${config.badgeJoin} !important; }
+      .type-join .action-text { color: ${config.colorJoinText} !important; }
+
+      /* Top Leaders Card & Row Custom Sizing */
+      .leader-card {
+        padding: ${config.leadersCardPadding}px !important;
+      }
+      .leader-row {
+        padding: ${config.leadersPadding}px 4px !important;
+        font-size: ${config.leadersFontSize}px !important;
+      }
+      .rank-num {
+        font-size: ${config.leadersFontSize}px !important;
+      }
+      .leader-avatar {
+        width: ${config.leadersAvatarSize}px !important;
+        height: ${config.leadersAvatarSize}px !important;
+      }
+      .leader-name {
+        font-size: ${config.leadersFontSize}px !important;
+        max-width: ${config.leadersFontSize * 5.5}px !important;
+      }
+      .leader-score {
+        font-size: ${config.leadersFontSize - 1}px !important;
+      }
+    `;
+  }
+
+  // Load from localStorage or use defaults
+  function loadLocalSettings() {
+    try {
+      const stored = localStorage.getItem('widget_activity_feed_settings');
+      if (stored) {
+        config = { ...config, ...JSON.parse(stored) };
+      }
+    } catch(e) {
+      console.warn('Failed to load local activity feed settings:', e);
+    }
+    
+    // Backup loaded state as current baseline
+    initialConfigBackup = { ...config };
+
+    // Apply state to form inputs
+    document.getElementById('cfg-show-leaders').checked = config.showLeadersBar;
+    document.getElementById('cfg-show-recent-gifts').checked = config.showRecentGiftsBar;
+    
+    document.getElementById('cfg-leaders-limit').value = config.leadersLimit;
+    document.getElementById('cfg-leaders-font-size').value = config.leadersFontSize;
+    document.getElementById('cfg-leaders-avatar-size').value = config.leadersAvatarSize;
+    document.getElementById('cfg-leaders-padding').value = config.leadersPadding;
+    document.getElementById('cfg-leaders-card-padding').value = config.leadersCardPadding;
+    
+    document.getElementById('cfg-rg-padding').value = config.recentGiftsPadding;
+    document.getElementById('cfg-rg-font-size').value = config.recentGiftsFontSize;
+    document.getElementById('cfg-rg-icon-size').value = config.recentGiftsIconSize;
+    document.getElementById('cfg-rg-avatar-size').value = config.recentGiftsAvatarSize;
+    document.getElementById('cfg-recent-gifts-limit').value = config.recentGiftsLimit;
+
+    document.getElementById('cfg-card-width').value = config.cardWidth;
+    document.getElementById('cfg-card-padding').value = config.cardPadding;
+    document.getElementById('cfg-line-height').value = config.lineHeight;
+    document.getElementById('cfg-display-layout').value = config.displayLayout;
+
+    document.getElementById('cfg-show-earnings').checked = config.showEarningsCounter;
+    document.getElementById('cfg-earnings-pos').value = config.earningsPosition;
+    document.getElementById('cfg-earn-bg-color').value = config.earningsBgColor;
+    document.getElementById('cfg-earn-bg-opacity').value = config.earningsBgOpacity;
+
+    document.getElementById('cfg-show-chat').checked = config.showChat;
+    document.getElementById('cfg-show-follow').checked = config.showFollow;
+    document.getElementById('cfg-show-share').checked = config.showShare;
+    document.getElementById('cfg-show-gift').checked = config.showGift;
+    document.getElementById('cfg-show-subscribe').checked = config.showSubscribe;
+    document.getElementById('cfg-show-join').checked = config.showJoin;
+    document.getElementById('cfg-max-items').value = config.maxItems;
+
+    document.getElementById('cfg-border-radius').value = config.borderRadius;
+    document.getElementById('cfg-border-width').value = config.borderWidth;
+    document.getElementById('cfg-border-color').value = config.borderColor;
+
+    document.getElementById('cfg-font-size-name').value = config.fontSizeName;
+    document.getElementById('cfg-font-size-action').value = config.fontSizeAction;
+    document.getElementById('cfg-font-size-chat').value = config.fontSizeChat;
+
+    document.getElementById('cfg-color-name').value = config.colorName;
+    document.getElementById('cfg-color-action').value = config.colorAction;
+
+    // Chat
+    document.getElementById('cfg-bg-chat-color').value = config.bgChatColor;
+    document.getElementById('cfg-bg-chat-opacity').value = config.bgChatOpacity;
+    document.getElementById('cfg-border-left-chat').value = config.borderLeftChat;
+    document.getElementById('cfg-badge-chat').value = config.badgeChat;
+    document.getElementById('cfg-color-chat-msg').value = config.colorChatMsg;
+
+    // Follow
+    document.getElementById('cfg-bg-follow-color').value = config.bgFollowColor;
+    document.getElementById('cfg-bg-follow-opacity').value = config.bgFollowOpacity;
+    document.getElementById('cfg-border-left-follow').value = config.borderLeftFollow;
+    document.getElementById('cfg-badge-follow').value = config.badgeFollow;
+    document.getElementById('cfg-color-follow-text').value = config.colorFollowText;
+
+    // Share
+    document.getElementById('cfg-bg-share-color').value = config.bgShareColor;
+    document.getElementById('cfg-bg-share-opacity').value = config.bgShareOpacity;
+    document.getElementById('cfg-border-left-share').value = config.borderLeftShare;
+    document.getElementById('cfg-badge-share').value = config.badgeShare;
+    document.getElementById('cfg-color-share-text').value = config.colorShareText;
+
+    // Gift
+    document.getElementById('cfg-bg-gift-color').value = config.bgGiftColor;
+    document.getElementById('cfg-bg-gift-opacity').value = config.bgGiftOpacity;
+    document.getElementById('cfg-border-left-gift').value = config.borderLeftGift;
+    document.getElementById('cfg-badge-gift').value = config.badgeGift;
+    document.getElementById('cfg-color-gift-text').value = config.colorGiftText;
+
+    // Subscribe
+    document.getElementById('cfg-bg-subscribe-color').value = config.bgSubscribeColor;
+    document.getElementById('cfg-bg-subscribe-opacity').value = config.bgSubscribeOpacity;
+    document.getElementById('cfg-border-left-subscribe').value = config.borderLeftSubscribe;
+    document.getElementById('cfg-badge-subscribe').value = config.badgeSubscribe;
+    document.getElementById('cfg-color-subscribe-text').value = config.colorSubscribeText;
+
+    // Join
+    document.getElementById('cfg-bg-join-color').value = config.bgJoinColor;
+    document.getElementById('cfg-bg-join-opacity').value = config.bgJoinOpacity;
+    document.getElementById('cfg-border-left-join').value = config.borderLeftJoin;
+    document.getElementById('cfg-badge-join').value = config.badgeJoin;
+    document.getElementById('cfg-color-join-text').value = config.colorJoinText;
+
+    // Run dynamic theme binding
+    applyTheme();
+  }
+
+  // Live Update temporary config state and call applyTheme
+  function liveUpdateTheme() {
+    config.showLeadersBar = document.getElementById('cfg-show-leaders').checked;
+    config.showRecentGiftsBar = document.getElementById('cfg-show-recent-gifts').checked;
+    
+    config.leadersLimit = parseInt(document.getElementById('cfg-leaders-limit').value) || 3;
+    config.leadersFontSize = parseInt(document.getElementById('cfg-leaders-font-size').value) || 9;
+    config.leadersAvatarSize = parseInt(document.getElementById('cfg-leaders-avatar-size').value) || 12;
+    config.leadersPadding = parseInt(document.getElementById('cfg-leaders-padding').value) || 2;
+    config.leadersCardPadding = parseInt(document.getElementById('cfg-leaders-card-padding').value) || 6;
+    
+    config.recentGiftsPadding = parseInt(document.getElementById('cfg-rg-padding').value) || 3;
+    config.recentGiftsFontSize = parseInt(document.getElementById('cfg-rg-font-size').value) || 10;
+    config.recentGiftsIconSize = parseInt(document.getElementById('cfg-rg-icon-size').value) || 14;
+    config.recentGiftsAvatarSize = parseInt(document.getElementById('cfg-rg-avatar-size').value) || 12;
+    config.recentGiftsLimit = parseInt(document.getElementById('cfg-recent-gifts-limit').value) || 10;
+
+    config.cardWidth = document.getElementById('cfg-card-width').value;
+    config.cardPadding = parseInt(document.getElementById('cfg-card-padding').value) || 10;
+    config.lineHeight = parseFloat(document.getElementById('cfg-line-height').value) || 1.4;
+    config.displayLayout = document.getElementById('cfg-display-layout').value;
+
+    config.showEarningsCounter = document.getElementById('cfg-show-earnings').checked;
+    config.earningsPosition = document.getElementById('cfg-earnings-pos').value;
+    config.earningsBgColor = document.getElementById('cfg-earn-bg-color').value;
+    config.earningsBgOpacity = parseFloat(document.getElementById('cfg-earn-bg-opacity').value);
+
+    config.borderRadius = parseInt(document.getElementById('cfg-border-radius').value) || 12;
+    config.borderWidth = parseInt(document.getElementById('cfg-border-width').value) || 1;
+    config.borderColor = document.getElementById('cfg-border-color').value;
+
+    config.fontSizeName = parseInt(document.getElementById('cfg-font-size-name').value) || 14;
+    config.fontSizeAction = parseInt(document.getElementById('cfg-font-size-action').value) || 14;
+    config.fontSizeChat = parseInt(document.getElementById('cfg-font-size-chat').value) || 14;
+
+    config.colorName = document.getElementById('cfg-color-name').value;
+    config.colorAction = document.getElementById('cfg-color-action').value;
+
+    // Chat
+    config.bgChatColor = document.getElementById('cfg-bg-chat-color').value;
+    config.bgChatOpacity = parseFloat(document.getElementById('cfg-bg-chat-opacity').value);
+    config.borderLeftChat = document.getElementById('cfg-border-left-chat').value;
+    config.badgeChat = document.getElementById('cfg-badge-chat').value;
+    config.colorChatMsg = document.getElementById('cfg-color-chat-msg').value;
+
+    // Follow
+    config.bgFollowColor = document.getElementById('cfg-bg-follow-color').value;
+    config.bgFollowOpacity = parseFloat(document.getElementById('cfg-bg-follow-opacity').value);
+    config.borderLeftFollow = document.getElementById('cfg-border-left-follow').value;
+    config.badgeFollow = document.getElementById('cfg-badge-follow').value;
+    config.colorFollowText = document.getElementById('cfg-color-follow-text').value;
+
+    // Share
+    config.bgShareColor = document.getElementById('cfg-bg-share-color').value;
+    config.bgShareOpacity = parseFloat(document.getElementById('cfg-bg-share-opacity').value);
+    config.borderLeftShare = document.getElementById('cfg-border-left-share').value;
+    config.badgeShare = document.getElementById('cfg-badge-share').value;
+    config.colorShareText = document.getElementById('cfg-color-share-text').value;
+
+    // Gift
+    config.bgGiftColor = document.getElementById('cfg-bg-gift-color').value;
+    config.bgGiftOpacity = parseFloat(document.getElementById('cfg-bg-gift-opacity').value);
+    config.borderLeftGift = document.getElementById('cfg-border-left-gift').value;
+    config.badgeGift = document.getElementById('cfg-badge-gift').value;
+    config.colorGiftText = document.getElementById('cfg-color-gift-text').value;
+
+    // Subscribe
+    config.bgSubscribeColor = document.getElementById('cfg-bg-subscribe-color').value;
+    config.bgSubscribeOpacity = parseFloat(document.getElementById('cfg-bg-subscribe-opacity').value);
+    config.borderLeftSubscribe = document.getElementById('cfg-border-left-subscribe').value;
+    config.badgeSubscribe = document.getElementById('cfg-badge-subscribe').value;
+    config.colorSubscribeText = document.getElementById('cfg-color-subscribe-text').value;
+
+    // Join
+    config.bgJoinColor = document.getElementById('cfg-bg-join-color').value;
+    config.bgJoinOpacity = parseFloat(document.getElementById('cfg-bg-join-opacity').value);
+    config.borderLeftJoin = document.getElementById('cfg-border-left-join').value;
+    config.badgeJoin = document.getElementById('cfg-badge-join').value;
+    config.colorJoinText = document.getElementById('cfg-color-join-text').value;
+
+    // Redraw styling instantly
+    applyTheme();
+    updateLeadersRow(lastStatsData || {});
+  }
+
+  function saveLocalSettings() {
+    config.showChat = document.getElementById('cfg-show-chat').checked;
+    config.showFollow = document.getElementById('cfg-show-follow').checked;
+    config.showShare = document.getElementById('cfg-show-share').checked;
+    config.showGift = document.getElementById('cfg-show-gift').checked;
+    config.showSubscribe = document.getElementById('cfg-show-subscribe').checked;
+    config.showJoin = document.getElementById('cfg-show-join').checked;
+    config.maxItems = parseInt(document.getElementById('cfg-max-items').value) || 50;
+
+    // Re-run final live update
+    liveUpdateTheme();
+
+    try {
+      localStorage.setItem('widget_activity_feed_settings', JSON.stringify(config));
+    } catch(e) {
+      console.error('Failed to save activity feed settings:', e);
+    }
+    
+    // Save backup state
+    initialConfigBackup = { ...config };
+    closeSettings();
+  }
+
+  function revertUnsavedChanges() {
+    config = { ...initialConfigBackup };
+    loadLocalSettings();
+    closeSettings();
+  }
+
+  function openSettings() {
+    modal.style.display = 'flex';
+    document.body.classList.add('settings-open');
+  }
+
+  function closeSettings() {
+    modal.style.display = 'none';
+    document.body.classList.remove('settings-open');
+  }
+
+  // Bind settings UI events
+  toggleBtn.onclick = openSettings;
+  closeModalBtn.onclick = revertUnsavedChanges;
+  cancelBtn.onclick = revertUnsavedChanges;
+  saveBtn.onclick = saveLocalSettings;
+
+  // Bind live listeners on all inputs so that changes happen instantly in the background!
+  document.querySelectorAll('.live-input').forEach(input => {
+    input.addEventListener('input', liveUpdateTheme);
+    input.addEventListener('change', liveUpdateTheme);
+  });
+
+  // Load initial settings
+  loadLocalSettings();
+  
+  // Render empty placeholders on startup matching limit
+  updateLeadersRow({});
+
+  // Prepend bubble to the Horizontal Recent Gifts Stream
+  function updateRecentGiftsBar(data) {
+    if (!config.showRecentGiftsBar) return;
+    
+    const list = document.getElementById('recent-gifts-list');
+    const bubble = document.createElement('div');
+    bubble.className = 'recent-gift-bubble';
+
+    // أسماء وصور المشاهدين بيانات خارجية — إجباري تنقيتها قبل أي innerHTML (XSS)
+    const avatar = safeUrl(data.profilePictureUrl || data.avatar) || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+    const nickname = data.nickname || data.uniqueId || 'User';
+
+    bubble.innerHTML = `
+      <img class="rg-user-avatar" src="${esc(avatar)}">
+      <span class="rg-username">${esc(nickname)}</span>
+      <img class="rg-gift-icon" src="${esc(data.giftPictureUrl || 'https://cdn-icons-png.flaticon.com/512/833/833472.png')}">
+      <span class="rg-count">x${esc(data.repeatCount || 1)}</span>
+    `;
+
+    list.insertBefore(bubble, list.firstChild);
+
+    // Limit children count
+    while (list.children.length > config.recentGiftsLimit) {
+      list.removeChild(list.lastChild);
+    }
+  }
+
+  // Update floating earnings widget
+  function updateEarningsWidget(totalCoins) {
+    if (!config.showEarningsCounter) return;
+    
+    // Update total coins value
+    document.getElementById('earnings-coins-val').textContent = totalCoins;
+    
+    // Add gold coin icon inside block if not there
+    const earnBlock = document.getElementById('earn-coins-block');
+    if (!earnBlock.querySelector('svg')) {
+      earnBlock.insertAdjacentHTML('beforeend', coinSvg);
+    }
+
+    // Convert to USD: 100 coins = $0.50 => USD = Coins * 0.005
+    const usd = totalCoins * 0.005;
+    document.getElementById('earnings-usd-val').textContent = `$${usd.toFixed(2)}`;
+  }
+
+  // Helper to dynamically render list of leaders
+  function renderLeaderList(containerId, listData, suffix = '') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    const limit = parseInt(config.leadersLimit) || 3;
+    for (let i = 0; i < limit; i++) {
+      const item = listData[i];
+      const row = document.createElement('div');
+      row.className = `leader-row rank-${i+1}`;
+      
+      if (item) {
+        const avatar = safeUrl(item.icon) || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+        row.innerHTML = `
+          <span class="rank-num">${i+1}</span>
+          <img class="leader-avatar" src="${esc(avatar)}">
+          <span class="leader-name" title="${esc(item.user)}">${esc(item.user)}</span>
+          <span class="leader-score">${esc(item.count)}${esc(suffix)}</span>
+        `;
+      } else {
+        row.innerHTML = `
+          <span class="rank-num">${i+1}</span>
+          <img class="leader-avatar" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y">
+          <span class="leader-name">Waiting...</span>
+          <span class="leader-score">0${suffix}</span>
+        `;
+      }
+      container.appendChild(row);
+    }
+  }
+
+  // Update leaders bar dynamically
+  function updateLeadersRow(stats) {
+    if (!config.showLeadersBar) return;
+    
+    // Render Gifters list
+    renderLeaderList('lc-gift-list', stats.topGifters || [], coinSvg);
+    
+    // Render Likers list
+    renderLeaderList('lc-like-list', stats.topLikers || [], ' 💖');
+    
+    // Render Commenters list
+    renderLeaderList('lc-chat-list', stats.topCommenters || [], ' 💬');
+  }
+
+  // Helper to build feed item
+  function addFeedItem(type, data) {
+    if (type === 'chat' && !config.showChat) return;
+    if (type === 'follow' && !config.showFollow) return;
+    if (type === 'share' && !config.showShare) return;
+    if (type === 'gift' && !config.showGift) return;
+    if (type === 'subscribe' && !config.showSubscribe) return;
+    if (type === 'join' && !config.showJoin) return;
+
+    const nickname = data.nickname || data.uniqueId || 'User';
+    const avatar = data.profilePictureUrl || data.avatar || '';
+    
+    // Create element
+    const item = document.createElement('div');
+    item.className = `feed-item type-${type}`;
+    if (config.displayLayout === 'expanded') {
+      item.classList.add('layout-expanded');
+    }
+
+    // Badge Icon container
+    const badge = document.createElement('div');
+    badge.className = 'badge-icon';
+    
+    if (type === 'gift' && data.giftPictureUrl) {
+      const img = document.createElement('img');
+      img.className = 'gift-img-icon';
+      img.src = data.giftPictureUrl;
+      img.onerror = () => {
+        img.outerHTML = '<span style="font-size: 16px;">🎁</span>';
+      };
+      badge.appendChild(img);
+    } else {
+      let icon = '💬';
+      if (type === 'follow') icon = '➕';
+      else if (type === 'share') icon = '🔄';
+      else if (type === 'gift') icon = '🎁';
+      else if (type === 'subscribe') icon = '⭐';
+      else if (type === 'join') icon = '👋';
+      badge.textContent = icon;
+    }
+
+    // Avatar element
+    let avatarEl;
+    if (avatar) {
+      const img = document.createElement('img');
+      img.className = 'user-avatar';
+      img.src = avatar;
+      img.onerror = () => {
+        img.outerHTML = `<div class="avatar-fallback">${nickname.charAt(0)}</div>`;
+      };
+      avatarEl = img;
+    } else {
+      const fallback = document.createElement('div');
+      fallback.className = 'avatar-fallback';
+      fallback.textContent = nickname.charAt(0);
+      avatarEl = fallback;
+    }
+
+    // Build layout depending on 'standard' or 'expanded'
+    if (config.displayLayout === 'expanded') {
+      // Row 1: Header (Badge, Avatar, Username, Action Text)
+      const headerRow = document.createElement('div');
+      headerRow.className = 'item-header-row';
+      headerRow.appendChild(badge);
+      headerRow.appendChild(avatarEl);
+
+      const metaSpan = document.createElement('span');
+      metaSpan.style.display = 'inline-flex';
+      metaSpan.style.alignItems = 'center';
+      metaSpan.style.gap = '4px';
+
+      const userSpan = document.createElement('span');
+      userSpan.className = 'user-name';
+      userSpan.textContent = nickname;
+      metaSpan.appendChild(userSpan);
+
+      const actionSpan = document.createElement('span');
+      actionSpan.className = 'action-text';
+
+      if (type === 'chat') {
+        actionSpan.textContent = 'said:';
+      } else if (type === 'follow') {
+        actionSpan.textContent = 'followed the host!';
+      } else if (type === 'share') {
+        actionSpan.textContent = 'shared the LIVE!';
+      } else if (type === 'gift') {
+        const count = data.repeatCount || 1;
+        const totalCoins = (data.diamondCount || 0) * count;
+        actionSpan.textContent = `sent ${data.giftName} x${count}`;
+        metaSpan.appendChild(actionSpan);
+        if (totalCoins > 0) {
+          const giftBadge = document.createElement('span');
+          giftBadge.className = 'gift-badge';
+          giftBadge.innerHTML = `${totalCoins}${coinSvg}`;
+          metaSpan.appendChild(giftBadge);
+        }
+      } else if (type === 'subscribe') {
+        actionSpan.textContent = 'subscribed to the LIVE!';
+      } else if (type === 'join') {
+        actionSpan.textContent = 'joined the LIVE stream!';
+      }
+
+      if (type !== 'gift') {
+        metaSpan.appendChild(actionSpan);
+      }
+
+      headerRow.appendChild(metaSpan);
+      item.appendChild(headerRow);
+
+      // Row 2: Message/Content (mainly for Chat comment)
+      if (type === 'chat') {
+        const msgRow = document.createElement('div');
+        msgRow.className = 'item-message-row';
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-msg';
+        msgDiv.textContent = data.comment || '';
+        msgRow.appendChild(msgDiv);
+        item.appendChild(msgRow);
+      }
+
+    } else {
+      // Standard Side-by-Side Layout
+      item.appendChild(badge);
+      item.appendChild(avatarEl);
+
+      const content = document.createElement('div');
+      content.className = 'item-content';
+
+      const userSpan = document.createElement('span');
+      userSpan.className = 'user-name';
+      userSpan.textContent = nickname;
+      content.appendChild(userSpan);
+
+      const actionSpan = document.createElement('span');
+      actionSpan.className = 'action-text';
+
+      if (type === 'chat') {
+        actionSpan.textContent = 'said:';
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-msg';
+        msgDiv.textContent = data.comment || '';
+        content.appendChild(actionSpan);
+        content.appendChild(msgDiv);
+      } else if (type === 'follow') {
+        actionSpan.textContent = 'followed the host!';
+        content.appendChild(actionSpan);
+      } else if (type === 'share') {
+        actionSpan.textContent = 'shared the LIVE!';
+        content.appendChild(actionSpan);
+      } else if (type === 'gift') {
+        const count = data.repeatCount || 1;
+        const totalCoins = (data.diamondCount || 0) * count;
+        actionSpan.textContent = `sent ${data.giftName} x${count}`;
+        content.appendChild(actionSpan);
+
+        if (totalCoins > 0) {
+          const giftBadge = document.createElement('span');
+          giftBadge.className = 'gift-badge';
+          giftBadge.innerHTML = `${totalCoins}${coinSvg}`;
+          content.appendChild(giftBadge);
+        }
+      } else if (type === 'subscribe') {
+        actionSpan.textContent = 'subscribed to the LIVE!';
+        content.appendChild(actionSpan);
+      } else if (type === 'join') {
+        actionSpan.textContent = 'joined the LIVE stream!';
+        content.appendChild(actionSpan);
+      }
+
+      item.appendChild(content);
+    }
+
+    // Add to container (insert at top for most recent)
+    container.insertBefore(item, container.firstChild);
+
+    // Limit items count
+    while (container.children.length > config.maxItems) {
+      container.removeChild(container.lastChild);
+    }
+  }
+
+  let lastStatsData = {};
+  let accumulatedCoins = 0;
+
+  // Connect to SSE stream
+  const es = new EventSource('/widgets/stream');
+  
+  es.onmessage = (e) => {
+    try {
+      const m = JSON.parse(e.data);
+      
+      // Real-time statistics broadcast
+      if (m.type === 'stats' && m.stats) {
+        lastStatsData = m.stats;
+        accumulatedCoins = m.stats.totalCoins || 0;
+        updateLeadersRow(lastStatsData);
+        updateEarningsWidget(accumulatedCoins);
+        return;
+      }
+
+      // Support incoming test events with exact PNG URLs for gifts
+      if (m.type === 'test' && m.id === 'activity-feed') {
+        const testType = m.eventType || 'chat';
+        let testData = {};
+        if (testType === 'chat') testData = { nickname: 'MegaViewer', comment: 'Amazing stream! Let\'s go! 🔥' };
+        else if (testType === 'follow') testData = { nickname: 'AwesomeFan' };
+        else if (testType === 'share') testData = { nickname: 'SuperSharer' };
+        else if (testType === 'gift') {
+          // Rose with 10 coins so they can see live increment!
+          testData = { nickname: 'EliteGifter', giftName: 'Rose', repeatCount: 1, diamondCount: 10, giftPictureUrl: 'https://cdn-icons-png.flaticon.com/512/833/833472.png' };
+          updateRecentGiftsBar(testData);
+          accumulatedCoins += 10;
+          updateEarningsWidget(accumulatedCoins);
+        }
+        else if (testType === 'subscribe') testData = { nickname: 'VIP_Member' };
+        else if (testType === 'join') testData = { nickname: 'CasualLurker' };
+        
+        addFeedItem(testType, testData);
+        return;
+      }
+
+      // Standard events mapping
+      if (m.type === 'chat') addFeedItem('chat', m.data);
+      else if (m.type === 'follow') addFeedItem('follow', m.data);
+      else if (m.type === 'share') addFeedItem('share', m.data);
+      else if (m.type === 'gift') {
+        addFeedItem('gift', m.data);
+        updateRecentGiftsBar(m.data);
+      }
+      else if (m.type === 'subscribe') addFeedItem('subscribe', m.data);
+      else if (m.type === 'join') addFeedItem('join', m.data);
+      
+    } catch(err) {
+      console.error('Error parsing SSE event in Activity Feed:', err);
+    }
+  };
+
+})();
+</script>
+</body>
+</html>

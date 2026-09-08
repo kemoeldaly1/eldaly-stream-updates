@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELDALY STREAM — أقوى أداة بث تيك توك لايف</title>
+<meta name="description" content="برنامج تفاعلات البث الاحترافي لتيك توك لايف — أوفرلاي، ويدجت، أصوات، تعليق صوتي، وأكتر. جرّب مجاناً الآن.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=Changa:wght@600;700;800&family=Orbitron:wght@600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #d4af37;
+    --gold-light: #ecd28a;
+    --gold-dark: #a17c1e;
+    --bg: #07070a;
+    --bg-card: #0f0f15;
+    --text: #ece9e1;
+    --text-muted: #a6a198;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+    background:
+      radial-gradient(1000px 520px at 50% -10%, rgba(212,175,55,0.09), transparent 65%),
+      radial-gradient(circle at 50% 100%, rgba(212,175,55,0.045), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+  /* gaming grid backdrop */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(212,175,55,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212,175,55,0.035) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+
+  /* ===== Nav ===== */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 5vw;
+    background: rgba(7,7,10,0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid transparent;
+    border-image: linear-gradient(90deg, rgba(212,175,55,0) 0%, rgba(212,175,55,0.35) 18%, rgba(212,175,55,0.12) 55%, rgba(212,175,55,0) 100%) 1;
+  }
+  .nav-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900; font-size: 17px; letter-spacing: 3px;
+    background: linear-gradient(135deg, #f2dc93 0%, #d4af37 50%, #a17c1e 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 22px rgba(212,175,55,0.35);
+  }
+  .nav-links { display: flex; gap: 22px; align-items: center; }
+  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 700; transition: color .2s; }
+  .nav-links a:hover { color: var(--gold-light); }
+
+  /* ===== Hero ===== */
+  .hero { text-align: center; padding: 70px 5vw 30px; max-width: 1080px; margin: 0 auto; }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(212,175,55,0.08);
+    border: 1px solid rgba(212,175,55,0.4);
+    color: var(--gold-light);
+    font-size: 13px; font-weight: 800;
+    padding: 9px 20px; border-radius: 100px;
+    margin-bottom: 26px;
+    box-shadow: 0 0 18px rgba(212,175,55,0.15);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 14px rgba(212,175,55,0.12); }
+    50% { box-shadow: 0 0 30px rgba(212,175,55,0.3); }
+  }
+  h1 {
+    font-family: 'Changa', 'Cairo', sans-serif;
+    font-size: clamp(30px, 5vw, 54px);
+    font-weight: 800; line-height: 1.55;
+    background: linear-gradient(180deg, #fff8e1 5%, #f2dc93 35%, #d4af37 70%, #9c7819 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 26px rgba(212, 175, 55, 0.22));
+    margin-bottom: 16px;
+  }
+  h1 .brand {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95em;
+    font-weight: 900;
+    letter-spacing: 5px;
+    white-space: nowrap;
+  }
+  .hero p.sub {
+    color: var(--text-muted); font-size: clamp(14.5px, 2vw, 18px);
+    line-height: 1.9; max-width: 720px; margin: 0 auto 34px;
+  }
+  .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 16px 34px;
+    font-family: 'Changa', 'Cairo', sans-serif;
+    font-size: 16px; font-weight: 700;
+    cursor: pointer; text-decoration: none; transition: all .2s;
+    border: none; position: relative;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+  .btn-gold {
+    background: linear-gradient(180deg, #f0d078 0%, #c69c2d 100%);
+    color: #201803;
+    box-shadow: 0 10px 30px rgba(212,175,55,0.3);
+  }
+  .btn-gold:hover { filter: brightness(1.08); box-shadow: 0 0 44px rgba(212,175,55,0.45); transform: translateY(-2px); }
+  .btn-ghost {
+    background: rgba(212,175,55,0.05);
+    border: 1px solid rgba(212,175,55,0.35);
+    color: var(--gold-light);
+    clip-path: none; border-radius: 4px;
+  }
+  .btn-ghost:hover { background: rgba(212,175,55,0.12); box-shadow: 0 0 26px rgba(212,175,55,0.18); }
+  .hero-note { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+
+  /* ===== App screenshot (animated mockup) ===== */
+  .shot-wrap { position: relative; max-width: 980px; margin: 56px auto 10px; perspective: 1200px; }
+  .shot-frame {
+    position: relative;
+    border: 1px solid rgba(212,175,55,0.35);
+    border-radius: 14px;
+    background: #0b0b10;
+    padding: 10px;
+    box-shadow:
+      0 0 0 1px rgba(212,175,55,0.08),
+      0 30px 80px rgba(0,0,0,0.7),
+      0 0 70px rgba(212,175,55,0.12);
+    transform: rotateX(6deg);
+    animation: floaty 5.5s ease-in-out infinite;
+  }
+  @keyframes floaty {
+    0%, 100% { transform: rotateX(6deg) translateY(0); }
+    50% { transform: rotateX(4deg) translateY(-14px); }
+  }
+  .shot-frame::before {
+    content: '';
+    position: absolute; inset: -2px; border-radius: 16px; z-index: -1;
+    background: linear-gradient(120deg, rgba(212,175,55,0.5), transparent 30%, transparent 70%, rgba(212,175,55,0.5));
+    filter: blur(14px); opacity: .5;
+  }
+  .shot-frame img { display: block; width: 100%; border-radius: 8px; }
+  .shot-dots {
+    display: flex; gap: 6px; padding: 2px 6px 10px;
+  }
+  .shot-dots span { width: 10px; height: 10px; border-radius: 50%; background: #26262e; }
+  .shot-dots span:nth-child(1) { background: #3a2b28; }
+  .shot-dots span:nth-child(2) { background: #33321f; }
+  .shot-dots span:nth-child(3) { background: #2b3a28; }
+  .glow-line {
+    height: 2px; width: 70%; margin: 8px auto 0;
+    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.7), transparent);
+    border-radius: 2px;
+  }
+
+  /* ===== Sections ===== */
+  section { padding: 70px 5vw; max-width: 1100px; margin: 0 auto; }
+  .sec-title {
+    font-family: 'Changa', 'Cairo', sans-serif;
+    text-align: center; font-size: clamp(23px, 4vw, 33px); font-weight: 800;
+    color: var(--gold-light); margin-bottom: 12px;
+    text-shadow: 0 0 30px rgba(212,175,55,0.25);
+  }
+  .sec-sub { text-align: center; color: var(--text-muted); font-size: 15px; margin-bottom: 44px; line-height: 1.8; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+  .card {
+    background: linear-gradient(180deg, rgba(212,175,55,0.03), rgba(255,255,255,0) 35%), var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px; padding: 28px 22px;
+    transition: all .25s;
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  }
+  .card:hover {
+    border-color: rgba(212,175,55,0.45);
+    box-shadow: 0 14px 44px rgba(212,175,55,0.1);
+    transform: translateY(-4px);
+  }
+  .card .icon { font-size: 38px; margin-bottom: 14px; filter: drop-shadow(0 0 12px rgba(212,175,55,0.3)); }
+  .card h3 { font-family: 'Changa', 'Cairo', sans-serif; font-size: 17px; font-weight: 700; color: var(--gold-light); margin-bottom: 10px; }
+  .card p { font-size: 13.5px; color: var(--text-muted); line-height: 1.9; }
+
+  /* ===== Pricing ===== */
+  .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 380px)); gap: 20px; justify-content: center; }
+  .plan {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 8px; padding: 36px 28px;
+    text-align: center;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .plan.hot {
+    border-color: rgba(212,175,55,0.55);
+    box-shadow: 0 0 60px rgba(212,175,55,0.13);
+    position: relative;
+    clip-path: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px);
+  }
+  .plan-name { font-family: 'Changa','Cairo',sans-serif; font-size: 24px; font-weight: 800; color: var(--gold-light); letter-spacing: 1px; }
+  .plan-price { font-size: 15px; color: var(--text-muted); }
+  .plan-price strong { font-family: 'Orbitron',sans-serif; color: var(--gold); font-size: 30px; }
+  .plan ul { list-style: none; flex: 1; }
+  .plan ul li { padding: 9px 0; font-size: 14.5px; color: var(--text-muted); border-bottom: 1px dashed rgba(255,255,255,0.06); }
+  .plan ul li:last-child { border-bottom: none; }
+  .plan ul li::before { content: '✓ '; color: var(--gold); font-weight: 900; }
+  .plan ul li.no::before { content: '✕ '; color: #c65a54; }
+  .plan ul li.no { opacity: .75; }
+
+  /* ===== Payment ===== */
+  .pay-box {
+    max-width: 640px; margin: 0 auto;
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 8px; padding: 30px; text-align: center;
+  }
+  .pay-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 22px; }
+  .pay-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text); font-size: 14px; font-weight: 700;
+    padding: 12px 20px; border-radius: 6px; cursor: pointer;
+    text-decoration: none; transition: all .2s;
+  }
+  .pay-chip:hover { border-color: rgba(212,175,55,0.5); color: var(--gold-light); box-shadow: 0 0 20px rgba(212,175,55,0.12); }
+  .wallet {
+    background: rgba(232,0,14,0.06); border: 1px solid rgba(232,0,14,0.28);
+    border-radius: 6px; padding: 18px; margin-top: 6px;
+  }
+  .wallet .num { font-family: 'Orbitron', monospace; font-size: 22px; font-weight: 800; color: #ffd7d7; letter-spacing: 3px; direction: ltr; }
+  .wallet p { font-size: 13px; color: var(--text-muted); margin-top: 10px; line-height: 1.9; }
+
+  footer {
+    text-align: center; padding: 40px 5vw 30px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    color: var(--text-muted); font-size: 13px; line-height: 2.2;
+  }
+  footer a { color: var(--gold); text-decoration: none; font-weight: 800; }
+
+  @media (max-width: 600px) {
+    .nav-links a.hide-m { display: none; }
+    .shot-frame { transform: none; animation: floaty-sm 5.5s ease-in-out infinite; }
+    @keyframes floaty-sm { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ Nav ═══════════ -->
+<nav>
+  <div class="nav-logo">ELDALY STREAM</div>
+  <div class="nav-links">
+    <a href="#features" class="hide-m">المميزات</a>
+    <a href="#pricing" class="hide-m">الأسعار</a>
+    <a href="#download">تحميل</a>
+  </div>
+</nav>
+
+<!-- ═══════════ Hero ═══════════ -->
+<div class="hero">
+  <div class="hero-badge">🔥 الإصدار 1.0 — متاح الآن للتحميل</div>
+  <h1>خلّي بثك احترافي<br>مع برنامج <span class="brand">ELDALY STREAM</span><br>للتفاعل مع البث بالهدايا والأوامر<br>بكل سهولة واحترافية</h1>
+  <p class="sub">
+    أوفرلاي، ويدجت متحركة، أصوات وفيديوهات لحظية، تعليق صوتي بالعربي،
+    وربط كامل بالهدايا والتعليقات والمتابعين — كله بيشتغل أوتوماتيك وأنت بتبث.
+  </p>
+  <div class="cta-row">
+    <a class="btn btn-gold" href="https://github.com/kemoeldaly1/eldaly-stream-updates/releases/latest/download/ELDALY-STREAM-Setup-Latest.exe" onclick="return dlApp(this)">
+      ⬇ حمّل البرنامج مجاناً
+    </a>
+    <a class="btn btn-ghost" href="#pricing">شوف الباقات</a>
+  </div>
+  <p class="hero-note">متوافق مع ويندوز 10/11 • يعمل مع OBS و Streamlabs</p>
+
+  <!-- App screenshot mockup -->
+  <div class="shot-wrap">
+    <div class="shot-frame">
+      <div class="shot-dots"><span></span><span></span><span></span></div>
+      <img src="app-ui.png?v=20260825" alt="واجهة برنامج ELDALY STREAM">
+    </div>
+    <div class="glow-line"></div>
+  </div>
+</div>
+
+<!-- ═══════════ Features ═══════════ -->
+<section id="features">
+  <div class="sec-title">⚡ كل اللي بثك محتاجه في مكان واحد</div>
+  <div class="sec-sub">صممناه عشان يشتغل معاك في البث المباشر من غير تعقيد</div>
+  <div class="grid">
+    <div class="card"><div class="icon">🖥️</div><h3>10 شاشات أوفرلاي</h3><p>فيديوهات وأصوات وصور بتشتغل لحظياً على سورس OBS — بترتيب وتوقيت أنت بتتحكم فيهم.</p></div>
+    <div class="card"><div class="icon">🎁</div><h3>تفاعل فوري مع الهدايا</h3><p>كل هدية بتشغل الأكشن بتاعها تلقائياً — صوت، فيديو، بانر باسم المرسل وصورته فوق الفيديو.</p></div>
+    <div class="card"><div class="icon">🗣️</div><h3>تعليق صوتي عربي</h3><p>قراءة التعليقات وأسماء المرسلين بأصوات عربية طبيعية — مع طابور منظم من غير تداخل.</p></div>
+    <div class="card"><div class="icon">🏆</div><h3>ويدجت احترافية</h3><p>سباق الهدايا، لوحة الصدارة، عداد الأهداف بالقلب الماي، باتل الفرق، سبييدومتر وأكتر.</p></div>
+    <div class="card"><div class="icon">⌨️</div><h3>هوت كيز وأتمتة</h3><p>شغّل أي أكشن بضغطة زرار، وأحداث أوتوماتيك للمتابعة واللايكات والمشاركة والتعليقات.</p></div>
+    <div class="card"><div class="icon">🛡️</div><h3>تحديثات تلقائية</h3><p>البرنامج يحدّث نفسه في الخلفية من غير ما يقطع بثك أبداً — وأمان كامل للاشتراك.</p></div>
+  </div>
+</section>
+
+<!-- ═══════════ Pricing ═══════════ -->
+<section id="pricing">
+  <div class="sec-title">💎 باقات بسيطة وواضحة</div>
+  <div class="sec-sub">ابدأ مجاناً من غير كارت — وارتقِ وقت ما تحب</div>
+  <div class="plans">
+    <div class="plan">
+      <div class="plan-name">🆓 المجانية</div>
+      <div class="plan-price">تجرّب البرنامج كامل</div>
+      <ul>
+        <li>بروفايل واحد</li>
+        <li>7 أكشنات وأحداث</li>
+        <li>شاشات الأوفرلاي في الأكشنات</li>
+        <li>تسجيل بالإيميل فقط — بدون دفع</li>
+        <li class="no">الويدجت المتقدمة</li>
+        <li class="no">الهوت كيز والإضافات</li>
+      </ul>
+      <a class="btn btn-ghost" href="https://github.com/kemoeldaly1/eldaly-stream-updates/releases/latest/download/ELDALY-STREAM-Setup-Latest.exe" onclick="return dlApp(this)">حمّل وابدأ مجاناً</a>
+    </div>
+    <div class="plan hot">
+      <div class="plan-name">⭐ PRO</div>
+      <div class="plan-price"><strong>$10</strong> شهرياً</div>
+      <ul>
+        <li>🔴 دفع Patreon — تفعيل تلقائي خلال دقيقة</li>
+        <li>بروفايلات بلا حدود — بياناتك محفوظة لحسابك لوحدك</li>
+        <li>أكشنات وأحداث بلا حدود</li>
+        <li>كل الويدجت المتقدمة والحصرية</li>
+        <li>⌨️ ضغطات ألعاب حقيقية (Roblox وGTA وكل الألعاب)</li>
+        <li>🔊 تنبيهات صوتية فورية للاتصال والانقطاع</li>
+        <li>📢 استقبال إشعارات ورسائل الإدارة أول بأول</li>
+        <li>🎧 دعم فني مباشر (واتساب + ديسكورد) من جوه البرنامج</li>
+      </ul>
+      <a class="btn btn-gold" href="https://www.patreon.com/c/ELDALYSTREAM/membership" target="_blank">اشترك الآن</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ Payment ═══════════ -->
+<section id="payment">
+  <div class="sec-title">💳 طرق الدفع</div>
+  <div class="sec-sub">ادفع بالطريقة اللي تريحك — والتفعيل يوصلك على إيميلك في دقائق</div>
+  <div class="pay-box">
+    <div class="pay-row">
+      <a class="pay-chip" href="https://www.patreon.com/c/ELDALYSTREAM/membership" target="_blank">🔴 Patreon — تفعيل تلقائي ⚡</a>
+      <span class="pay-chip">📱 تحويل كاش (أي شبكة)</span>
+    </div>
+    <div class="wallet">
+      <div class="num">01558345646</div>
+      <p>عبر باتريون: اشترك بنفس إيميل حسابك في البرنامج وهيتفعّل تلقائياً خلال دقيقة 🔴<br>أو حوّل قيمة الاشتراك على الرقم (كاش بأي شبكة) وابعت صورة التحويل على واتساب ⚡</p>
+    </div>
+    <div class="pay-row" style="margin:22px 0 0;">
+      <a class="pay-chip" href="javascript:void(0)" onclick="navigator.clipboard.writeText('KEMOELDALY');this.textContent='✓ تم نسخ الدسكورد';setTimeout(()=>this.textContent='🎮 Discord: KEMOELDALY',1600)">🎮 Discord: KEMOELDALY</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ Download CTA ═══════════ -->
+<section id="download" style="text-align:center;">
+  <div class="sec-title">🚀 جاهز ترفع مستوى بثك؟</div>
+  <div class="sec-sub">حمّل النسخة 1.0 الآن — تسطيب بضغطة واحدة، وجرّب مجاناً فوراً</div>
+  <a class="btn btn-gold" style="font-size:18px; padding:18px 44px;" href="https://github.com/kemoeldaly1/eldaly-stream-updates/releases/latest/download/ELDALY-STREAM-Setup-Latest.exe" onclick="return dlApp(this)">⬇ تحميل ELDALY STREAM 1.0</a>
+</section>
+
+<footer>
+  ELDALY STREAM © 2026 — جميع الحقوق محفوظة<br>
+  الدعم الفني: <a href="https://wa.me/201558345646" target="_blank">واتساب 01558345646</a>
+  • Discord: <a href="javascript:void(0)" onclick="navigator.clipboard.writeText('KEMOELDALY');this.textContent='✓ تم النسخ';setTimeout(()=>this.textContent='KEMOELDALY',1500)">🎮 KEMOELDALY</a>
+</footer>
+
+<script>
+// التحميل المباشر: نجيب أحدث ملف تسطيب من إصدارات GitHub من غير مغادرة الصفحة
+function dlApp(btn){
+  if (btn.dataset.busy) return false;
+  btn.dataset.busy = '1';
+  fetch('https://api.github.com/repos/kemoeldaly1/eldaly-stream-updates/releases/latest', {headers:{'Accept':'application/vnd.github+json'}})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      var a = (j.assets || []).filter(function(x){ return /\.exe$/.test(x.name); })[0];
+      location.href = a ? a.browser_download_url : btn.getAttribute('href');
+      btn.innerHTML = '✅ بدأ التحميل — افتح ملف التسطيب بعد ما يخلص';
+    })
+    .catch(function(){ location.href = btn.getAttribute('href'); });
+  return false;
+}
+</script>
+
+</body>
+</html>

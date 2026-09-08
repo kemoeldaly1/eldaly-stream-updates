@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://eldalystream.com/sitemap.xml

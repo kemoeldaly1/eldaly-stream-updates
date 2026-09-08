@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELDALY STREAM — لوحة الإدارة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0c; --panel: #131318; --panel-2: #0f0f14; --inset: #0b0b0e;
+    --line: rgba(255,255,255,.07); --line-2: rgba(255,255,255,.13);
+    --gold: #d4af37; --gold-2: #ecd28a; --gold-3: #a17c1e;
+    --txt: #ece9e1; --txt-2: #a6a198; --txt-3: #6d6960;
+    --red: #c65a54; --green: #57a273; --blue: #7391bd; --teal: #6fbfb2;
+  }
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: #08080a;
+    background-image:
+      radial-gradient(1000px 460px at 50% -160px, rgba(212,175,55,.10), transparent 62%),
+      radial-gradient(800px 540px at 100% 112%, rgba(115,145,189,.05), transparent 60%);
+    background-attachment: fixed;
+    min-height: 100vh; color: #ece9e1; padding: 30px 18px 50px;
+  }
+  ::selection { background: rgba(212,175,55,.3); }
+
+  .shell {
+    max-width: 1060px; margin: 0 auto;
+    background: rgba(18,18,23,.94); border: 1px solid var(--line);
+    border-radius: 22px; overflow: hidden;
+    box-shadow: 0 34px 90px rgba(0,0,0,.7), 0 0 0 1px rgba(212,175,55,.05);
+  }
+  .top-line { height: 3px; background: linear-gradient(90deg, transparent 4%, #d4af37 28%, #f6e7a8 50%, #d4af37 72%, transparent 96%); }
+
+  /* ===== الهيدر ===== */
+  .hdr {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 20px 28px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #111116, #0d0d11);
+  }
+  .hdr-brand { display: flex; align-items: center; gap: 13px; }
+  .hdr-mark {
+    width: 40px; height: 40px; border-radius: 12px; flex: 0 0 40px;
+    background: linear-gradient(135deg, rgba(212,175,55,.18), rgba(212,175,55,.05));
+    border: 1px solid rgba(212,175,55,.4);
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .hdr-logo {
+    font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700; letter-spacing: 2.5px;
+    background: linear-gradient(135deg, #f6e7a8, #d4af37 55%, #a17c1e);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    display: block; line-height: 1.2;
+  }
+  .hdr-sub { font-size: 11.5px; color: #6d6960; display: block; letter-spacing: .5px; }
+  .hdr-side { display: flex; align-items: center; gap: 10px; }
+  .role-chip {
+    font-size: 11.5px; font-weight: 800; padding: 7px 15px; border-radius: 20px;
+    background: rgba(212,175,55,.12); color: #ecd28a; border: 1px solid rgba(212,175,55,.4);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+  }
+
+  /* ===== عنوان قسم ===== */
+  .sec-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 20px 28px 2px; font-size: 12px; font-weight: 800; letter-spacing: 1.5px;
+    color: #a6a198;
+  }
+  .sec-head::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(212,175,55,.3), transparent); }
+
+  /* ===== الإحصائيات ===== */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 14px 28px 4px; }
+  .stat {
+    position: relative; overflow: hidden;
+    background: linear-gradient(180deg, #14141b, #0e0e12); border: 1px solid var(--line);
+    border-radius: 15px; padding: 17px 12px 14px; text-align: center;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    animation: fadeUp .4s ease both;
+  }
+  .stat:nth-child(2) { animation-delay: .05s; } .stat:nth-child(3) { animation-delay: .1s; } .stat:nth-child(4) { animation-delay: .15s; }
+  .stat::before { content: ""; position: absolute; top: 0; left: 20%; right: 20%; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, rgba(212,175,55,.55), transparent); }
+  .stat:hover { transform: translateY(-3px); border-color: rgba(212,175,55,.35); box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+  .stat .num {
+    font-family: 'Cinzel', serif; font-size: 28px; font-weight: 700; color: #ecd28a;
+    text-shadow: 0 0 26px rgba(212,175,55,.28);
+  }
+  .stat .lbl { font-size: 11px; color: #6d6960; margin-top: 4px; font-weight: 700; }
+  .stat.live-stat .num { color: #6fdc9c; text-shadow: 0 0 26px rgba(87,162,115,.32); }
+  .stat.live-stat::before { background: linear-gradient(90deg, transparent, rgba(87,162,115,.6), transparent); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ===== شريط الأدوات ===== */
+  .toolbar { display: flex; align-items: center; gap: 10px; padding: 14px 28px 6px; }
+  .toolbar input {
+    flex: 1; padding: 13px 16px; font-size: 13.5px; font-family: 'Cairo', sans-serif;
+    background: #0a0a0d; border: 1px solid rgba(255,255,255,.09);
+    border-radius: 11px; color: #ece9e1; outline: none; transition: all .18s;
+  }
+  .toolbar input::placeholder { color: #55524b; }
+  .toolbar input:focus { border-color: rgba(212,175,55,.55); box-shadow: 0 0 0 3px rgba(212,175,55,.1); }
+  .auto-note { font-size: 10.5px; color: #55524b; white-space: nowrap; }
+
+  /* ===== قايمة المستخدمين ===== */
+  .users-wrap { padding: 6px 28px 30px; }
+  .users-list { display: flex; flex-direction: column; gap: 12px; }
+  .user-card {
+    position: relative; overflow: hidden;
+    background: linear-gradient(180deg, #14141b, #0e0e12); border: 1px solid var(--line);
+    border-radius: 16px; padding: 17px 20px;
+    transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+    animation: fadeUp .35s ease both;
+  }
+  .user-card::before {
+    content: ""; position: absolute; inset-inline-start: 0; top: 0; bottom: 0; width: 3px;
+    background: transparent; transition: background .18s;
+  }
+  .user-card:hover { border-color: var(--line-2); transform: translateY(-2px); box-shadow: 0 12px 34px rgba(0,0,0,.45); }
+  .user-card.pro { border-color: rgba(212,175,55,.3); }
+  .user-card.pro::before { background: linear-gradient(180deg, #f2dc93, #d4af37); }
+  .user-card.banned { opacity: .72; border-color: rgba(198,90,84,.3); }
+  .user-card.banned::before { background: rgba(198,90,84,.6); }
+  .u-row { display: flex; align-items: center; }
+  .u-top { justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .u-id { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .u-email { font-size: 14.5px; font-weight: 800; direction: ltr; word-break: break-all; letter-spacing: .2px; }
+  .u-tier { display: flex; align-items: center; gap: 9px; }
+  .u-exp { font-size: 11px; color: #6d6960; }
+  .u-meta { font-size: 11px; color: #55524b; margin-top: 10px; letter-spacing: .2px; }
+  .u-actions { justify-content: space-between; margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(255,255,255,.07); flex-wrap: wrap; gap: 8px; }
+  .u-group { display: flex; gap: 7px; flex-wrap: wrap; }
+  .u-owner-group { justify-content: flex-end; }
+
+  /* ===== الإحصائيات الشهرية ===== */
+  .u-stats { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(212,175,55,.045); border: 1px solid rgba(212,175,55,.18); }
+  .u-stats-head { display: flex; align-items: center; gap: 8px; font-size: 10.5px; color: #a6a198; letter-spacing: .5px; font-weight: 800; margin-bottom: 9px; }
+  .u-stats-head::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(212,175,55,.25), transparent); }
+  .u-stats-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .u-st { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 10px; font-size: 11.5px; font-weight: 700; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); color: #a6a198; }
+  .u-st b { color: #fff; font-size: 13px; font-weight: 800; }
+  .u-st.gold { border-color: rgba(212,175,55,.35); background: rgba(212,175,55,.08); }
+  .u-st.gold b { color: #ecd28a; }
+
+  .badge {
+    display: inline-flex; align-items: center; padding: 3.5px 12px; border-radius: 20px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: .5px;
+  }
+  .badge-pro { background: rgba(212,175,55,.13); color: #ecd28a; border: 1px solid rgba(212,175,55,.45); }
+  .badge-free { background: rgba(255,255,255,.05); color: #a6a198; border: 1px solid rgba(255,255,255,.1); }
+  .badge-vip { background: rgba(111,191,178,.12); color: #6fbfb2; border: 1px solid rgba(111,191,178,.35); }
+  .badge-exp { background: rgba(198,90,84,.12); color: #d97a74; border: 1px solid rgba(198,90,84,.3); }
+  .badge-owner { background: linear-gradient(180deg,#f2dc93,#d4af37); color: #201803; border: 1px solid #d4af37; box-shadow: 0 2px 10px rgba(212,175,55,.25); }
+  .badge-adm { background: rgba(115,145,189,.14); color: #9db6e3; border: 1px solid rgba(115,145,189,.4); }
+  .badge-live { background: rgba(87,162,115,.15); color: #6fdc9c; border: 1px solid rgba(87,162,115,.45); }
+  .badge-live .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #34d374; margin-left: 5px; animation: pulse 1.4s infinite; }
+  .badge-off .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #c65a54; margin-left: 5px; }
+  .badge-off { background: rgba(198,90,84,.08); color: #d98884; border: 1px solid rgba(198,90,84,.25); }
+  @keyframes pulse { 0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52,211,116,.5); } 50% { opacity: .6; box-shadow: 0 0 0 4px rgba(52,211,116,0); } }
+
+  .btn {
+    padding: 10px 17px; font-family: 'Cairo', sans-serif; font-size: 12.5px; font-weight: 800;
+    border: none; border-radius: 10px; cursor: pointer; transition: all .15s ease; color: #fff;
+    letter-spacing: .2px;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn-gold {
+    background: linear-gradient(180deg, #ecca72, #c69c2d); color: #201803;
+    box-shadow: 0 3px 16px rgba(212,175,55,.24), inset 0 1px 0 rgba(255,255,255,.32);
+  }
+  .btn-gold:hover { filter: brightness(1.09); transform: translateY(-1px); box-shadow: 0 6px 22px rgba(212,175,55,.32), inset 0 1px 0 rgba(255,255,255,.32); }
+  .btn-ghost { background: rgba(255,255,255,.03); color: #a6a198; border: 1px solid rgba(255,255,255,.1); }
+  .btn-ghost:hover { color: #ece9e1; border-color: rgba(255,255,255,.26); background: rgba(255,255,255,.05); }
+  .btn-danger { background: rgba(198,90,84,.1); color: #d97a74; border: 1px solid rgba(198,90,84,.3); }
+  .btn-danger:hover { background: rgba(198,90,84,.22); border-color: rgba(198,90,84,.5); }
+  .btn-sm { padding: 7.5px 14px; font-size: 11.5px; border-radius: 9px; }
+
+  .empty {
+    text-align: center; color: #6d6960; padding: 42px 20px; font-size: 13px;
+    border: 1px dashed rgba(255,255,255,.1); border-radius: 14px; background: rgba(255,255,255,.015);
+  }
+
+  /* ===== كروت الرسالة + باتريون ===== */
+  .announce-card {
+    margin: 16px 28px; padding: 19px 22px;
+    background: linear-gradient(180deg, rgba(212,175,55,.055), transparent 45%), #0f0f14;
+    border: 1px solid rgba(212,175,55,.22); border-radius: 16px;
+  }
+  .ann-head { font-size: 13.5px; font-weight: 800; color: #ecd28a; margin-bottom: 13px; display: flex; align-items: center; gap: 9px; }
+  .ann-chip { font-size: 10.5px; padding: 3px 11px; border-radius: 20px; background: rgba(87,162,115,.15); color: #57a273; border: 1px solid rgba(87,162,115,.35); animation: pulse 2s infinite; }
+  .ann-current { padding: 13px 15px; background: rgba(212,175,55,.06); border: 1px dashed rgba(212,175,55,.3); border-radius: 11px; margin-bottom: 13px; }
+  .ann-text { font-size: 13px; color: #ece9e1; line-height: 1.75; }
+  .ann-meta { font-size: 11px; color: #6d6960; margin-top: 7px; }
+  .announce-card textarea {
+    width: 100%; padding: 13px 15px; font-family: 'Cairo', sans-serif; font-size: 13px;
+    background: #0a0a0d; border: 1px solid rgba(255,255,255,.09); border-radius: 11px;
+    color: #ece9e1; outline: none; resize: vertical; transition: border-color .18s;
+  }
+  .announce-card textarea:focus { border-color: rgba(212,175,55,.55); }
+  .announce-card input { background: #0a0a0d; transition: border-color .18s; }
+  .announce-card input:focus { border-color: rgba(212,175,55,.55); }
+  .ann-row { display: flex; align-items: center; gap: 10px; margin-top: 13px; flex-wrap: wrap; }
+  .ann-row label { font-size: 12px; font-weight: 700; color: #a6a198; }
+  .ann-row select {
+    padding: 9px 13px; font-family: 'Cairo', sans-serif; font-size: 12.5px; font-weight: 700;
+    background: #0a0a0d; border: 1px solid rgba(255,255,255,.09); border-radius: 10px; color: #ece9e1; outline: none;
+    cursor: pointer;
+  }
+  .msg { min-height: 20px; text-align: center; font-size: 12.5px; font-weight: 700; margin-top: 12px; }
+  .msg.ok { color: #57a273; } .msg.bad { color: #c65a54; } .msg.info { color: #7391bd; }
+
+  /* ===== شاشة الدخول ===== */
+  #loginGate { max-width: 410px; margin: 8vh auto 0; padding: 0 10px; }
+  #panelRoot { display: none; }
+  .login-card {
+    background: linear-gradient(180deg, rgba(212,175,55,.07), transparent 42%), #0f0f14;
+    border: 1px solid rgba(255,255,255,.08); border-radius: 22px; padding: 36px 32px;
+    box-shadow: 0 26px 80px rgba(0,0,0,.65), 0 0 0 1px rgba(212,175,55,.05);
+  }
+  .login-ico {
+    width: 62px; height: 62px; margin: 0 auto 16px; border-radius: 18px;
+    background: linear-gradient(135deg, rgba(212,175,55,.18), rgba(212,175,55,.04));
+    border: 1px solid rgba(212,175,55,.4); display: flex; align-items: center; justify-content: center;
+    font-size: 26px; box-shadow: 0 8px 30px rgba(212,175,55,.12);
+  }
+  .login-brand {
+    text-align: center; font-family: 'Cinzel', serif; font-size: 24px; font-weight: 700; letter-spacing: 3.5px;
+    background: linear-gradient(135deg, #f6e7a8, #d4af37 55%, #a17c1e);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .login-sub { text-align: center; font-size: 12px; color: #6d6960; margin: 9px 0 28px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; font-weight: 700; color: #a6a198; margin-bottom: 7px; }
+  input[type="email"], input[type="password"] {
+    width: 100%; padding: 13px 15px; font-size: 14px; font-family: 'Cairo', sans-serif;
+    background: #0a0a0d; border: 1px solid rgba(255,255,255,.09);
+    border-radius: 11px; color: #ece9e1; outline: none; direction: ltr; text-align: left; transition: all .18s;
+  }
+  input:focus { border-color: rgba(212,175,55,.55) !important; box-shadow: 0 0 0 3px rgba(212,175,55,.1) !important; }
+  #loginBtn { padding: 14px; font-size: 14.5px; border-radius: 11px; }
+
+  /* ===== مودال ===== */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(4,4,6,.8); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal {
+    width: 380px; max-width: calc(100vw - 40px);
+    background: linear-gradient(180deg, rgba(212,175,55,.06), transparent 35%), #131318;
+    border: 1px solid rgba(255,255,255,.11); border-radius: 18px; padding: 28px;
+    box-shadow: 0 34px 90px rgba(0,0,0,.75); animation: popIn .18s ease;
+  }
+  @keyframes popIn { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal h3 { font-size: 15.5px; color: #ecd28a; margin-bottom: 7px; text-align: center; }
+  .modal .u-target { text-align: center; font-size: 11.5px; color: #a6a198; direction: ltr; word-break: break-all; margin-bottom: 18px; }
+  .modal .field { margin-bottom: 16px; }
+  .modal label { display: block; font-size: 12px; font-weight: 700; color: #a6a198; margin-bottom: 6px; }
+  .modal input[type="number"] {
+    width: 100%; padding: 13px 15px; font-size: 14px; font-family: 'Cairo', sans-serif;
+    background: #0a0a0d; border: 1px solid rgba(255,255,255,.09); border-radius: 11px; color: #ece9e1; outline: none;
+  }
+  .modal .row { display: flex; gap: 10px; margin-top: 8px; }
+  .modal .row .btn { flex: 1; }
+
+  /* ===== سكرول + موبايل ===== */
+  ::-webkit-scrollbar { width: 9px; }
+  ::-webkit-scrollbar-track { background: #08080a; }
+  ::-webkit-scrollbar-thumb { background: #2a2a33; border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3a45; }
+
+  @media (max-width: 760px) {
+    body { padding: 14px 8px 30px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); padding: 14px 16px 4px; }
+    .toolbar { padding: 12px 16px 8px; flex-wrap: wrap; }
+    .users-wrap { padding: 4px 16px 22px; }
+    .announce-card { margin: 14px 16px; }
+    .hdr { padding: 16px; flex-wrap: wrap; }
+    .sec-head { padding: 16px 16px 2px; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="top-line"></div>
+
+  <!-- ===== تسجيل دخول الإدارة ===== -->
+  <div id="loginGate">
+    <div class="login-card">
+      <div class="login-brand">ELDALY STREAM</div>
+      <div class="login-sub">لوحة إدارة الحسابات — للأدمن فقط</div>
+      <div class="field">
+        <label>البريد الإلكتروني (حساب الأدمن)</label>
+        <input type="email" id="adminEmail" dir="ltr">
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input type="password" id="adminPass" dir="ltr">
+      </div>
+      <button class="btn btn-gold" id="loginBtn" style="width:100%">دخول</button>
+      <div class="msg" id="loginMsg"></div>
+    </div>
+  </div>
+
+  <!-- ===== اللوحة ===== -->
+  <div id="panelRoot">
+    <div class="hdr">
+      <div class="hdr-brand">
+        <span class="hdr-logo">ELDALY STREAM</span>
+        <span class="hdr-sub">إدارة المشتركين</span>
+      </div>
+      <div class="hdr-side">
+        <span class="role-chip" id="myRoleChip">…</span>
+        <button class="btn btn-ghost btn-sm" id="logoutBtn">خروج</button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="num" id="statTotal">0</div><div class="lbl">👥 إجمالي المسجلين</div></div>
+      <div class="stat"><div class="num" id="statPro">0</div><div class="lbl">⭐ مشتركين PRO</div></div>
+      <div class="stat"><div class="num" id="statFree">0</div><div class="lbl">🆓 باقات مجانية</div></div>
+      <div class="stat live-stat"><div class="num" id="statLive">0</div><div class="lbl">🟢 لايف دلوقتي</div></div>
+    </div>
+
+    <!-- ===== رسالة جماعية لكل المستخدمين ===== -->
+    <div class="announce-card" id="announceCard" style="display:none">
+      <div class="ann-head">📢 رسالة لكل مستخدمي البرنامج <span class="ann-chip" id="annChip" style="display:none">نشطة الآن</span></div>
+      <div class="ann-current" id="annCurrent" style="display:none">
+        <div class="ann-text" id="annText"></div>
+        <div class="ann-meta" id="annMeta"></div>
+      </div>
+      <textarea id="annInput" rows="2" placeholder="اكتب رسالتك — مثال: هيتم عمل صيانة للسيرفر الساعة 10 مساءً الليلة، البرنامج هيقف مؤقتاً"></textarea>
+      <div class="ann-row">
+        <label>المدة:</label>
+        <select id="annHours" dir="rtl">
+          <option value="1">ساعة</option>
+          <option value="6">6 ساعات</option>
+          <option value="12">12 ساعة</option>
+          <option value="24" selected>يوم</option>
+          <option value="72">3 أيام</option>
+          <option value="168">أسبوع</option>
+        </select>
+        <button class="btn btn-gold btn-sm" id="annSaveBtn">💾 نشر / تعديل</button>
+        <button class="btn btn-danger btn-sm" id="annDeleteBtn">🗑 مسح الرسالة</button>
+      </div>
+      <div class="msg" id="annMsg"></div>
+    </div>
+
+    <!-- ===== ربط Patreon (تفعيل تلقائي) ===== -->
+    <div class="announce-card" id="patreonCard" style="display:none">
+      <div class="ann-head">🔴 ربط Patreon — التفعيل التلقائي</div>
+      <div class="ann-current" style="display:none" id="ptStatus">
+        <div class="ann-text" id="ptStatusText"></div>
+      </div>
+      <input type="password" id="ptTokenInput" placeholder="الصق Creator's Access Token من patreon.com/portal/clients" dir="ltr" style="width:100%; padding:10px 12px; font-family:'Cairo',sans-serif; font-size:12.5px; background:#131318; border:1px solid rgba(255,255,255,.09); border-radius:8px; color:#ece9e1; outline:none;">
+      <div class="ann-row">
+        <button class="btn btn-gold btn-sm" id="ptSaveBtn">💾 حفظ التوكن</button>
+        <button class="btn btn-danger btn-sm" id="ptDeleteBtn">🗑 إلغاء الربط</button>
+      </div>
+      <div class="msg" id="ptMsg" style="font-size:11.5px; color:#6d6960; margin-top:8px;">⚠️ لازم برنامجك يكون شغال على جهازك متسجل بحساب المالك — هو اللي بيفحص باتريون كل دقيقة ويفعّل المشتركين. والعميل لازم يشترك بنفس إيميل حسابه في البرنامج.</div>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="searchBox" placeholder="🔍 ابحث بالإيميل...">
+      <button class="btn btn-ghost btn-sm" id="refreshBtn">↻ تحديث</button>
+      <button class="btn btn-ghost btn-sm" id="restoreBtn" style="display:none;color:#6fbfb2;border-color:rgba(111,191,178,.35)">♻️ استرجاع محذوف</button>
+      <span class="auto-note">تحديث تلقائي كل 25 ثانية</span>
+    </div>
+
+    <div class="users-wrap">
+      <div class="users-list" id="usersList"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== مودال التفعيل ===== -->
+<div class="modal-bg" id="tierModal">
+  <div class="modal">
+    <h3 id="modalTitle">تفعيل PRO</h3>
+    <div class="u-target" id="modalTarget"></div>
+    <div class="field">
+      <label>المدة (عدد الأيام)</label>
+      <input type="number" id="modalDays" value="30" min="1" dir="ltr">
+    </div>
+    <div class="row">
+      <button class="btn btn-gold" id="modalSave">تفعيل</button>
+      <button class="btn btn-ghost" id="modalCancel">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+  // ===== إعدادات المشروع (المفتاح عام بطبيعته — زي أي ويب أب فيربييز) =====
+  const WEB_API_KEY = 'AIzaSyA88qSpFDSQVWFZZWNSjv1XwYFpelpDmWo';
+  const PROJECT_ID = 'eldaly-stream';
+  const DB_ROOT = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+  const USERS_URL = `${DB_ROOT}/users`;
+  const BANNED_HWIDS_URL = `${DB_ROOT}/bannedhwids`;
+  const OWNER_EMAILS = ['kemo.eldaly44@gmail.com', 'captenblank1@gmail.com'];
+
+  // تحديد رتبة الداخل: OWNER من قايمة الإيميلات الثابتة — وإلا لازم ملفه فيه role=admin
+  async function detectRole(email) {
+    const e = String(email || '').trim().toLowerCase();
+    if (OWNER_EMAILS.includes(e)) return 'owner';
+    try {
+      const meRes = await fetch(`${USERS_URL}/${encodeURIComponent(e)}`, { headers: authHeaders() });
+      if (meRes.ok) {
+        const me = parseDoc(await meRes.json());
+        if (me.role === 'admin') return 'admin';
+      }
+    } catch (err) {}
+    return null;
+  }
+
+  let adminToken = null;
+  let myRole = 'admin'; // أو 'owner'
+  let usersCache = [];
+  let modalCtx = null; // {email, mode:'pro'|'renew'}
+
+  const $ = (id) => document.getElementById(id);
+
+  // ===== دخول Firebase Auth =====
+  async function tryLogin() {
+    const email = $('adminEmail').value.trim();
+    const pass = $('adminPass').value;
+    if (!email || !pass) { $('loginMsg').textContent = 'املأ الإيميل والباسورد'; $('loginMsg').className = 'msg bad'; return; }
+    $('loginMsg').textContent = 'جاري تسجيل الدخول...'; $('loginMsg').className = 'msg info';
+    try {
+      const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${WEB_API_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass, returnSecureToken: true }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.idToken) {
+        $('loginMsg').textContent = (data.error && data.error.message) || 'فشل تسجيل الدخول';
+        $('loginMsg').className = 'msg bad'; return;
+      }
+      adminToken = data.idToken;
+      // التأكد من صلاحية الأدمن (قراءة قايمة المستخدمين)
+      const test = await fetch(`${USERS_URL}?pageSize=1`, { headers: authHeaders() });
+      if (test.status === 401 || test.status === 403) {
+        $('loginMsg').textContent = 'الحساب ده مش أدمن — لازم إيميل الأدمن بالظبط';
+        $('loginMsg').className = 'msg bad'; adminToken = null; return;
+      }
+      // حفظ الجلسة (refresh token) عشان الصفحة تفتح على اللوحة مباشرة حتى بعد الريفريش
+      localStorage.setItem('adminRefresh', data.refreshToken || '');
+      localStorage.setItem('adminEmail', email);
+      // تحديد رتبتي: OWNER بالإيميلات الثابتة — أو ADMIN لو ملفي فيه role=admin
+      const role = await detectRole(email);
+      if (!role) {
+        $('loginMsg').textContent = 'الحساب ده مش أدمن — لازم المالك يمنحك رتبة ADMIN';
+        $('loginMsg').className = 'msg bad'; adminToken = null; localStorage.removeItem('adminRefresh'); return;
+      }
+      myRole = role;
+      try { const chip = document.getElementById('myRoleChip'); if (chip) chip.textContent = myRole === 'owner' ? '👑 OWNER' : '🛡 ADMIN'; } catch (e) {}
+      try { const rb = document.getElementById('restoreBtn'); if (rb) rb.style.display = myRole === 'owner' ? '' : 'none'; } catch (e) {}
+      try { const ac = document.getElementById('announceCard'); if (ac) { ac.style.display = myRole === 'owner' ? '' : 'none'; if (myRole === 'owner') loadAnnouncement(); } } catch (e) {}
+      try { const pc = document.getElementById('patreonCard'); if (pc) { pc.style.display = myRole === 'owner' ? '' : 'none'; if (myRole === 'owner') loadPatreonStatus(); } } catch (e) {}
+      $('loginGate').style.display = 'none';
+      $('panelRoot').style.display = 'block';
+      loadUsers();
+    } catch (e) {
+      $('loginMsg').textContent = 'خطأ في الاتصال: ' + e.message;
+      $('loginMsg').className = 'msg bad';
+    }
+  }
+  $('loginBtn').addEventListener('click', tryLogin);
+  $('adminPass').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryLogin(); });
+  $('adminEmail').value = localStorage.getItem('adminEmail') || 'kemo.eldaly44@gmail.com';
+
+  function authHeaders() {
+    return adminToken ? { 'Content-Type': 'application/json', Authorization: 'Bearer ' + adminToken } : { 'Content-Type': 'application/json' };
+  }
+
+  // ===== تحميل المستخدمين =====
+  function parseDoc(doc) {
+    const f = (doc && doc.fields) || {};
+    const g = (v) => v == null ? null : (v.booleanValue !== undefined ? v.booleanValue : v.stringValue !== undefined ? v.stringValue : v.timestampValue !== undefined ? v.timestampValue : v.integerValue !== undefined ? parseInt(v.integerValue, 10) : null);
+    const name = (doc.name || '').split('/').pop() || '';
+    return {
+      email: decodeURIComponent(g(f.email) || name),
+      tier: g(f.tier) || 'free',
+      hwid: g(f.hwid) || '',
+      createdAt: g(f.createdAt),
+      expiresAt: g(f.expiresAt),
+      role: g(f.role) || '',
+      banned: g(f.banned) === true,
+      deleted: g(f.deleted) === true,
+      live: g(f.live) === true,
+      liveAt: g(f.liveAt) || '',
+    };
+    // الإحصائيات الشهرية: حقول stats_YYYY-MM_(lives|durationMs|coins)
+    const stats = {};
+    for (const k of Object.keys(f)) {
+      const m = String(k).match(/^stats_(\d{4}-\d{2})_(lives|durationMs|coins)$/);
+      if (m) {
+        const v = f[k] && f[k].integerValue !== undefined ? parseInt(f[k].integerValue, 10) || 0 : 0;
+        (stats[m[1]] = stats[m[1]] || {})[m[2]] = v;
+      }
+    }
+    return Object.assign(u, { stats });
+  }
+
+  // اللمبة بتفضل خضرا بس لو فيه نبض حديث (أقل من 3 دقايق) —
+  // لو البرنامج قفل فجأة/قطع الكهرباء، المشترك بيرجع OFFLINE لوحده
+  function isFreshLive(u) {
+    if (!u.live || !u.liveAt) return false;
+    const at = new Date(u.liveAt).getTime();
+    return !isNaN(at) && (Date.now() - at) < 180000;
+  }
+
+  async function loadUsers(silent) {
+    const list = $('usersList');
+    if (!silent) list.innerHTML = '<div class="empty">جاري التحميل...</div>';
+    try {
+      let all = [];
+      let pageToken = '';
+      do {
+        const url = `${USERS_URL}?pageSize=300` + (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : '');
+        const res = await fetch(url, { headers: authHeaders() });
+        if (!res.ok) {
+          let d = ''; try { d = (await res.json()).error.message; } catch (e) {}
+          list.innerHTML = `<div class="empty" style="color:#c65a54">خطأ في التحميل: HTTP ${res.status} ${d}</div>`;
+          return;
+        }
+        const data = await res.json();
+        all = all.concat((data.documents || []).map(parseDoc));
+        pageToken = data.nextPageToken || '';
+      } while (pageToken);
+      usersCache = all;
+      renderUsers();
+    } catch (e) {
+      list.innerHTML = `<div class="empty" style="color:#c65a54">خطأ: ${e.message}</div>`;
+    }
+  }
+
+  function tierInfo(u) {
+    if (u.tier === 'free') return { label: 'FREE', cls: 'badge-free', pro: false };
+    let expired = false;
+    if (u.expiresAt) {
+      const exp = new Date(u.expiresAt);
+      if (!isNaN(exp.getTime()) && exp.getTime() < Date.now()) expired = true;
+    }
+    if (expired) return { label: 'خلصت ❌', cls: 'badge-exp', pro: false };
+    return { label: u.tier.toUpperCase(), cls: u.tier === 'vip' ? 'badge-vip' : 'badge-pro', pro: true };
+  }
+
+  function fmtDate(s) {
+    if (!s) return '—';
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('ar-EG') + ' ' + d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function renderUsers() {
+    const q = $('searchBox').value.trim().toLowerCase();
+    const all = usersCache.filter((u) => !u.deleted); // المحذوفين مش بيظهروا
+    const filtered = q ? all.filter((u) => u.email.toLowerCase().includes(q)) : all;
+    const list = $('usersList');
+
+    const proCount = all.filter((u) => tierInfo(u).pro).length;
+    $('statTotal').textContent = all.length;
+    $('statPro').textContent = proCount;
+    $('statFree').textContent = all.length - proCount;
+    $('statLive').textContent = all.filter((u) => isFreshLive(u)).length;
+
+    if (!filtered.length) {
+      list.innerHTML = `<div class="empty">${q ? 'مفيش نتائج للبحث ده' : 'لسه مفيش مستخدمين مسجلين — أول ما حد يسجل من البرنامج هيظهر هنا تلقائيًا'}</div>`;
+      return;
+    }
+    list.innerHTML = '';
+    filtered
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+      .forEach((u) => {
+        const t = tierInfo(u);
+        const isOwnerAcc = OWNER_EMAILS.includes(u.email.toLowerCase());
+        const isAdminAcc = !isOwnerAcc && u.role === 'admin';
+        const roleBadge = isOwnerAcc ? '<span class="badge badge-owner">👑 OWNER</span>'
+          : (isAdminAcc ? '<span class="badge badge-adm">🛡 ADMIN</span>' : '');
+        const banBadge = u.banned ? '<span class="badge badge-exp">🚫 محظور</span>' : '';
+        const liveBadge = isFreshLive(u)
+          ? '<span class="badge badge-live">LIVE<span class="dot"></span></span>'
+          : '<span class="badge badge-off">OFFLINE<span class="dot"></span></span>';
+        // إحصائيات الشهر الحالي
+        const mk = new Date().toISOString().slice(0, 7);
+        const ms = u.stats && u.stats[mk];
+        const monthLabel = mk.split('-').reverse().join('/');
+        const statsBar = ms ? `
+          <div class="u-stats">
+            <div class="u-stats-head">📊 إحصائيات الشهر (${monthLabel})</div>
+            <div class="u-stats-chips">
+              <span class="u-st">🎬 لايفات <b>${ms.lives || 0}</b></span>
+              <span class="u-st">⏱ بث <b>${((ms.durationMs || 0) / 3600000).toFixed(1)}</b> ساعة</span>
+              <span class="u-st gold">💎 كوينز <b>${(ms.coins || 0).toLocaleString('en-US')}</b></span>
+            </div>
+          </div>` : '';
+        const card = document.createElement('div');
+        card.className = 'user-card' + (t.pro ? ' pro' : '') + (u.banned ? ' banned' : '');
+        const ownerBtns = (myRole === 'owner' && !isOwnerAcc) ? `
+            ${!u.banned ? `<button class="btn btn-danger btn-sm" data-act="ban" data-email="${u.email}" data-hwid="${u.hwid || ''}" title="حظر الحساب + الجهاز">🚫 حظر</button>` : `<button class="btn btn-ghost btn-sm" style="color:#57a273;border-color:rgba(87,162,115,.3)" data-act="unban" data-email="${u.email}" data-hwid="${u.hwid || ''}">✅ فك الحظر</button>`}
+            <button class="btn btn-danger btn-sm" data-act="del" data-email="${u.email}" title="حذف الحساب نهائيًا">🗑 حذف</button>
+            ${isAdminAcc ? `<button class="btn btn-ghost btn-sm" data-act="demote" data-email="${u.email}">تنزيل ADMIN</button>` : `<button class="btn btn-ghost btn-sm" style="color:#6fbfb2;border-color:rgba(111,191,178,.3)" data-act="promote" data-email="${u.email}">🛡 ADMIN</button>`}
+        ` : '';
+        card.innerHTML = `
+          <div class="u-row u-top">
+            <div class="u-id">${liveBadge}<span class="u-email">${u.email}</span>${roleBadge}${banBadge}</div>
+            <div class="u-tier"><span class="badge ${t.cls}">${t.label}</span>${t.pro && u.expiresAt ? '<span class="u-exp">ينتهي: ' + fmtDate(u.expiresAt) + '</span>' : ''}</div>
+          </div>
+          <div class="u-row u-meta">💻 HWID: ${u.hwid ? u.hwid.substring(0, 26) + '…' : '—'} &nbsp;•&nbsp; مسجل: ${fmtDate(u.createdAt)}</div>
+          ${statsBar}
+          <div class="u-row u-actions">
+            <div class="u-group">
+              ${t.pro ? `<button class="btn btn-gold btn-sm" data-act="renew" data-email="${u.email}">تجديد الاشتراك</button>` : `<button class="btn btn-gold btn-sm" data-act="pro" data-email="${u.email}">⭐ تفعيل PRO</button>`}
+              ${t.pro ? `<button class="btn btn-ghost btn-sm" data-act="free" data-email="${u.email}">إرجاع Free</button>` : ''}
+            </div>
+            <div class="u-group u-owner-group">${ownerBtns}</div>
+          </div>`;
+        list.appendChild(card);
+      });
+
+    list.querySelectorAll('button[data-act]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const act = btn.dataset.act;
+        const email = btn.dataset.email;
+        const hwid = btn.dataset.hwid || '';
+        if (act === 'pro' || act === 'renew') return openTierModal(act, email);
+        if (act === 'free') return setUserTier(email, 'free', 0);
+        if (act === 'ban') return banUser(email, hwid, true);
+        if (act === 'unban') return banUser(email, hwid, false);
+        if (act === 'del') return deleteUser(email);
+        if (act === 'promote') return setUserField(email, { role: { stringValue: 'admin' } }, ['role'], 'ترقية لـ ADMIN');
+        if (act === 'demote') return setUserField(email, { role: { stringValue: 'user' } }, ['role'], 'تنزيل الـ ADMIN');
+      });
+    });
+  }
+
+  $('searchBox').addEventListener('input', renderUsers);
+  $('refreshBtn').addEventListener('click', () => loadUsers());
+
+  // تحديث تلقائي صامت كل 25 ثانية — اللمبات والأرقام تفضل لايف من غير ما تفقد مكانك
+  setInterval(() => { if (adminToken) loadUsers(true); }, 25000);
+
+  // ===== مودال المدة =====
+  function openTierModal(mode, email) {
+    modalCtx = { mode, email };
+    $('modalTitle').textContent = mode === 'renew' ? 'تجديد الاشتراك' : 'تفعيل PRO';
+    $('modalTarget').textContent = email;
+    $('modalDays').value = 30;
+    $('tierModal').classList.add('open');
+    $('modalDays').focus();
+  }
+  $('modalCancel').addEventListener('click', () => $('tierModal').classList.remove('open'));
+  $('tierModal').addEventListener('mousedown', (e) => { if (e.target === $('tierModal')) $('tierModal').classList.remove('open'); });
+
+  $('modalSave').addEventListener('click', async () => {
+    if (!modalCtx) return;
+    const days = parseInt($('modalDays').value) || 0;
+    if (days < 1) return;
+    $('tierModal').classList.remove('open');
+    await setUserTier(modalCtx.email, 'pro', days, modalCtx.mode === 'renew');
+  });
+
+  async function setUserTier(email, tier, days, isRenew) {
+    const fields = { tier: { stringValue: tier } };
+    if (tier === 'pro' && days > 0) {
+      const base = isRenew ? await currentExpiry(email) : null;
+      const from = (base && base.getTime() > Date.now()) ? base : new Date();
+      from.setDate(from.getDate() + days);
+      fields.expiresAt = { timestampValue: from.toISOString() };
+      fields.activatedAt = { timestampValue: new Date().toISOString() };
+    }
+    const masks = ['tier'];
+    if (fields.expiresAt) masks.push('expiresAt', 'activatedAt');
+    const qs = masks.map((m) => 'updateMask.fieldPaths=' + encodeURIComponent(m)).join('&');
+    const url = `${USERS_URL}/${encodeURIComponent(email)}?${qs}`;
+    try {
+      const res = await fetch(url, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ fields }) });
+      if (!res.ok) {
+        let d = ''; try { d = (await res.json()).error.message; } catch (e) {}
+        alert('فشل: HTTP ' + res.status + (d ? '\n' + d : ''));
+        return;
+      }
+      loadUsers();
+    } catch (e) { alert('خطأ: ' + e.message); }
+  }
+
+  async function currentExpiry(email) {
+    const u = usersCache.find((x) => x.email === email);
+    if (u && u.expiresAt) { const d = new Date(u.expiresAt); if (!isNaN(d.getTime())) return d; }
+    return null;
+  }
+
+  // ===== أدوات المالك: تعديل حقول عامة على ملف المستخدم =====
+  async function setUserField(email, fields, masks, label) {
+    const qs = masks.map((m) => 'updateMask.fieldPaths=' + encodeURIComponent(m)).join('&');
+    try {
+      const res = await fetch(`${USERS_URL}/${encodeURIComponent(email)}?${qs}`, {
+        method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ fields }),
+      });
+      if (!res.ok) {
+        let d = ''; try { d = (await res.json()).error.message; } catch (e) {}
+        alert(label + ' فشل: HTTP ' + res.status + (d ? '\n' + d : ''));
+        return;
+      }
+      loadUsers();
+    } catch (e) { alert('خطأ: ' + e.message); }
+  }
+
+  // حظر = قفل الحساب + قفل الجهاز (HWID) بحيث ميرجعش يسجل حساب جديد من نفس الماكينة
+  async function banUser(email, hwid, ban) {
+    if (ban && !confirm('حظر ' + email + ' نهائيًا؟\nالحساب + جهازه (HWID) هيتقفلوا ومش هيعرف يسجل حساب جديد من نفس الماكينة.')) return;
+    try {
+      const qs = 'updateMask.fieldPaths=banned';
+      const res = await fetch(`${USERS_URL}/${encodeURIComponent(email)}?${qs}`, {
+        method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ fields: { banned: { booleanValue: ban } } }),
+      });
+      let ok = res.ok;
+      if (!ok) {
+        let d = ''; try { d = (await res.json()).error.message; } catch (e) {}
+        alert('حظر الحساب فشل: HTTP ' + res.status + (d ? '\n' + d : ''));
+        return;
+      }
+      if (hwid) {
+        if (ban) {
+          const bRes = await fetch(`${BANNED_HWIDS_URL}?documentId=${encodeURIComponent(hwid)}`, {
+            method: 'POST', headers: authHeaders(),
+            body: JSON.stringify({ fields: { at: { timestampValue: new Date().toISOString() }, email: { stringValue: email } } }),
+          });
+          ok = bRes.ok || bRes.status === 409; // موجود قبل كده = تمام
+        } else {
+          await fetch(`${BANNED_HWIDS_URL}/${encodeURIComponent(hwid)}`, { method: 'DELETE', headers: authHeaders() });
+        }
+      }
+      loadUsers();
+    } catch (e) { alert('خطأ: ' + e.message); }
+  }
+
+  // حذف = اختفاء الحساب من اللوحة + قفل دخوله (من غير حظر الجهاز)
+  async function deleteUser(email) {
+    if (!confirm('حذف حساب ' + email + ' نهائيًا؟\nالحساب هيختفي من اللوحة ومش هيدخل تاني.')) return;
+    await setUserField(email, { deleted: { booleanValue: true }, banned: { booleanValue: true } }, ['deleted', 'banned'], 'حذف');
+  }
+
+  // استرجاع حساب محذوف: يرجع للوحة + يفك الإيقاف + يشيل حظر الجهاز لو كان متحظر
+  async function restoreUser() {
+    const email = String(prompt('اكتب إيميل الحساب المحذوف اللي عايز ترجعه:') || '').trim();
+    if (!email) return;
+    try {
+      const docRes = await fetch(`${USERS_URL}/${encodeURIComponent(email)}`, { headers: authHeaders() });
+      if (!docRes.ok) {
+        alert('مفيش ملف بالإيميل ده — اتأكد إنه مكتوب صح.');
+        return;
+      }
+      const hwid = (parseDoc(await docRes.json()).hwid) || '';
+      if (hwid) { // إزالة حظر الجهاز لو موجود (مش خطأ لو أصلاً مش محذور)
+        await fetch(`${BANNED_HWIDS_URL}/${encodeURIComponent(hwid)}`, { method: 'DELETE', headers: authHeaders() });
+      }
+      await setUserField(email, { deleted: { booleanValue: false }, banned: { booleanValue: false } }, ['deleted', 'banned'], 'استرجاع');
+      loadUsers();
+    } catch (e) { alert('خطأ: ' + e.message); }
+  }
+  $('restoreBtn').addEventListener('click', restoreUser);
+
+  // ===== رسالة جماعية لكل المستخدمين (المالك فقط) =====
+  const ANNOUNCEMENT_URL = `${DB_ROOT}/config/announcement`;
+  function annMsg(text, cls) { const m = $('annMsg'); m.textContent = text; m.className = 'msg ' + cls; }
+
+  async function loadAnnouncement() {
+    try {
+      const res = await fetch(ANNOUNCEMENT_URL, { headers: authHeaders() });
+      if (!res.ok) { $('annCurrent').style.display = 'none'; $('annChip').style.display = 'none'; return; }
+      const doc = await res.json();
+      const f = doc.fields || {};
+      const text = f.text ? f.text.stringValue : '';
+      const endAt = f.endAt ? f.endAt.timestampValue : null;
+      const active = text && endAt && new Date(endAt).getTime() > Date.now();
+      $('annChip').style.display = active ? '' : 'none';
+      if (!text) { $('annCurrent').style.display = 'none'; return; }
+      $('annCurrent').style.display = '';
+      $('annText').textContent = text;
+      $('annMeta').textContent = active
+        ? ('الرسالة ظاهرة الآن للمستخدمين — تنتهي: ' + fmtDate(endAt))
+        : ('رسالة قديمة منتهية — ' + (endAt ? 'انتهت: ' + fmtDate(endAt) : 'بدون مدة'));
+      $('annInput').value = text;
+    } catch (e) {}
+  }
+
+  async function saveAnnouncement() {
+    const text = $('annInput').value.trim();
+    if (!text) return annMsg('اكتب الرسالة الأول', 'bad');
+    const hours = parseInt($('annHours').value, 10) || 24;
+    const startAt = new Date();
+    const endAt = new Date(startAt.getTime() + hours * 3600000);
+    try {
+      const res = await fetch(`${ANNOUNCEMENT_URL}?updateMask.fieldPaths=text&updateMask.fieldPaths=startAt&updateMask.fieldPaths=endAt`, {
+        method: 'PATCH', headers: authHeaders(),
+        body: JSON.stringify({ fields: {
+          text: { stringValue: text },
+          startAt: { timestampValue: startAt.toISOString() },
+          endAt: { timestampValue: endAt.toISOString() }
+        }})
+      });
+      if (!res.ok) {
+        let d = ''; try { d = (await res.json()).error.message; } catch (e) {}
+        return annMsg('فشل النشر: HTTP ' + res.status + (d ? '\n' + d : ''), 'bad');
+      }
+      annMsg('تم النشر ✓ — الرسالة هتظهر لكل المستخدمين خلال دقيقة', 'ok');
+      loadAnnouncement();
+    } catch (e) { annMsg('خطأ: ' + e.message, 'bad'); }
+  }
+
+  async function deleteAnnouncement() {
+    if (!confirm('مسح الرسالة؟ هتختفي من كل المستخدمين خلال دقيقة.')) return;
+    try {
+      const res = await fetch(ANNOUNCEMENT_URL, { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok && res.status !== 404) return annMsg('فشل المسح: HTTP ' + res.status, 'bad');
+      $('annInput').value = '';
+      annMsg('تم المسح ✓', 'ok');
+      loadAnnouncement();
+    } catch (e) { annMsg('خطأ: ' + e.message, 'bad'); }
+  }
+
+  $('annSaveBtn').addEventListener('click', saveAnnouncement);
+  $('annDeleteBtn').addEventListener('click', deleteAnnouncement);
+
+  // ===== ربط Patreon (توكن المزامنة — المالك فقط) =====
+  const PATREON_SECRET_URL = `${DB_ROOT}/secrets/patreon`;
+  function ptMsgSet(text, cls) { const m = $('ptMsg'); m.textContent = text; m.className = 'msg ' + (cls || ''); }
+
+  async function loadPatreonStatus() {
+    try {
+      const res = await fetch(PATREON_SECRET_URL, { headers: authHeaders() });
+      if (!res.ok) { $('ptStatus').style.display = 'none'; return; }
+      const doc = await res.json();
+      const token = doc.fields && doc.fields.creatorToken ? doc.fields.creatorToken.stringValue : '';
+      if (!token) { $('ptStatus').style.display = 'none'; return; }
+      $('ptStatus').style.display = '';
+      $('ptStatusText').textContent = '✅ الربط شغال — التوكن محفوظ (' + token.substring(0, 8) + '...) والمزامنة بتبدأ أول ما برنامجك يشتغل';
+    } catch (e) {}
+  }
+
+  async function savePatreonToken() {
+    const token = $('ptTokenInput').value.trim();
+    if (!token || token.length < 20) return ptMsgSet('التوكن قصير أو غلط — انسخه كامل من باتريون', 'bad');
+    try {
+      const res = await fetch(`${PATREON_SECRET_URL}?updateMask.fieldPaths=creatorToken&updateMask.fieldPaths=minCents`, {
+        method: 'PATCH', headers: authHeaders(),
+        body: JSON.stringify({ fields: {
+          creatorToken: { stringValue: token },
+          minCents: { integerValue: "500" }
+        }})
+      });
+      if (!res.ok) {
+        let d = ''; try { d = (await res.json()).error.message; } catch (e) {}
+        return ptMsgSet('فشل الحفظ: HTTP ' + res.status + (d ? '\n' + d : ''), 'bad');
+      }
+      $('ptTokenInput').value = '';
+      ptMsgSet('تم الحفظ ✓ — افتح برنامجك وهتبدأ المزامنة تلقائياً', 'ok');
+      loadPatreonStatus();
+    } catch (e) { ptMsgSet('خطأ: ' + e.message, 'bad'); }
+  }
+
+  async function deletePatreonToken() {
+    if (!confirm('إلغاء ربط باتريون؟ التفعيل التلقائي هيقف.')) return;
+    try {
+      const res = await fetch(PATREON_SECRET_URL, { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok && res.status !== 404) return ptMsgSet('فشل الإلغاء: HTTP ' + res.status, 'bad');
+      ptMsgSet('تم إلغاء الربط ✓', 'ok');
+      loadPatreonStatus();
+    } catch (e) { ptMsgSet('خطأ: ' + e.message, 'bad'); }
+  }
+
+  $('ptSaveBtn').addEventListener('click', savePatreonToken);
+  $('ptDeleteBtn').addEventListener('click', deletePatreonToken);
+
+  $('logoutBtn').addEventListener('click', () => {
+    adminToken = null;
+    localStorage.removeItem('adminRefresh');
+    $('panelRoot').style.display = 'none';
+    $('loginGate').style.display = 'block';
+    $('adminPass').value = '';
+    $('loginMsg').textContent = '';
+  });
+
+  // ===== دخول تلقائي لو فيه جلسة محفوظة (حتى بعد تحديث الصفحة) =====
+  (async () => {
+    const savedRefresh = localStorage.getItem('adminRefresh');
+    if (!savedRefresh) return;
+    try {
+      const res = await fetch(`https://securetoken.googleapis.com/v1/token?key=${WEB_API_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grant_type: 'refresh_token', refresh_token: savedRefresh }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.id_token) { localStorage.removeItem('adminRefresh'); return; }
+      adminToken = data.id_token;
+      localStorage.setItem('adminRefresh', data.refresh_token || savedRefresh);
+      const test = await fetch(`${USERS_URL}?pageSize=1`, { headers: authHeaders() });
+      if (test.status === 401 || test.status === 403) { adminToken = null; localStorage.removeItem('adminRefresh'); return; }
+      // استرجاع الرتبة كمان — عشان الأزرار تفضل ظاهرة بعد الريفريش من غير تسجيل خروج
+      const role = await detectRole(localStorage.getItem('adminEmail') || '');
+      if (!role) { adminToken = null; localStorage.removeItem('adminRefresh'); return; }
+      myRole = role;
+      try { const chip = document.getElementById('myRoleChip'); if (chip) chip.textContent = myRole === 'owner' ? '👑 OWNER' : '🛡 ADMIN'; } catch (e) {}
+      try { const rb = document.getElementById('restoreBtn'); if (rb) rb.style.display = myRole === 'owner' ? '' : 'none'; } catch (e) {}
+      try { const ac = document.getElementById('announceCard'); if (ac) { ac.style.display = myRole === 'owner' ? '' : 'none'; if (myRole === 'owner') loadAnnouncement(); } } catch (e) {}
+      try { const pc = document.getElementById('patreonCard'); if (pc) { pc.style.display = myRole === 'owner' ? '' : 'none'; if (myRole === 'owner') loadPatreonStatus(); } } catch (e) {}
+      $('loginGate').style.display = 'none';
+      $('panelRoot').style.display = 'block';
+      loadUsers();
+    } catch (e) {}
+  })();
+
+</script>
+</body>
+</html>

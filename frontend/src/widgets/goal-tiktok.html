@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>TikTok Logo Goal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow:hidden;background:transparent!important;width:100vw;height:100vh}
+body{font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;color:#fff}
+
+.scene{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.goal-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;position:relative}
+
+.tiktok-container{
+  position:relative;width:300px;height:380px;
+  display:flex;align-items:center;justify-content:center;
+  animation:tiktokFloat 5s ease-in-out infinite;
+}
+@keyframes tiktokFloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-10px) rotate(1deg)}}
+
+.liquid-svg{position:absolute;inset:0;width:100%;height:100%}
+.tiktok-outline{
+  position:absolute;inset:0;width:100%;height:100%;
+  z-index:10;pointer-events:none;
+  filter:drop-shadow(0 0 20px rgba(37,244,238,.4)) drop-shadow(0 0 20px rgba(254,44,85,.4));
+}
+
+.goal-title{
+  font-size:var(--title-size, 22px);font-weight:800;letter-spacing:1px;
+  text-shadow:0 2px 12px rgba(0,0,0,.6);z-index:20;
+  margin-top:var(--title-margin, 0px);
+}
+
+.goal-counter{
+  font-size:var(--counter-size, 28px);font-weight:900;z-index:20;
+  text-shadow:0 0 15px rgba(37,244,238,.5),0 0 30px rgba(254,44,85,.3);
+  margin-top:var(--counter-margin, 0px);
+}
+
+.goal-pct{
+  position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);z-index:15;
+  font-size:38px;font-weight:900;
+  background:linear-gradient(180deg,#25f4ee,#fe2c55);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.7));
+}
+
+@keyframes waveMove{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.wave-front{animation:waveMove var(--wave-speed-front, 3.5s) linear infinite}
+.wave-back{animation:waveMove var(--wave-speed-back, 5.5s) linear infinite reverse}
+
+/* Bubbles */
+@keyframes bubbleRise{
+  0%{transform:translateY(0) scale(1);opacity:.7}
+  100%{transform:translateY(-180px) scale(.2);opacity:0}
+}
+.bubble{
+  position:absolute;border-radius:50%;z-index:8;
+  background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.3),rgba(37,244,238,.3));
+  border:1px solid rgba(254,44,85,.3);
+  animation:bubbleRise 3s ease-out infinite;
+}
+
+/* Glow effect on progress */
+@keyframes tiktokGlow{
+  0%,100%{filter:drop-shadow(0 0 15px rgba(37,244,238,.3)) drop-shadow(0 0 15px rgba(254,44,85,.3))}
+  50%{filter:drop-shadow(0 0 35px rgba(37,244,238,.6)) drop-shadow(0 0 35px rgba(254,44,85,.6))}
+}
+.tiktok-container.complete .tiktok-outline{animation:tiktokGlow 2s ease-in-out infinite}
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="goal-wrap">
+    <div class="goal-title" id="goalTitle">Gift Goal</div>
+    <div class="tiktok-container" id="container">
+      <svg viewBox="0 0 300 380" class="liquid-svg">
+        <defs>
+          <clipPath id="tiktokClip">
+            <!-- TikTok logo / musical note shape -->
+            <path d="M200,20 C200,20 200,10 210,10 L240,10 C245,10 250,15 250,20 L250,60 C260,65 275,68 290,68 L290,100 C275,100 260,95 250,88 L250,250 C250,300 210,340 160,340 C110,340 70,300 70,250 C70,200 110,160 160,160 L160,195 C130,195 105,220 105,250 C105,280 130,305 160,305 C190,305 215,280 215,250 L215,20 Z"/>
+          </clipPath>
+          <linearGradient id="waveFrontGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#25f4ee"/>
+            <stop offset="100%" stop-color="#fe2c55"/>
+          </linearGradient>
+          <linearGradient id="waveBackGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1bd1c7"/>
+            <stop offset="100%" stop-color="#cc1a42"/>
+          </linearGradient>
+        </defs>
+        <g clip-path="url(#tiktokClip)">
+          <path id="waveBack" class="wave-back" fill="url(#waveBackGrad)" d=""/>
+          <path id="waveFront" class="wave-front" fill="url(#waveFrontGrad)" d=""/>
+        </g>
+      </svg>
+
+      <svg viewBox="0 0 300 380" class="tiktok-outline">
+        <!-- TikTok outline with colored shadows -->
+        <path d="M200,20 C200,20 200,10 210,10 L240,10 C245,10 250,15 250,20 L250,60 C260,65 275,68 290,68 L290,100 C275,100 260,95 250,88 L250,250 C250,300 210,340 160,340 C110,340 70,300 70,250 C70,200 110,160 160,160 L160,195 C130,195 105,220 105,250 C105,280 130,305 160,305 C190,305 215,280 215,250 L215,20 Z"
+          fill="none" stroke="rgba(255,255,255,.15)" stroke-width="3"/>
+      </svg>
+
+      <div id="bubbles"></div>
+      <div class="goal-pct" id="pctDisplay">0%</div>
+    </div>
+    <div class="goal-counter" id="goalCounter">0 / 100</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let cfg={};try{cfg=JSON.parse('__INITIAL_CONFIG__')}catch(e){}
+  const urlParams=new URLSearchParams(window.location.search);
+  const widgetId=urlParams.get('id')||'tiktok-goal';
+  const goalType=urlParams.get('type')||cfg.goalType||'gift';
+
+  let goal=parseInt(cfg.goal)||100;
+  let title=cfg.title||'Gift Goal';
+  let currentValue=0;
+  let giftName=(cfg.giftName||'').toLowerCase();
+
+  // Settings
+  let waveSpeed=parseFloat(cfg.waveSpeed)||3.5;
+  let bubbleSpeed=parseFloat(cfg.bubbleSpeed)||3;
+  let bubbleSize=parseFloat(cfg.bubbleSize)||8;
+  let titleMargin=parseInt(cfg.titleMargin)||0;
+  let counterMargin=parseInt(cfg.counterMargin)||0;
+  let titleSize=parseInt(cfg.titleSize)||22;
+  let counterSize=parseInt(cfg.counterSize)||28;
+
+  const titleEl=document.getElementById('goalTitle');
+  const counterEl=document.getElementById('goalCounter');
+  const pctEl=document.getElementById('pctDisplay');
+  const container=document.getElementById('container');
+  const root=document.documentElement;
+
+  function applySettings(){
+    root.style.setProperty('--wave-speed-front',waveSpeed+'s');
+    root.style.setProperty('--wave-speed-back',(waveSpeed*1.6)+'s');
+    root.style.setProperty('--title-size',titleSize+'px');
+    root.style.setProperty('--counter-size',counterSize+'px');
+    root.style.setProperty('--title-margin',titleMargin+'px');
+    root.style.setProperty('--counter-margin',counterMargin+'px');
+  }
+
+  function generateWavePath(baseY,amp,freq,phase){
+    let d=`M 0 380 L 0 ${baseY} `;
+    for(let x=0;x<=600;x+=3){
+      const y=baseY+Math.sin((x*freq/300+phase)*Math.PI*2)*amp+Math.sin((x*freq*1.5/300+phase*1.3)*Math.PI*2)*amp*.35;
+      d+=`L ${x} ${y} `;
+    }
+    d+=`L 600 380 Z`;return d;
+  }
+
+  let animPhase=0;
+  function animate(){
+    animPhase+=(0.05 / (waveSpeed || 3.5));
+    const pct=Math.min(1,Math.max(0,currentValue/goal));
+    const baseY=350-(pct*340);
+    document.getElementById('waveBack').setAttribute('d',generateWavePath(baseY-4,5,2,animPhase*0.8));
+    document.getElementById('waveFront').setAttribute('d',generateWavePath(baseY,7,2,animPhase));
+    requestAnimationFrame(animate);
+  }
+
+  function spawnBubble(){
+    const pct=currentValue/goal;if(pct<=0)return;
+    const ct=document.getElementById('bubbles');
+    const b=document.createElement('div');b.className='bubble';
+    const sz=(bubbleSize*0.4)+Math.random()*bubbleSize;
+    const dur=bubbleSpeed*(0.7+Math.random()*0.6);
+    b.style.cssText=`width:${sz}px;height:${sz}px;left:${80+Math.random()*140}px;bottom:${50+Math.random()*(pct*250)}px;animation-duration:${dur}s;animation-delay:${Math.random()*2}s;`;
+    ct.appendChild(b);setTimeout(()=>b.remove(),6000);
+  }
+  setInterval(spawnBubble,500);
+
+  function applyConfig(c){
+    cfg=c||{};goal=parseInt(c.goal)||100;title=c.title||'Gift Goal';
+    giftName=(c.giftName||'').toLowerCase();
+    waveSpeed=parseFloat(c.waveSpeed)||3.5;
+    bubbleSpeed=parseFloat(c.bubbleSpeed)||3;
+    bubbleSize=parseFloat(c.bubbleSize)||8;
+    titleMargin=parseInt(c.titleMargin)||0;
+    counterMargin=parseInt(c.counterMargin)||0;
+    titleSize=parseInt(c.titleSize)||22;
+    counterSize=parseInt(c.counterSize)||28;
+    applySettings();updateDisplay();
+  }
+
+  function updateDisplay(){
+    const baseline = cfg._baseline || 0;
+    const displayCurrent = Math.max(0, currentValue - baseline);
+    const pct=Math.min(100,Math.max(0,(displayCurrent/goal)*100));
+    titleEl.textContent=title;
+    counterEl.textContent=`${displayCurrent.toLocaleString()} / ${goal.toLocaleString()}`;
+    pctEl.textContent=Math.floor(pct)+'%';
+    if(pct>=100)container.classList.add('complete');else container.classList.remove('complete');
+  }
+
+  function updateGoal(val){currentValue=val;updateDisplay();}
+
+  applySettings();updateDisplay();animate();
+
+  const es=new EventSource('/widgets/stream');
+  es.onmessage=(e)=>{try{const m=JSON.parse(e.data);
+    if(m.type==='config'&&m.id===widgetId)applyConfig(m.config);
+    if(m.type==='stats'){
+      const gt=cfg.goalType||goalType;
+      if(gt==='likes'&&m.stats.likes!==undefined)updateGoal(m.stats.likes);
+      if(gt==='follows'&&m.stats.followers!==undefined)updateGoal(m.stats.followers);
+    }
+    if(m.type==='gift'&&(cfg.goalType||goalType)==='gift'){
+      if(giftName&&(m.data.giftName||'').toLowerCase()===giftName){currentValue+=(m.data.repeatCount||1);updateGoal(currentValue);}
+    }
+    if(m.type==='ext-tiktok-goal'){
+      const d=m.data;
+      if(d.action==='test'){currentValue+=(d.value||10);updateGoal(currentValue);}
+      if(d.action==='reset'){currentValue=0;updateGoal(0);}
+    }
+  }catch(err){}};
+})();
+</script>
+</body>
+</html>

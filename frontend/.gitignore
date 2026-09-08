@@ -1,0 +1,30 @@
+# ========== Dependencies ==========
+node_modules/
+
+# ========== Build output ==========
+dist/
+build/
+
+# ========== نسخة البناء المُجمّعة (bytecode + ملفات مشفرة) ==========
+# دي بتتولد من scripts/compile.js وقت الـ build ومش المفروض تترفع
+main.jsc
+src/renderer.jsc
+src/license-renderer.jsc
+src/services/*.jsc
+src/asset-key.js
+src/asset-key.jsc
+src/**/*.enc
+
+# ========== Runtime / logs ==========
+*.log
+npm-debug.log*
+
+# ========== Environment ==========
+.env
+.env.*
+
+# ========== OS / Editor ==========
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

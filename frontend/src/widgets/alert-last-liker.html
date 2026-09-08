@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>Last Liker Alert</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow:hidden;background:transparent!important;width:100vw;height:100vh}
+body{font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;color:#fff}
+
+.alert-container{
+  display:flex;flex-direction:column;align-items:center;gap:0;
+  opacity:0;transform:scale(.8);transition:opacity .6s ease,transform .6s ease;
+}
+.alert-container.visible{opacity:1;transform:scale(1)}
+
+/* Hexagon Avatar Frame */
+.avatar-frame{
+  position:relative;width:120px;height:120px;margin-bottom:-20px;z-index:5;
+}
+.hex-ring{
+  position:absolute;inset:-8px;
+  border:3px solid rgba(0,255,255,.4);
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  animation:hexRotate 6s linear infinite;
+}
+@keyframes hexRotate{
+  0%{transform:rotate(0deg);border-color:rgba(0,255,255,.4)}
+  33%{border-color:rgba(255,0,128,.4)}
+  66%{border-color:rgba(128,0,255,.4)}
+  100%{transform:rotate(360deg);border-color:rgba(0,255,255,.4)}
+}
+.hex-ring:nth-child(2){inset:-16px;animation-duration:8s;animation-direction:reverse;border-width:2px;opacity:.5}
+
+.avatar-img{
+  width:100%;height:100%;object-fit:cover;
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  background:linear-gradient(135deg,#1a1a2e,#16213e);
+}
+.avatar-placeholder{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px;
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  background:linear-gradient(135deg,#1a1a2e,#16213e);
+}
+
+/* Info Card */
+.info-card{
+  background:linear-gradient(135deg,rgba(15,15,35,.9),rgba(25,25,55,.85));
+  border:1px solid rgba(0,255,255,.2);
+  border-radius:16px;padding:30px 40px 20px;
+  text-align:center;min-width:250px;
+  backdrop-filter:blur(12px);
+  box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 30px rgba(0,255,255,.1),inset 0 1px rgba(255,255,255,.05);
+}
+
+.user-name{
+  font-size:22px;font-weight:800;letter-spacing:1px;
+  background:linear-gradient(90deg,#25f4ee,#fe2c55);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:4px;
+}
+
+.alert-message{
+  font-size:14px;color:rgba(255,255,255,.6);font-weight:500;
+}
+
+/* Floating Hearts */
+@keyframes heartFly{
+  0%{opacity:1;transform:translateY(0) scale(1) rotate(0deg)}
+  100%{opacity:0;transform:translateY(-120px) scale(.3) rotate(var(--rot,20deg))}
+}
+.flying-heart{
+  position:absolute;font-size:18px;opacity:0;
+  animation:heartFly 2.5s ease-out forwards;
+  z-index:20;
+}
+
+/* Cyberpunk scan line */
+@keyframes scanLine{0%{top:-5%}100%{top:105%}}
+.scan-line{
+  position:absolute;width:100%;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(0,255,255,.3),transparent);
+  animation:scanLine 3s linear infinite;
+  pointer-events:none;z-index:3;
+}
+
+/* Glow particles */
+@keyframes particleDrift{
+  0%{opacity:0;transform:translate(0,0)}
+  50%{opacity:.6}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy))}
+}
+.particle{
+  position:absolute;width:3px;height:3px;border-radius:50%;
+  background:rgba(0,255,255,.6);
+  animation:particleDrift 3s ease-in-out infinite;
+  pointer-events:none;
+}
+</style>
+</head>
+<body>
+<div class="alert-container" id="alertContainer">
+  <div class="avatar-frame" id="avatarFrame">
+    <div class="hex-ring"></div>
+    <div class="hex-ring"></div>
+    <div class="avatar-placeholder" id="avatarEl">❤️</div>
+  </div>
+  <div class="info-card" style="position:relative;overflow:hidden;">
+    <div class="scan-line"></div>
+    <div class="user-name" id="userName">—</div>
+    <div class="alert-message" id="alertMsg">أعجب بالبث</div>
+  </div>
+  <div id="heartsContainer" style="position:absolute;width:100%;height:100%;pointer-events:none;"></div>
+  <div id="particlesContainer" style="position:absolute;width:100%;height:100%;pointer-events:none;"></div>
+</div>
+
+<script>
+(function(){
+  let cfg={};try{cfg=JSON.parse('__INITIAL_CONFIG__')}catch(e){}
+  const urlParams=new URLSearchParams(window.location.search);
+  const widgetId=urlParams.get('id')||'last-liker';
+
+  const alertContainer=document.getElementById('alertContainer');
+  const userNameEl=document.getElementById('userName');
+  const alertMsgEl=document.getElementById('alertMsg');
+  const avatarEl=document.getElementById('avatarEl');
+
+  let message=cfg.message||'أعجب بالبث';
+  let showDuration=parseInt(cfg.showDuration)||5000;
+  let hideTimer=null;
+
+  function applyConfig(c){
+    cfg=c||{};
+    message=c.message||'أعجب بالبث';
+    showDuration=parseInt(c.showDuration)||5000;
+  }
+
+  function showAlert(data){
+    const name=data.uniqueId||data.nickname||data.username||'User';
+    const avatar=data.profilePictureUrl||data.avatar||'';
+
+    userNameEl.textContent='@'+name;
+    alertMsgEl.textContent=message;
+
+    if(avatar){
+      avatarEl.outerHTML=`<img class="avatar-img" id="avatarEl" src="${avatar}" onerror="this.outerHTML='<div class=\\'avatar-placeholder\\' id=\\'avatarEl\\'>❤️</div>'"/>`;
+    }else{
+      const el=document.getElementById('avatarEl');
+      if(el.tagName==='IMG')el.outerHTML=`<div class="avatar-placeholder" id="avatarEl">❤️</div>`;
+    }
+
+    // Show
+    alertContainer.classList.add('visible');
+    spawnHearts();
+    spawnParticles();
+
+    // Auto hide
+    clearTimeout(hideTimer);
+    hideTimer=setTimeout(()=>{
+      alertContainer.classList.remove('visible');
+    },showDuration);
+  }
+
+  function spawnHearts(){
+    const ct=document.getElementById('heartsContainer');
+    for(let i=0;i<8;i++){
+      const h=document.createElement('div');
+      h.className='flying-heart';
+      h.textContent=['❤️','💖','💗','💕'][Math.floor(Math.random()*4)];
+      h.style.left=(30+Math.random()*40)+'%';
+      h.style.bottom='30%';
+      h.style.setProperty('--rot',(Math.random()*40-20)+'deg');
+      h.style.animationDelay=(Math.random()*1)+'s';
+      h.style.fontSize=(14+Math.random()*12)+'px';
+      ct.appendChild(h);
+      setTimeout(()=>h.remove(),3500);
+    }
+  }
+
+  function spawnParticles(){
+    const ct=document.getElementById('particlesContainer');
+    for(let i=0;i<12;i++){
+      const p=document.createElement('div');
+      p.className='particle';
+      p.style.left=(Math.random()*100)+'%';
+      p.style.top=(Math.random()*100)+'%';
+      p.style.setProperty('--dx',(Math.random()*60-30)+'px');
+      p.style.setProperty('--dy',(Math.random()*60-30)+'px');
+      p.style.animationDelay=(Math.random()*2)+'s';
+      p.style.animationDuration=(2+Math.random()*3)+'s';
+      ct.appendChild(p);
+      setTimeout(()=>p.remove(),6000);
+    }
+  }
+
+  // Always visible mode (like a label widget)
+  if(cfg.alwaysVisible){
+    alertContainer.classList.add('visible');
+  }
+
+  // SSE
+  let likeAccumulator = 0;
+  const es=new EventSource('/widgets/stream');
+  es.onmessage=(e)=>{try{const m=JSON.parse(e.data);
+    if(m.type==='config'&&m.id===widgetId)applyConfig(m.config);
+    if(m.type==='like'){
+      const freq = parseInt(cfg.frequency) || 1;
+      const count = m.data.likeCount || 1;
+      likeAccumulator += count;
+      if (likeAccumulator >= freq) {
+        showAlert(m.data);
+        likeAccumulator %= freq;
+      }
+    }
+    if(m.type==='test'&&m.id===widgetId){
+      showAlert({uniqueId:'TestUser',nickname:'Test User',profilePictureUrl:''});
+    }
+  }catch(err){}};
+})();
+</script>
+</body>
+</html>

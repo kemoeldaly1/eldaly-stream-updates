@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>ELDALY STREAM — تسجيل الدخول</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: radial-gradient(circle at 50% -10%, #16120a 0%, #0a0a0c 55%, #060608 100%);
+    color: #ece9e1;
+    display: flex; flex-direction: column;
+    -webkit-app-region: no-drag;
+  }
+  /* ===== Titlebar ===== */
+  .titlebar {
+    height: 42px; flex: 0 0 42px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: #0d0d11; border-bottom: 1px solid rgba(255,255,255,.06);
+    direction: ltr; user-select: none;
+  }
+  .titlebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 14px; }
+  .titlebar-logo img { width: 24px; height: 24px; border-radius: 6px; }
+  .titlebar-title {
+    font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700;
+    letter-spacing: 2px; color: #ecd28a;
+  }
+  .titlebar-controls { display: flex; height: 100%; }
+  .titlebar-btn {
+    width: 46px; height: 100%; border: none; background: transparent; color: #a6a198;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .titlebar-btn:hover { background: rgba(255,255,255,.06); color: #ece9e1; }
+  .titlebar-btn.close:hover { background: #c0392b; color: #fff; }
+  /* ===== Layout ===== */
+  .wrap { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 20px; }
+  .card {
+    width: 400px; max-width: 96%;
+    background: #131318; border: 1px solid rgba(255,255,255,.07);
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 14px 44px rgba(0,0,0,.6), 0 0 0 1px rgba(212,175,55,.07);
+  }
+  .card-top { height: 2px; background: linear-gradient(90deg, transparent, #d4af37, transparent); }
+  .card-body { padding: 30px 30px 26px; }
+  .brand {
+    text-align: center; margin-bottom: 6px;
+    font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; letter-spacing: 3px;
+    background: linear-gradient(135deg, #f2dc93, #d4af37 60%, #a17c1e);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .brand-sub { text-align: center; font-size: 12.5px; color: #6d6960; margin-bottom: 22px; }
+  /* ===== Tabs ===== */
+  .tabs { display: flex; gap: 8px; margin-bottom: 22px; }
+  .tab {
+    flex: 1; padding: 10px; text-align: center; cursor: pointer;
+    font-size: 13px; font-weight: 700; border-radius: 8px;
+    background: rgba(255,255,255,.03); color: #a6a198;
+    border: 1px solid rgba(255,255,255,.08); transition: all .18s;
+  }
+  .tab:hover { color: #ece9e1; }
+  .tab.active {
+    background: rgba(212,175,55,.10); color: #ecd28a;
+    border-color: rgba(212,175,55,.45);
+  }
+  .pane { display: none; }
+  .pane.active { display: block; }
+  /* ===== Fields ===== */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 700; color: #a6a198; margin-bottom: 6px; }
+  .field input {
+    width: 100%; padding: 12px 14px; font-size: 14px; font-family: 'Cairo', sans-serif;
+    background: #0f0f14; border: 1px solid rgba(255,255,255,.09);
+    border-radius: 8px; color: #ece9e1; outline: none; transition: all .18s;
+    direction: ltr; text-align: left;
+  }
+  .field input:focus { border-color: rgba(212,175,55,.55); box-shadow: 0 0 0 3px rgba(212,175,55,.12); }
+  .pass-wrap { position: relative; }
+  .pass-wrap input { padding-right: 42px; }
+  .eye-btn {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; padding: 4px; line-height: 1;
+    font-size: 15px; color: #6d6960; transition: color .15s;
+  }
+  .eye-btn:hover { color: #d4af37; }
+  .btn-main {
+    width: 100%; padding: 13px; margin-top: 6px;
+    font-family: 'Cairo', sans-serif; font-size: 14.5px; font-weight: 800; letter-spacing: .3px;
+    background: linear-gradient(180deg, #e8ca74, #c69c2d); color: #201803;
+    border: none; border-radius: 8px; cursor: pointer;
+    box-shadow: 0 2px 12px rgba(212,175,55,.22), inset 0 1px 0 rgba(255,255,255,.25);
+    transition: all .18s;
+  }
+  .btn-main:hover { filter: brightness(1.08); box-shadow: 0 4px 18px rgba(212,175,55,.3), inset 0 1px 0 rgba(255,255,255,.25); }
+  .btn-main:disabled { opacity: .55; cursor: default; }
+  .msg { min-height: 20px; margin-top: 14px; text-align: center; font-size: 12.5px; font-weight: 700; }
+  .msg.ok { color: #57a273; }
+  .msg.bad { color: #c65a54; }
+  .msg.info { color: #7391bd; }
+  .note { text-align: center; font-size: 11.5px; color: #6d6960; margin-top: 12px; line-height: 1.8; }
+  .switch-line { text-align: center; margin-top: 16px; font-size: 12px; color: #6d6960; }
+  .switch-line a { color: #d4af37; font-weight: 700; cursor: pointer; text-decoration: none; }
+  /* ===== PRO pane ===== */
+  .pro-badge {
+    text-align: center; font-family: 'Cinzel', serif; font-size: 30px; font-weight: 700;
+    letter-spacing: 4px; margin: 4px 0 2px;
+    background: linear-gradient(135deg, #f2dc93, #d4af37 60%, #a17c1e);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .pro-price { text-align: center; color: #a6a198; font-size: 13px; margin-bottom: 18px; }
+  .pay-opts { display: flex; flex-direction: column; gap: 10px; }
+  .pay-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px; border-radius: 8px; font-size: 13.5px; font-weight: 800; cursor: pointer;
+    background: rgba(255,255,255,.03); color: #ece9e1;
+    border: 1px solid rgba(255,255,255,.1); transition: all .18s;
+    font-family: 'Cairo', sans-serif;
+  }
+  .pay-btn:hover { border-color: rgba(212,175,55,.5); color: #ecd28a; }
+  .wallet {
+    background: rgba(232,0,14,.05); border: 1px solid rgba(232,0,14,.25);
+    border-radius: 8px; padding: 14px; text-align: center;
+  }
+  .wallet .num {
+    font-family: 'Cinzel', monospace; font-size: 20px; font-weight: 700; color: #ffd7d7;
+    letter-spacing: 3px; direction: ltr; cursor: pointer;
+  }
+  .wallet .num:hover { text-decoration: underline; }
+  .wallet p { font-size: 11.5px; color: #a6a198; margin-top: 8px; line-height: 1.8; }
+  .discord-line { text-align: center; margin-top: 14px; font-size: 12px; color: #6d6960; }
+  .discord-line a { color: #d4af37; font-weight: 800; cursor: pointer; }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #0a0a0c; }
+  ::-webkit-scrollbar-thumb { background: #2a2a33; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3a45; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <div class="titlebar-logo">
+    <img src="logo.png">
+    <span class="titlebar-title">ELDALY STREAM</span>
+  </div>
+  <div class="titlebar-controls">
+    <button class="titlebar-btn" onclick="api.minimize()">
+      <svg width="12" height="12" viewBox="0 0 12 12"><rect y="5" width="12" height="2" fill="currentColor"/></svg>
+    </button>
+    <button class="titlebar-btn" onclick="api.maximize()">
+      <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    </button>
+    <button class="titlebar-btn close" onclick="api.close()">
+      <svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.6"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="card-top"></div>
+    <div class="card-body">
+      <div class="brand">ELDALY STREAM</div>
+      <div class="brand-sub">سجّل دخولك واستمر في بثك 🎥</div>
+
+      <div class="tabs">
+        <div class="tab active" id="tabLogin" onclick="switchTab('login')">🔑 تسجيل دخول</div>
+        <div class="tab" id="tabPro" onclick="switchTab('pro')">⭐ الاشتراك PRO</div>
+      </div>
+
+      <!-- دخول -->
+      <div class="pane active" id="paneLogin">
+        <div class="field">
+          <label>البريد الإلكتروني</label>
+          <input type="email" id="loginEmail" placeholder="example@gmail.com" dir="ltr">
+        </div>
+        <div class="field">
+          <label>كلمة المرور</label>
+          <div class="pass-wrap">
+            <input type="password" id="loginPass" placeholder="••••••••" dir="ltr">
+            <button type="button" class="eye-btn" data-target="loginPass" title="إظهار / إخفاء الباسورد">👁</button>
+          </div>
+        </div>
+        <button class="btn-main" id="loginBtn">دخول</button>
+        <div class="msg" id="msgLogin"></div>
+        <div class="switch-line"><a onclick="showForgot()">نسيت الباسورد؟</a> • <a onclick="showRegister()">اعمل حساب جديد</a></div>
+        <div id="forgotBox" style="display:none; margin-top:14px; border-top:1px dashed rgba(255,255,255,.08); padding-top:14px;">
+          <div class="field">
+            <label>اكتب إيميلك وهنبعتلك رابط تغيير الباسورد</label>
+            <input type="email" id="forgotEmail" placeholder="example@gmail.com" dir="ltr">
+          </div>
+          <button class="btn-main" id="forgotBtn">📧 إرسال رابط التغيير</button>
+          <div class="msg" id="msgForgot"></div>
+        </div>
+      </div>
+
+      <!-- تسجيل -->
+      <div class="pane" id="paneRegister">
+        <div class="field">
+          <label>البريد الإلكتروني</label>
+          <input type="email" id="regEmail" placeholder="example@gmail.com" dir="ltr">
+        </div>
+        <div class="field">
+          <label>كلمة المرور (6 حروف على الأقل)</label>
+          <div class="pass-wrap">
+            <input type="password" id="regPass" placeholder="••••••••" dir="ltr">
+            <button type="button" class="eye-btn" data-target="regPass" title="إظهار / إخفاء الباسورد">👁</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>تأكيد كلمة المرور</label>
+          <div class="pass-wrap">
+            <input type="password" id="regPass2" placeholder="••••••••" dir="ltr">
+            <button type="button" class="eye-btn" data-target="regPass2" title="إظهار / إخفاء الباسورد">👁</button>
+          </div>
+        </div>
+        <button class="btn-main" id="regBtn">إنشاء الحساب والبدء مجانًا</button>
+        <div class="msg" id="msgReg"></div>
+        <div class="note">هتبدأ بالباقة المجانية فورًا — وترقّي لـ PRO وقت ما تحب</div>
+        <div class="switch-line">عندك حساب بالفعل؟ <a onclick="showLogin()">سجّل دخول</a></div>
+      </div>
+
+      <!-- PRO -->
+      <div class="pane" id="panePro">
+        <div class="pro-badge">PRO</div>
+        <div class="pro-price">كل مميزات البرنامج كاملة — بلا حدود</div>
+        <div class="pay-opts">
+          <button class="pay-btn" id="patreonBtn" style="display:none; border-color:rgba(255,66,164,.45);">🔴 الدفع بـ Patreon</button>
+          <p id="patreonNote" style="display:none; font-size:11px; color:#a6a198; line-height:1.8; margin:4px 0 0;">⚡ اشترك بنفس إيميل حسابك هنا في البرنامج<br>وهيتم تفعيل PRO <b style="color:#ecd28a;">تلقائياً</b> خلال دقيقة من الدفع</p>
+          <div class="wallet">
+            <div class="num" id="walletNum">01558345646</div>
+            <p>حوّل قيمة الاشتراك على الرقم (كاش بأي شبكة)<br>واتأكد إنك مسجّل بنفس الإيميل — وهنفعّل حسابك خلال دقائق ⚡</p>
+          </div>
+        </div>
+        <div class="discord-line">الدعم: <a id="discordLink">Discord: KEMOELDALY</a></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="license-renderer.js"></script>
+</body>
+</html>

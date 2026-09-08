@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="referrer" content="no-referrer">
+  <title>Leaderboard Widget</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: transparent;
+      color: white;
+    }
+    .widget-container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    
+    .header {
+      font-size: 22px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 900;
+      margin-bottom: 25px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      text-align: center;
+    }
+
+    /* ---------------------------------
+       COMMON LIST 
+    --------------------------------- */
+    .list { display: flex; flex-direction: column; gap: 10px; }
+    .item { display: flex; align-items: center; transition: all 0.3s ease; position: relative; overflow: hidden; }
+    .info { display: flex; flex-direction: column; flex: 1; }
+    .username { font-weight: 700; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .value { font-weight: 600; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+
+    /* ---------------------------------
+       STYLES 1, 2, 3 (Standard)
+    --------------------------------- */
+    .style-1 .item, .style-2 .item, .style-3 .item { padding: 8px 15px; }
+    .style-1 .rank, .style-2 .rank, .style-3 .rank { font-size: 20px; font-weight: 900; margin-right: 15px; width: 30px; text-align: center; }
+    .style-1 .icon, .style-2 .icon, .style-3 .icon { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 2px solid rgba(255,255,255,0.5); }
+    .style-1 .item { background: rgba(20, 20, 30, 0.6); backdrop-filter: blur(8px); border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    .style-2 .item { background: linear-gradient(90deg, #1f1c2c 0%, rgba(146, 141, 171, 0.5) 100%); border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+    .style-2 .item::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--c1); }
+    .style-3 .item { background: transparent; border-bottom: 1px solid rgba(255,255,255,0.2); padding-left: 0; padding-right: 0; }
+    .style-3 .icon { border: none; border-radius: 8px; }
+
+    /* ---------------------------------
+       STYLE 4: Stepped Leaderboard
+    --------------------------------- */
+    .style-4 .list { align-items: flex-end; padding-right: 40px; box-sizing: border-box; }
+    .style-4 .item { 
+      height: 48px; border-radius: 25px; margin-bottom: 8px;
+      padding: 0 20px; display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      font-size: 16px;
+      box-sizing: border-box;
+      min-width: 230px;
+      white-space: nowrap;
+    }
+    .style-4 .item .value { font-size: 18px; font-weight: 800; min-width: 60px; }
+    .style-4 .item .filler { flex: 1; text-align: center; font-weight: 400; opacity: 0.5; margin: 0 10px; }
+    .style-4 .item .avatar-wrap { position: relative; display: flex; align-items: center; justify-content: flex-end; width: 140px; }
+    .style-4 .item .avatar-wrap .username { margin-right: 15px; max-width: 100px; text-align: right; overflow: hidden; text-overflow: ellipsis; }
+    .style-4 .item .icon { width: 38px; height: 38px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.5); object-fit: cover; margin-right: 32px; }
+    .style-4 .item .rank { 
+      position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+      width: 26px; height: 26px; background: inherit; border-radius: 50%; 
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border: 2px solid rgba(0,0,0,0.3);
+    }
+    .s4-bg-1 { background: linear-gradient(90deg, #d4af37, #f3e5ab); color: #000; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5) !important; }
+    .s4-bg-2 { background: linear-gradient(90deg, #bdc3c7, #2c3e50); }
+    .s4-bg-3 { background: linear-gradient(90deg, #cd7f32, #8b5a2b); }
+    .s4-bg-4 { background: linear-gradient(90deg, #4b6cb7, #182848); }
+    .s4-bg-5 { background: linear-gradient(90deg, #614385, #516395); }
+    .s4-bg-6 { background: linear-gradient(90deg, #11998e, #38ef7d); }
+    .s4-bg-7 { background: linear-gradient(90deg, #cb2d3e, #ef473a); }
+    .s4-bg-8 { background: linear-gradient(90deg, #f12711, #f5af19); }
+    .s4-bg-9 { background: linear-gradient(90deg, #1f4037, #99f2c8); color: #000; }
+    .s4-bg-10 { background: linear-gradient(90deg, #8A2387, #E94057); }
+
+    .style-4 .s4-bg-1 .rank { background: #ffd700; color: #000; font-size: 16px; width: 32px; height: 32px; right: -15px;}
+    .style-4 .s4-bg-1 .avatar-wrap::after { content: '👑'; position: absolute; right: -12px; top: -15px; font-size: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+    
+    /* ---------------------------------
+       STYLE 5: Top 3 Podium
+    --------------------------------- */
+    .style-5 .list { flex-direction: row; justify-content: center; align-items: flex-end; height: 260px; padding-bottom: 20px; }
+    .podium-item { display: flex; flex-direction: column; align-items: center; position: relative; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .podium-item.rank-1 { order: 2; z-index: 3; margin: 0 10px; transform: translateY(-30px); }
+    .podium-item.rank-2 { order: 3; z-index: 2; margin-left: -15px; }
+    .podium-item.rank-3 { order: 1; z-index: 1; margin-right: -15px; }
+    .podium-item.hidden { display: none !important; }
+
+    .podium-avatar { position: relative; border-radius: 50%; padding: 4px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); }
+    .podium-avatar img { border-radius: 50%; object-fit: cover; }
+    
+    .rank-1 .podium-avatar { width: 120px; height: 120px; background: linear-gradient(135deg, #FFD700, #FDB931); box-shadow: 0 0 30px rgba(255,215,0,0.6); }
+    .rank-1 .podium-avatar img { width: 112px; height: 112px; }
+    .rank-2 .podium-avatar { width: 90px; height: 90px; background: linear-gradient(135deg, #E0E0E0, #9E9E9E); }
+    .rank-2 .podium-avatar img { width: 84px; height: 84px; }
+    .rank-3 .podium-avatar { width: 80px; height: 80px; background: linear-gradient(135deg, #CD7F32, #8B4513); }
+    .rank-3 .podium-avatar img { width: 74px; height: 74px; }
+
+    .podium-crown { position: absolute; top: -35px; font-size: 40px; filter: drop-shadow(0 0 10px rgba(255,215,0,0.8)); z-index: 5; }
+    
+    .podium-badge { 
+      position: absolute; bottom: 0; right: 0; 
+      width: 28px; height: 28px; border-radius: 50%; 
+      background: #333; color: white; font-weight: 900; 
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid black; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+    .rank-1 .podium-badge { background: #FFD700; color: black; width: 34px; height: 34px; font-size: 18px; }
+
+    .podium-info { 
+      margin-top: 15px; background: rgba(20,20,30,0.8); backdrop-filter: blur(5px);
+      border-radius: 15px; padding: 5px 15px; border: 1px solid rgba(255,255,255,0.1);
+      display: flex; flex-direction: column; align-items: center; min-width: 100px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+    .podium-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .podium-val { font-size: 16px; font-weight: 900; color: #FFD700; }
+
+    /* Animations */
+    @keyframes slideIn { from { transform: translateX(-50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .style-1 .item, .style-2 .item, .style-3 .item, .style-4 .item { animation: slideIn 0.4s ease forwards; }
+
+  </style>
+</head>
+<body>
+  <div class="widget-container" id="container">
+    <div class="header" id="title">Leaderboard</div>
+    <div class="list" id="list">
+      <!-- Items generated by JS -->
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const widgetId = urlParams.get('id');
+    const type = urlParams.get('type') || 'top_gifter';
+    
+    let config = {};
+    let titleText = 'Leaderboard';
+    let color1 = '#ffd700';
+    let color2 = '#ff8c00';
+    let style = 'style-4'; // Default to style-4 for now
+    
+    const container = document.getElementById('container');
+    const titleEl = document.getElementById('title');
+    const listEl = document.getElementById('list');
+
+    function applyConfig() {
+      titleText = config.title || (type === 'top_gifter' ? 'Top Gifters' : 'Top Likers');
+      color1 = config.c1 || '#ffd700';
+      color2 = config.c2 || '#ff8c00';
+      style = config.style || 'style-4';
+      
+      container.className = `widget-container ${style}`;
+      titleEl.textContent = titleText;
+      titleEl.style.color = color1;
+      document.documentElement.style.setProperty('--c1', color1);
+      document.documentElement.style.setProperty('--c2', color2);
+      
+      // Force re-render on style change
+      currentData = []; 
+      listEl.innerHTML = '';
+    }
+
+    let currentData = [];
+
+    function updateList(arr) {
+      if (!arr || arr.length === 0) return;
+      if (JSON.stringify(arr) === JSON.stringify(currentData)) return;
+      currentData = arr;
+
+      if (style === 'style-4') {
+        renderSteppedList(arr);
+      } else if (style === 'style-5') {
+        renderPodium(arr);
+      } else {
+        renderStandardList(arr);
+      }
+    }
+
+    function renderStandardList(arr) {
+      arr.forEach((item, index) => {
+        let div = listEl.children[index];
+        if (!div) {
+          div = document.createElement('div');
+          div.className = 'item';
+          div.innerHTML = `
+            <div class="rank"></div><img class="icon" /><div class="info"><div class="username"></div><div class="value"></div></div>
+          `;
+          listEl.appendChild(div);
+        }
+        let rankColor = index === 0 ? color1 : (index === 1 ? '#C0C0C0' : (index === 2 ? '#CD7F32' : 'white'));
+        const iconSrc = item.icon && item.icon.startsWith('http') ? item.icon : `https://ui-avatars.com/api/?name=${item.user}&background=random`;
+        let valueSuffix = type === 'top_gifter' ? '💎' : '❤️';
+
+        div.querySelector('.rank').textContent = `#${index + 1}`;
+        div.querySelector('.rank').style.color = rankColor;
+        
+        const img = div.querySelector('.icon');
+        if (img.getAttribute('data-src') !== iconSrc) {
+          img.src = iconSrc; img.setAttribute('data-src', iconSrc);
+          img.onerror = () => { img.src = `https://ui-avatars.com/api/?name=${item.user}&background=random`; };
+        }
+        div.querySelector('.username').textContent = item.user;
+        div.querySelector('.value').textContent = `${item.count} ${valueSuffix}`;
+        div.querySelector('.value').style.color = color2;
+      });
+      while (listEl.children.length > arr.length) listEl.removeChild(listEl.lastChild);
+    }
+
+    function renderSteppedList(arr) {
+      // Set container for absolute positioning
+      listEl.style.position = 'relative';
+      const itemHeight = 56; // 48px height + 8px margin
+      listEl.style.height = `${arr.length * itemHeight}px`;
+      
+      const maxCount = arr.length > 0 ? Math.max(arr[0].count, 1) : 1;
+
+      // Get all existing items by user to reuse them
+      const existingItems = Array.from(listEl.children);
+      const userMap = {};
+      existingItems.forEach(el => {
+        if (el.dataset.user) userMap[el.dataset.user] = el;
+      });
+
+      arr.forEach((item, index) => {
+        let div = userMap[item.user];
+        if (!div) {
+          // Create new item for this user
+          div = document.createElement('div');
+          div.dataset.user = item.user;
+          div.className = 'item';
+          div.style.position = 'absolute';
+          div.style.top = '0';
+          div.style.right = '0';
+          div.style.transition = 'top 0.6s cubic-bezier(0.4, 0, 0.2, 1), width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.6s';
+          
+          div.innerHTML = `
+            <div class="value"></div>
+            <div class="filler">---</div>
+            <div class="avatar-wrap">
+              <div class="username"></div>
+              <div class="rank"></div>
+              <img class="icon" />
+            </div>
+          `;
+          listEl.appendChild(div);
+        }
+        
+        // Remove from map so we know it's still active
+        delete userMap[item.user];
+
+        // Assign rank-based class for styling (colors)
+        for(let i=1; i<=10; i++) div.classList.remove(`s4-bg-${i}`);
+        div.classList.add(`s4-bg-${index + 1}`);
+        
+        // Calculate width: Base width + Guaranteed Rank Step + Score Ratio
+        // This ensures a beautiful stepped look even if points are very close
+        const rankBonus = (9 - index) * 2; // Guarantee 2% difference per rank (up to 18%)
+        const scoreRatio = (item.count / maxCount) * 47; // Score fills up to 47%
+        const percentage = 35 + rankBonus + scoreRatio; // 35 base + 18 rank + 47 score = 100% max
+        div.style.width = `${percentage}%`;
+        
+        // Move to correct vertical position using top instead of transform to avoid conflict with slideIn animation
+        div.style.top = `${index * itemHeight}px`;
+        div.style.zIndex = 10 - index; // Top ranks stay above during transitions
+        
+        const iconSrc = item.icon && item.icon.startsWith('http') ? item.icon : `https://ui-avatars.com/api/?name=${item.user}&background=random`;
+        let valueSuffix = type === 'top_gifter' ? '💎' : '❤️';
+
+        div.querySelector('.value').textContent = `${item.count} ${valueSuffix}`;
+        div.querySelector('.username').textContent = item.user;
+        div.querySelector('.rank').textContent = index + 1;
+        
+        const img = div.querySelector('.icon');
+        if (img.getAttribute('data-src') !== iconSrc) {
+          img.src = iconSrc; img.setAttribute('data-src', iconSrc);
+          img.onerror = () => { img.src = `https://ui-avatars.com/api/?name=${item.user}&background=random`; };
+        }
+      });
+      
+      // Remove elements that are no longer in the top 10
+      Object.values(userMap).forEach(el => {
+        el.style.opacity = '0';
+        setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 600);
+      });
+    }
+
+    function renderPodium(arr) {
+      // Create exactly 3 items if they don't exist
+      if (listEl.children.length === 0) {
+        for(let i=1; i<=3; i++) {
+          const div = document.createElement('div');
+          div.className = `podium-item rank-${i}`;
+          div.innerHTML = `
+            ${i === 1 ? '<div class="podium-crown">👑</div>' : ''}
+            <div class="podium-avatar">
+              <img class="icon" />
+              <div class="podium-badge">${i}</div>
+            </div>
+            <div class="podium-info">
+              <div class="podium-name">---</div>
+              <div class="podium-val">0</div>
+            </div>
+          `;
+          listEl.appendChild(div);
+        }
+      }
+
+      // Map array to podium ranks (1, 2, 3)
+      const top3 = [arr[0], arr[1], arr[2]];
+      
+      top3.forEach((item, idx) => {
+        const rank = idx + 1;
+        const div = listEl.querySelector(`.podium-item.rank-${rank}`);
+        if (!div) return;
+        
+        if (!item) {
+          div.classList.add('hidden');
+          return;
+        }
+        div.classList.remove('hidden');
+
+        const iconSrc = item.icon && item.icon.startsWith('http') ? item.icon : `https://ui-avatars.com/api/?name=${item.user}&background=random`;
+        let valueSuffix = type === 'top_gifter' ? '💎' : '❤️';
+
+        const img = div.querySelector('.icon');
+        if (img.getAttribute('data-src') !== iconSrc) {
+          img.src = iconSrc; img.setAttribute('data-src', iconSrc);
+          img.onerror = () => { img.src = `https://ui-avatars.com/api/?name=${item.user}&background=random`; };
+        }
+
+        div.querySelector('.podium-name').textContent = item.user;
+        div.querySelector('.podium-val').textContent = `${item.count} ${valueSuffix}`;
+      });
+    }
+
+    const evtSource = new EventSource('/widgets/stream');
+    evtSource.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      if (data.type === 'stats') {
+        if (type === 'top_gifter' && data.stats.topGifters) updateList(data.stats.topGifters);
+        if (type === 'top_liker' && data.stats.topLikers) updateList(data.stats.topLikers);
+      }
+      if (data.type === 'config' && data.id === widgetId) {
+        config = data.config;
+        applyConfig();
+      }
+    };
+    
+    // Initial fetch config
+    fetch('/api/store/get?key=widget_' + widgetId)
+      .then(r => r.json())
+      .then(res => { if(res.success && res.data) { config = res.data; applyConfig(); } else applyConfig(); })
+      .catch(() => applyConfig());
+
+  </script>
+</body>
+</html>

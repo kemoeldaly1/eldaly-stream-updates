@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gift Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:transparent;width:100vw;height:100vh;overflow:hidden;margin:0;padding:0;display:flex;align-items:center;justify-content:center}
+.timer-container{
+  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .6s ease;pointer-events:none;
+}
+.timer-container.visible{opacity:1;pointer-events:auto}
+.timer-bg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);object-fit:contain;pointer-events:none;z-index:0}
+.timer-text{
+  position:relative;z-index:1;
+  font-weight:900;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";
+  text-shadow:0 0 20px rgba(255,255,255,.3),0 4px 12px rgba(0,0,0,.5);
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+  line-height:1;
+}
+/* bump handled via JS to preserve translate */
+.timer-label{
+  position:relative;z-index:1;font-size:16px;font-weight:600;opacity:.7;margin-top:8px;
+  text-shadow:0 2px 4px rgba(0,0,0,.5);
+}
+.end-image{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  max-width:90vw;max-height:90vh;object-fit:contain;
+  opacity:0;transition:opacity .8s ease;z-index:10;
+}
+.end-image.visible{opacity:1}
+
+/* Pulse animation when low time */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.timer-text.low{animation:pulse 1s ease-in-out infinite;color:#ff4444!important}
+
+/* Add/Remove flash */
+@keyframes flash-green{0%{text-shadow:0 0 30px #10b981,0 0 60px #10b981}100%{text-shadow:0 0 20px rgba(255,255,255,.3),0 4px 12px rgba(0,0,0,.5)}}
+@keyframes flash-red{0%{text-shadow:0 0 30px #ff4444,0 0 60px #ff4444}100%{text-shadow:0 0 20px rgba(255,255,255,.3),0 4px 12px rgba(0,0,0,.5)}}
+.timer-text.flash-add{animation:flash-green .5s ease}
+.timer-text.flash-remove{animation:flash-red .5s ease}
+</style>
+</head>
+<body>
+<div class="timer-container" id="timer-container">
+  <img class="timer-bg" id="timer-bg" style="display:none">
+  <div class="timer-text" id="timer-text">00:00</div>
+  <div class="timer-label" id="timer-label"></div>
+</div>
+<img class="end-image" id="end-image">
+<script>
+(function(){
+let cfg = {};
+try { cfg = JSON.parse('__INITIAL_CONFIG__'); } catch(e) {}
+
+const container = document.getElementById('timer-container');
+const timerText = document.getElementById('timer-text');
+const timerLabel = document.getElementById('timer-label');
+const timerBg = document.getElementById('timer-bg');
+const endImg = document.getElementById('end-image');
+
+let remainingMs = 0;
+let running = false;
+let intervalId = null;
+let lastTickTime = 0;
+
+function formatTime(ms) {
+  const totalSec = Math.max(0, Math.ceil(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function updateDisplay() {
+  timerText.textContent = formatTime(remainingMs);
+  // Low time warning (under 30 seconds)
+  const totalSec = Math.ceil(remainingMs / 1000);
+  if (totalSec <= 30 && totalSec > 0 && running) {
+    timerText.classList.add('low');
+  } else {
+    timerText.classList.remove('low');
+  }
+}
+
+function bump() {
+  const base = timerText.style.transform || '';
+  timerText.style.transition = 'transform .15s cubic-bezier(.34,1.56,.64,1)';
+  timerText.style.transform = base + ' scale(1.15)';
+  setTimeout(() => { timerText.style.transform = base; }, 200);
+}
+
+function flashAdd() {
+  timerText.classList.remove('flash-add','flash-remove');
+  void timerText.offsetWidth;
+  timerText.classList.add('flash-add');
+  setTimeout(() => timerText.classList.remove('flash-add'), 500);
+}
+
+function flashRemove() {
+  timerText.classList.remove('flash-add','flash-remove');
+  void timerText.offsetWidth;
+  timerText.classList.add('flash-remove');
+  setTimeout(() => timerText.classList.remove('flash-remove'), 500);
+}
+
+function startTimer() {
+  if (running) return;
+  if (remainingMs <= 0) return;
+  running = true;
+  container.classList.add('visible');
+  endImg.classList.remove('visible');
+  lastTickTime = Date.now();
+  intervalId = setInterval(() => {
+    const now = Date.now();
+    const elapsed = now - lastTickTime;
+    lastTickTime = now;
+    remainingMs -= elapsed;
+    if (remainingMs <= 0) {
+      remainingMs = 0;
+      stopTimer();
+      onTimerEnd();
+    }
+    updateDisplay();
+  }, 100);
+}
+
+function stopTimer() {
+  running = false;
+  if (intervalId) { clearInterval(intervalId); intervalId = null; }
+  timerText.classList.remove('low');
+}
+
+function resetTimer(minutes) {
+  stopTimer();
+  remainingMs = (minutes || cfg.initialMinutes || 60) * 60 * 1000;
+  updateDisplay();
+  container.classList.remove('visible');
+  endImg.classList.remove('visible');
+}
+
+function onTimerEnd() {
+  updateDisplay();
+  if (cfg.endImage) {
+    endImg.src = '/media/' + encodeURIComponent(cfg.endImage);
+    endImg.classList.add('visible');
+    container.classList.remove('visible');
+    const dur = (cfg.endImageDuration || 10) * 1000;
+    setTimeout(() => {
+      endImg.classList.remove('visible');
+    }, dur);
+  } else {
+    // Just hide timer
+    setTimeout(() => {
+      container.classList.remove('visible');
+    }, 2000);
+  }
+}
+
+function addTime(seconds) {
+  remainingMs += seconds * 1000;
+  if (remainingMs < 0) remainingMs = 0;
+  updateDisplay();
+  bump();
+  if (seconds > 0) flashAdd();
+  else flashRemove();
+  // If timer was at 0 and time was added, don't auto-start
+}
+
+function applyConfig(c) {
+  cfg = c;
+  // Font — use system font name directly
+  const googleFonts = ['Inter','Roboto','Cairo','Tajawal','Almarai','Lalezar','Outfit','Poppins','Montserrat','Open Sans'];
+  const fontName = c.fontFamily || 'Inter';
+  if (googleFonts.includes(fontName)) {
+    // Load Google Font if not already loaded
+    if (!document.querySelector(`link[data-font="${fontName}"]`)) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.dataset.font = fontName;
+      link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g,'+')}:wght@400;700;800;900&display=swap`;
+      document.head.appendChild(link);
+    }
+  }
+  const ff = '"' + fontName + '",Inter,sans-serif';
+  timerText.style.fontFamily = ff;
+  timerLabel.style.fontFamily = ff;
+  
+  // Font size
+  timerText.style.fontSize = (c.fontSize || 72) + 'px';
+  
+  // Colors
+  timerText.style.color = c.textColor || '#ffffff';
+  timerLabel.style.color = c.textColor || '#ffffff';
+  
+  // Label
+  timerLabel.textContent = c.label || '';
+  timerLabel.style.display = c.label ? 'block' : 'none';
+  timerLabel.style.fontSize = (c.labelSize || 16) + 'px';
+  
+  // Background image (fully independent position & scale)
+  if (c.bgImage) {
+    timerBg.src = '/media/' + encodeURIComponent(c.bgImage);
+    timerBg.style.display = 'block';
+    const scale = c.bgScale || 1;
+    timerBg.style.transform = `translate(calc(-50% + ${c.bgPosX || 0}px), calc(-50% + ${c.bgPosY || 0}px)) scale(${scale})`;
+  } else {
+    timerBg.style.display = 'none';
+  }
+  
+  // Timer Style: transparent or box
+  const style = c.timerStyle || 'transparent';
+  if (style === 'box') {
+    container.style.backgroundColor = c.bgColor || '#1a1a2e';
+    container.style.borderRadius = (c.borderRadius || 16) + 'px';
+    container.style.padding = (c.padding || 20) + 'px';
+  } else {
+    container.style.backgroundColor = 'transparent';
+    container.style.borderRadius = '0px';
+    container.style.padding = '20px';
+  }
+  
+  // Timer text position (moves text ONLY, not the image)
+  const tx = c.posX || 0;
+  const ty = c.posY || 0;
+  timerText.style.transform = `translate(${tx}px, ${ty}px)`;
+  timerLabel.style.transform = `translate(${tx}px, ${ty}px)`;
+  
+  updateDisplay();
+}
+
+// Initial config
+if (cfg && Object.keys(cfg).length > 0) {
+  applyConfig(cfg);
+  remainingMs = (cfg.initialMinutes || 60) * 60 * 1000;
+  updateDisplay();
+}
+
+// SSE connection
+const widgetId = new URLSearchParams(window.location.search).get('id') || 'gift-timer';
+const es = new EventSource('/widgets/stream');
+es.onmessage = (e) => {
+  try {
+    const m = JSON.parse(e.data);
+    if (m.type === 'config' && m.id === 'gift-timer') {
+      applyConfig(m.config);
+    }
+    if (m.type === 'ext-gift-timer') {
+      const d = m.data;
+      switch(d.action) {
+        case 'start':
+          if (d.minutes) remainingMs = d.minutes * 60 * 1000;
+          updateDisplay();
+          startTimer();
+          break;
+        case 'stop':
+          stopTimer();
+          break;
+        case 'reset':
+          resetTimer(d.minutes || cfg.initialMinutes);
+          break;
+        case 'add-time':
+          addTime(d.seconds || 0);
+          break;
+        case 'remove-time':
+          addTime(-(d.seconds || 0));
+          break;
+        case 'set-time':
+          remainingMs = (d.seconds || 0) * 1000;
+          updateDisplay();
+          bump();
+          break;
+      }
+    }
+  } catch(err) {}
+};
+
+})();
+</script>
+</body>
+</html>

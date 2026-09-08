@@ -1,0 +1,32 @@
+{
+  "name": "eldaly-stream",
+  "version": "2.1.31",
+  "description": "ELDALY STREAM — TikTok LIVE Interactive Desktop Client",
+  "main": "boot.js",
+  "author": "ELDALY STREAM",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "node scripts/clean-jsc.js && electron .",
+    "compile": "electron scripts/compile.js",
+    "build": "electron scripts/compile.js && electron-builder",
+    "clean": "node scripts/clean-jsc.js",
+    "publish": "electron scripts/compile.js && electron-builder --publish always"
+  },
+  "dependencies": {
+    "bytenode": "^1.6.0",
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.8.9",
+    "uiohook-napi": "^1.5.5",
+    "ws": "^8.20.1"
+  },
+  "devDependencies": {
+    "@electron/fuses": "^2.1.3",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "productName": "ELDALY STREAM",
+  "allowScripts": {
+    "electron": true,
+    "uiohook-napi": true
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "appId": "com.eldaly.stream",
+  "productName": "ELDALY STREAM",
+  "electronVersion": "33.4.11",
+  "directories": {
+    "output": "dist"
+  },
+  "asar": true,
+  "asarUnpack": [
+    "**/node_modules/uiohook-napi/**"
+  ],
+  "npmRebuild": false,
+  "buildDependenciesFromSource": false,
+  "afterPack": "fuses-hook.js",
+  "afterAllArtifactBuild": "scripts/add-latest-artifact.js",
+  "files": [
+    "**/*",
+    "!main.js",
+    "!preload.src.js",
+    "!fuses-hook.js",
+    "!src/renderer.js",
+    "!src/license-renderer.js",
+    "!src/index.html",
+    "!src/license.html",
+    "!src/skeleton.html",
+    "!src/license.css",
+    "!src/styles/**/*.css",
+    "!src/widgets/**/*.html",
+    "!src/services/local-overlay-server.js",
+    "!src/services/keyboard.js",
+    "!src/services/secure-assets.js",
+    "!src/asset-key.js",
+    "!scripts/**",
+    "!dist/**",
+    "!*.md"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "icon": "src/logo.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "allowElevation": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "ELDALY STREAM",
+    "runAfterFinish": true,
+    "deleteAppDataOnUninstall": false,
+    "artifactName": "ELDALY-STREAM-Setup-${version}.exe"
+  },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "kemoeldaly1",
+      "repo": "eldaly-stream-updates",
+      "releaseType": "release"
+    }
+  ]
+}
