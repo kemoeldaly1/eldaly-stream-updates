@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Battle Royale</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--frame-w:600px;--frame-h:600px;--accent:#a855f7;--gold:#ffd700}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:transparent;width:100vw;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#br{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px}
+/* Gift Info Bar */
+#gift-bar{display:flex;align-items:center;gap:10px;padding:8px 18px;background:rgba(0,0,0,.7);border-radius:14px;border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(10px);transition:all .3s}
+#gift-bar.hidden{display:none}
+#gift-bar img{width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(168,85,247,.5))}
+.gift-info{display:flex;flex-direction:column;gap:2px}
+.gift-name{font-size:13px;font-weight:700;color:#fff}
+.gift-coins{font-size:11px;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:4px}
+.coin-icon{display:inline-block;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#f0a800);border:1.5px solid #e0960a;font-size:8px;line-height:14px;text-align:center;color:#7a5400;font-weight:900;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+/* Timer */
+#timer-wrap{width:var(--frame-w);height:28px;background:rgba(0,0,0,.6);border-radius:10px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,.1)}
+#timer-fill{height:100%;background:linear-gradient(90deg,var(--accent),#ff2d55);border-radius:10px;transition:width .3s linear;width:100%}
+#timer-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+/* Round/Level Info */
+#info-bar{display:flex;gap:12px;font-size:12px;font-weight:700;color:rgba(255,255,255,.7)}
+#info-bar span{background:rgba(0,0,0,.5);padding:4px 12px;border-radius:8px}
+.lvl-badge{color:var(--gold)!important}
+/* Arena */
+#arena{width:var(--frame-w);height:var(--frame-h);position:relative;overflow:hidden;border-radius:20px;background:rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.1);backdrop-filter:blur(8px);display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:center;align-items:flex-start;padding:8px;gap:4px;transition:all .3s}
+#arena.shape-rect{border-radius:8px;aspect-ratio:auto}
+#arena.shape-transparent{background:transparent;border:none;backdrop-filter:none;box-shadow:none}
+#arena.frame-img{background-size:cover;background-position:center;border:none}
+/* Participant Cell */
+.p-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:all .15s;position:relative;z-index:1}
+.p-cell.highlight{z-index:10;transform:scale(1.15);filter:drop-shadow(0 0 16px var(--accent))}
+.p-cell.highlight .p-avatar{border-color:var(--accent)!important;box-shadow:0 0 20px var(--accent)}
+.p-cell.eliminated{animation:eliminatePop .5s forwards}
+@keyframes eliminatePop{0%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.7;filter:brightness(2)}100%{transform:scale(0);opacity:0}}
+.p-avatar{width:100%;height:100%;object-fit:cover;border:2px solid rgba(255,255,255,.3);transition:all .15s}
+.p-avatar.circle{border-radius:50%}
+.p-avatar.square{border-radius:6px}
+.p-avatar.rect{border-radius:4px}
+.p-name{font-size:9px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+/* Status Overlays */
+.status-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:50;opacity:0;pointer-events:none;transition:opacity .4s;border-radius:16px}
+.status-overlay.show{opacity:1;pointer-events:auto}
+#waiting-text{font-size:18px;font-weight:800;color:rgba(255,255,255,.5);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+/* Winner */
+#winner-overlay{background:radial-gradient(circle,rgba(168,85,247,.3),rgba(0,0,0,.85))}
+.winner-crown{font-size:60px;animation:crownBounce 1s infinite}
+@keyframes crownBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.winner-avatar{width:120px;height:120px;border-radius:50%;border:4px solid var(--gold);object-fit:cover;box-shadow:0 0 40px rgba(255,215,0,.5);margin:12px 0}
+.winner-name{font-size:28px;font-weight:900;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,.4)}
+.winner-tag{font-size:14px;color:rgba(255,255,255,.6);margin-top:4px;font-weight:600}
+/* Confetti */
+.confetti{position:absolute;width:8px;height:8px;border-radius:2px;animation:confettiFall linear forwards;z-index:60;pointer-events:none}
+@keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(var(--frame-h)) rotate(720deg);opacity:0}}
+/* Eliminating banner */
+#elim-banner{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);background:rgba(255,0,0,.8);padding:8px 24px;border-radius:10px;font-size:16px;font-weight:800;color:#fff;z-index:55;opacity:0;transition:opacity .3s;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+#elim-banner.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="br">
+  <div id="gift-bar">
+    <img id="gift-img" src="" alt="">
+    <div class="gift-info">
+      <span class="gift-name" id="gift-name">—</span>
+      <span class="gift-coins" id="gift-coins"><span class="coin-icon">C</span> 0</span>
+    </div>
+  </div>
+  <div id="info-bar">
+    <span>Round <b id="round-num">0</b></span>
+    <span class="lvl-badge">Level <b id="level-num">1</b></span>
+    <span id="players-count">0 Players</span>
+  </div>
+  <div id="timer-wrap">
+    <div id="timer-fill"></div>
+    <div id="timer-text">Waiting...</div>
+  </div>
+  <div id="arena" style="position:relative;">
+    <div class="status-overlay show" id="waiting-overlay"><span id="waiting-text">⏳ Waiting to start...</span></div>
+    <div class="status-overlay" id="winner-overlay">
+      <div class="winner-crown">👑</div>
+      <img class="winner-avatar" id="winner-avatar" src="">
+      <div class="winner-name" id="winner-name"></div>
+      <div class="winner-tag">WINNER!</div>
+    </div>
+    <div id="elim-banner">❌ ELIMINATED!</div>
+  </div>
+</div>
+
+<script>
+(function(){
+let cfg={};try{cfg=JSON.parse('__INITIAL_CONFIG__')}catch(e){}
+
+// ===== STATE =====
+let state={
+  status:'idle', // idle, active, eliminating, finished
+  participants:[], // {id, name, avatar}
+  round:0,
+  level:0,
+  timeLeft:0,
+  winner:null,
+  pendingGift:null // for manual mode: queued gift change for next round
+};
+let roundTimer=null;
+let idCounter=0;
+
+// ===== DOM =====
+const arena=document.getElementById('arena');
+const timerFill=document.getElementById('timer-fill');
+const timerText=document.getElementById('timer-text');
+const roundNum=document.getElementById('round-num');
+const levelNum=document.getElementById('level-num');
+const playersCount=document.getElementById('players-count');
+const giftImg=document.getElementById('gift-img');
+const giftName=document.getElementById('gift-name');
+const giftCoins=document.getElementById('gift-coins');
+const giftBar=document.getElementById('gift-bar');
+const waitingOverlay=document.getElementById('waiting-overlay');
+const winnerOverlay=document.getElementById('winner-overlay');
+const elimBanner=document.getElementById('elim-banner');
+
+// ===== SOUND SYSTEM =====
+let audioCtx=null;
+function getCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function isMuted(){return cfg.soundEnabled===false;}
+function vol(){return((cfg.soundVolume??70)/100);}
+
+function playRoundStart(){
+  if(isMuted())return;
+  const c=getCtx(),v=vol(),t=c.currentTime;
+  // Rising chime
+  const g=c.createGain();g.gain.setValueAtTime(v*0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.4);g.connect(c.destination);
+  const o=c.createOscillator();o.type='sine';o.frequency.setValueAtTime(523,t);o.frequency.exponentialRampToValueAtTime(1047,t+0.2);
+  o.connect(g);o.start(t);o.stop(t+0.4);
+  // Second note
+  const g2=c.createGain();g2.gain.setValueAtTime(v*0.25,t+0.15);g2.gain.exponentialRampToValueAtTime(0.001,t+0.5);g2.connect(c.destination);
+  const o2=c.createOscillator();o2.type='sine';o2.frequency.setValueAtTime(659,t+0.15);o2.frequency.exponentialRampToValueAtTime(1318,t+0.35);
+  o2.connect(g2);o2.start(t+0.15);o2.stop(t+0.5);
+}
+
+function playTick(){
+  if(isMuted())return;
+  const c=getCtx(),v=vol(),t=c.currentTime;
+  const g=c.createGain();g.gain.setValueAtTime(v*0.15,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.06);g.connect(c.destination);
+  const o=c.createOscillator();o.type='square';o.frequency.value=800+Math.random()*400;
+  o.connect(g);o.start(t);o.stop(t+0.06);
+}
+
+function playEliminate(){
+  if(isMuted())return;
+  const c=getCtx(),v=vol(),t=c.currentTime;
+  // Dramatic buzzer
+  const g=c.createGain();g.gain.setValueAtTime(v*0.35,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.6);g.connect(c.destination);
+  const o=c.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(300,t);o.frequency.exponentialRampToValueAtTime(100,t+0.5);
+  o.connect(g);o.start(t);o.stop(t+0.6);
+}
+
+function playWinner(){
+  if(isMuted())return;
+  const c=getCtx(),v=vol(),t=c.currentTime;
+  // Triumphant fanfare: 3 rising notes
+  const notes=[523,659,784,1047];
+  notes.forEach((freq,i)=>{
+    const delay=i*0.15;
+    const g=c.createGain();g.gain.setValueAtTime(v*0.3,t+delay);g.gain.exponentialRampToValueAtTime(0.001,t+delay+0.5);g.connect(c.destination);
+    const o=c.createOscillator();o.type='sine';o.frequency.value=freq;
+    o.connect(g);o.start(t+delay);o.stop(t+delay+0.5);
+  });
+}
+
+// ===== HELPER: Check if only one unique person remains =====
+function getUniqueNames(participants){
+  const names=new Set();
+  participants.forEach(p=>names.add(p.name.toLowerCase()));
+  return names;
+}
+
+// ===== CONFIG =====
+function applyConfig(c){
+  cfg=c;
+  const baseW=c.frameWidth||600;
+  const baseH=c.frameHeight||600;
+  const shape=c.frameShape||'square';
+  // For 'rect' shape, use width as-is and reduce height to create rectangle look
+  // For 'square', use same w and h
+  let fw,fh;
+  if(shape==='rect'){fw=baseW;fh=Math.round(baseW*0.6);}
+  else{fw=baseW;fh=baseH;}
+  document.documentElement.style.setProperty('--frame-w',fw+'px');
+  document.documentElement.style.setProperty('--frame-h',fh+'px');
+  arena.style.width=fw+'px';arena.style.height=fh+'px';
+  arena.className='';
+  if(shape==='rect') arena.classList.add('shape-rect');
+  else if(shape==='transparent') arena.classList.add('shape-transparent');
+  if(c.frameImage){arena.style.backgroundImage='url(/media/'+encodeURIComponent(c.frameImage)+')';arena.classList.add('frame-img');}
+  else{arena.style.backgroundImage='none';}
+  // Gift bar visibility
+  giftBar.classList.toggle('hidden',!c.showGiftImage&&!c.showGiftName&&!c.showGiftCoins);
+  giftImg.style.display=c.showGiftImage!==false?'block':'none';
+  giftName.style.display=c.showGiftName!==false?'inline':'none';
+  giftCoins.style.display=c.showGiftCoins!==false?'flex':'none';
+  if(c.giftPosX||c.giftPosY){giftBar.style.transform='translate('+(c.giftPosX||0)+'px,'+(c.giftPosY||0)+'px)';}
+  updateGiftDisplay();
+}
+
+function getCurrentGift(){
+  if(cfg.mode==='levels'&&cfg.levels&&cfg.levels.length>0){
+    const lvl=Math.min(state.level,cfg.levels.length-1);
+    return cfg.levels[lvl];
+  }
+  return cfg.manualGift||{name:'—',img:'',diamonds:0};
+}
+
+function updateGiftDisplay(){
+  const g=getCurrentGift();
+  giftName.textContent=g.name||'—';
+  giftCoins.innerHTML='<span class="coin-icon">C</span> '+(g.diamonds||0);
+  if(g.img)giftImg.src=g.img;
+  else giftImg.src='';
+}
+
+// ===== PARTICIPANT MANAGEMENT =====
+function addParticipant(name,avatar){
+  if(state.status==='finished')return;
+  const id='p_'+(++idCounter);
+  state.participants.push({id,name:name||'Unknown',avatar:avatar||''});
+  if(state.status!=='eliminating') renderParticipants();
+  playersCount.textContent=state.participants.length+' Players';
+}
+
+function removeParticipant(id){
+  state.participants=state.participants.filter(p=>p.id!==id);
+  renderParticipants();
+  playersCount.textContent=state.participants.length+' Players';
+}
+
+function renderParticipants(){
+  // Remove old cells (keep overlays and banner)
+  arena.querySelectorAll('.p-cell').forEach(el=>el.remove());
+  const count=state.participants.length;
+  if(count===0)return;
+  const aw=arena.clientWidth-16;
+  const ah=arena.clientHeight-16;
+  // Calculate optimal grid
+  let bestCols=1,bestSize=0;
+  for(let cols=1;cols<=count;cols++){
+    const rows=Math.ceil(count/cols);
+    const cw=aw/cols-4;
+    const ch=ah/rows-4;
+    const sz=Math.min(cw,ch);
+    if(sz>bestSize){bestSize=sz;bestCols=cols;}
+  }
+  const cellSize=Math.max(20,Math.min(bestSize,150));
+  const pShape=cfg.participantShape||'circle';
+  // Shapes: circle=1:1, square=1:1, rect=1.4:1 (wider)
+  const isRect=pShape==='rect';
+  const avatarW=Math.max(16,cellSize-18);
+  const avatarH=isRect?Math.max(12,Math.round(avatarW*0.7)):avatarW;
+  const cellW=isRect?Math.round(cellSize*1.3):cellSize;
+  const cellH=isRect?Math.round(cellSize*0.85):cellSize;
+  state.participants.forEach(p=>{
+    const cell=document.createElement('div');
+    cell.className='p-cell';
+    cell.dataset.pid=p.id;
+    cell.style.width=cellW+'px';
+    cell.style.height=cellH+'px';
+    const img=document.createElement('img');
+    img.className='p-avatar '+pShape;
+    img.style.width=avatarW+'px';
+    img.style.height=avatarH+'px';
+    if(p.avatar){img.src=p.avatar;img.onerror=()=>{img.src='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="20" fill="#333"/><text x="20" y="26" text-anchor="middle" fill="white" font-size="18" font-family="Inter">'+p.name.charAt(0).toUpperCase()+'</text></svg>')}}
+    else{img.src='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="20" fill="#333"/><text x="20" y="26" text-anchor="middle" fill="white" font-size="18" font-family="Inter">'+p.name.charAt(0).toUpperCase()+'</text></svg>')}
+    cell.appendChild(img);
+    if(cellSize>35){
+      const nm=document.createElement('div');
+      nm.className='p-name';
+      nm.textContent=p.name;
+      nm.style.maxWidth=avatarW+'px';
+      nm.style.fontSize=Math.max(7,Math.min(10,cellSize/8))+'px';
+      cell.appendChild(nm);
+    }
+    arena.appendChild(cell);
+  });
+}
+
+// ===== GIFT MATCHING =====
+function isGiftQualifying(giftData){
+  const reqGift=getCurrentGift();
+  if(!reqGift||!reqGift.diamonds||reqGift.diamonds<=0)return false;
+  const giftDiamonds=(giftData.diamondCount||0)*(giftData.repeatCount||1);
+  return giftDiamonds>=reqGift.diamonds;
+}
+
+// ===== TIMER =====
+function startTimer(){
+  const total=cfg.roundTime||20;
+  state.timeLeft=total;
+  timerText.textContent=state.timeLeft+'s';
+  // Force-reset the bar: remove transition, set to 100%, force reflow, then animate
+  timerFill.style.transition='none';
+  timerFill.style.width='100%';
+  // Force browser to paint the 100% state before starting animation
+  void timerFill.offsetWidth;
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      timerFill.style.transition='width '+total+'s linear';
+      timerFill.style.width='0%';
+    });
+  });
+  clearInterval(roundTimer);
+  roundTimer=setInterval(()=>{
+    state.timeLeft--;
+    timerText.textContent=state.timeLeft+'s';
+    if(state.timeLeft<=0){
+      clearInterval(roundTimer);
+      roundTimer=null;
+      onRoundEnd();
+    }
+  },1000);
+}
+
+function stopTimer(){
+  clearInterval(roundTimer);
+  roundTimer=null;
+  timerFill.style.transition='none';
+  timerFill.style.width='0%';
+}
+
+// ===== GAME FLOW =====
+// هدايا وصلت وقت الاستبعاد أو لحظة الفوز — بتتسجل للجولة الجديدة مش القديمة
+let giftQueue=[];
+let winnerRestartTimer=null;
+function flushGiftQueue(){
+  if(giftQueue.length===0)return;
+  const q=giftQueue;giftQueue=[];
+  q.forEach(g=>{for(let i=0;i<g.count;i++)addParticipant(g.name,g.avatar);});
+}
+function startGame(){
+  clearTimeout(winnerRestartTimer);
+  state.status='active';
+  state.round=0;
+  state.level=0;
+  state.winner=null;
+  state.participants=[];
+  idCounter=0;
+  waitingOverlay.classList.remove('show');
+  winnerOverlay.classList.remove('show');
+  renderParticipants();
+  updateGiftDisplay();
+  levelNum.textContent=(state.level+1);
+  startRound();
+}
+
+function startRound(){
+  state.round++;
+  state.status='active';
+  roundNum.textContent=state.round;
+  // Check level progression
+  if(cfg.mode==='levels'&&cfg.levels&&cfg.levels.length>1){
+    const rpl=cfg.roundsPerLevel||10;
+    const newLevel=Math.min(Math.floor((state.round-1)/rpl),cfg.levels.length-1);
+    if(newLevel!==state.level){
+      state.level=newLevel;
+      levelNum.textContent=(state.level+1);
+      updateGiftDisplay();
+    }
+  }
+  // Apply pending gift change (manual mode)
+  if(state.pendingGift){
+    cfg.manualGift=state.pendingGift;
+    state.pendingGift=null;
+    updateGiftDisplay();
+  }
+  timerText.textContent='Round '+state.round;
+  playRoundStart();
+  flushGiftQueue();
+  setTimeout(()=>startTimer(),500);
+}
+
+function onRoundEnd(){
+  // Check if only one unique person remains (even with multiple entries)
+  const uniqueNames=getUniqueNames(state.participants);
+  if(uniqueNames.size<=1 && state.participants.length>0){
+    state.winner=state.participants[0];
+    showWinner();
+    return;
+  }
+  if(state.participants.length<=1){
+    if(state.participants.length===1){
+      state.winner=state.participants[0];
+      showWinner();
+    } else {
+      timerText.textContent='No players!';
+      setTimeout(()=>{if(state.status!=='idle')startRound();},3000);
+    }
+    return;
+  }
+  // Eliminate one random participant
+  state.status='eliminating';
+  eliminateRandom();
+}
+
+// ===== ELIMINATION ANIMATION =====
+function eliminateRandom(){
+  const count=state.participants.length;
+  if(count<=1)return;
+  const targetIdx=Math.floor(Math.random()*count);
+  const target=state.participants[targetIdx];
+  const cells=arena.querySelectorAll('.p-cell');
+  if(cells.length===0)return;
+  // Scanning roulette animation
+  let step=0;
+  const totalSteps=20+Math.floor(Math.random()*10);
+  let currentHighlight=-1;
+  let speed=50;
+  function scan(){
+    // Remove previous highlight
+    cells.forEach(c=>c.classList.remove('highlight'));
+    if(step>=totalSteps){
+      // Land on target
+      const targetCell=arena.querySelector('[data-pid="'+target.id+'"]');
+      if(targetCell){
+        targetCell.classList.add('highlight');
+        playEliminate();
+        // Show elimination banner
+        elimBanner.classList.add('show');
+        elimBanner.textContent='❌ '+target.name+' ELIMINATED!';
+        setTimeout(()=>{
+          targetCell.classList.remove('highlight');
+          targetCell.classList.add('eliminated');
+          elimBanner.classList.remove('show');
+          setTimeout(()=>{
+            removeParticipant(target.id);
+            // Check if only one unique person remains
+            const uniqueNames=getUniqueNames(state.participants);
+            if(uniqueNames.size<=1 && state.participants.length>0){
+              state.winner=state.participants[0];
+              showWinner();
+            } else if(state.participants.length<=1){
+              if(state.participants.length===1){
+                state.winner=state.participants[0];
+                showWinner();
+              } else {
+                timerText.textContent='No winner';
+                state.status='idle';
+              }
+            } else {
+              const pauseTime=(cfg.pauseBetweenRounds||3)*1000;
+              timerText.textContent='Next round in...';
+              setTimeout(()=>{startRound();},pauseTime);
+            }
+          },600);
+        },1200);
+        return;
+      }
+    }
+    // Pick random cell or approach target near the end
+    let idx;
+    if(step>totalSteps-5){
+      const remaining=totalSteps-step;
+      const cellArr=Array.from(cells);
+      const targetCellIdx=cellArr.findIndex(c=>c.dataset.pid===target.id);
+      const range=Math.max(1,remaining);
+      idx=(targetCellIdx+Math.floor(Math.random()*range*2)-range+cellArr.length)%cellArr.length;
+    } else {
+      idx=Math.floor(Math.random()*cells.length);
+    }
+    if(cells[idx])cells[idx].classList.add('highlight');
+    playTick();
+    step++;
+    speed=50+Math.pow(step/totalSteps,2)*300;
+    setTimeout(scan,speed);
+  }
+  scan();
+}
+
+// ===== WINNER =====
+function showWinner(){
+  state.status='finished';
+  stopTimer();
+  clearTimeout(winnerRestartTimer);
+  // بعد عرض الفائز: جولة جديدة نضيفة تلقائياً — وأي هدية اتبعتت وقت الفوز بتدخل الجولة الجديدة
+  winnerRestartTimer=setTimeout(()=>{
+    if(state.status==='finished'){
+      startGame();
+      flushGiftQueue();
+    }
+  },8000);
+  timerText.textContent='🏆 WINNER!';
+  playWinner();
+  if(state.winner){
+    document.getElementById('winner-avatar').src=state.winner.avatar||'';
+    document.getElementById('winner-name').textContent=state.winner.name;
+  }
+  winnerOverlay.classList.add('show');
+  spawnConfetti();
+}
+
+function spawnConfetti(){
+  const colors=['#ff2d55','#a855f7','#25f4ee','#ffd700','#10b981','#ff8c00'];
+  for(let i=0;i<50;i++){
+    setTimeout(()=>{
+      const c=document.createElement('div');
+      c.className='confetti';
+      c.style.left=Math.random()*100+'%';
+      c.style.top='-10px';
+      c.style.background=colors[Math.floor(Math.random()*colors.length)];
+      c.style.animationDuration=(2+Math.random()*2)+'s';
+      c.style.animationDelay=Math.random()*0.5+'s';
+      c.style.width=(4+Math.random()*8)+'px';
+      c.style.height=(4+Math.random()*8)+'px';
+      arena.appendChild(c);
+      setTimeout(()=>c.remove(),5000);
+    },i*60);
+  }
+}
+
+// ===== RESET =====
+function resetGame(){
+  stopTimer();
+  clearTimeout(winnerRestartTimer);
+  giftQueue=[];
+  state={status:'idle',participants:[],round:0,level:0,timeLeft:0,winner:null,pendingGift:null};
+  idCounter=0;
+  renderParticipants();
+  roundNum.textContent='0';
+  levelNum.textContent='1';
+  playersCount.textContent='0 Players';
+  timerText.textContent='Waiting...';
+  timerFill.style.transition='none';
+  timerFill.style.width='100%';
+  waitingOverlay.classList.add('show');
+  winnerOverlay.classList.remove('show');
+  elimBanner.classList.remove('show');
+  arena.querySelectorAll('.confetti').forEach(c=>c.remove());
+  updateGiftDisplay();
+}
+
+// ===== INIT =====
+applyConfig(cfg||{});
+
+// ===== SSE =====
+const es=new EventSource('/widgets/stream');
+es.onmessage=(e)=>{try{const m=JSON.parse(e.data);
+  // Config update
+  if(m.type==='config'&&m.id==='battle-royale')applyConfig(m.config);
+  // Extension commands
+  if(m.type==='ext-battle-royale'){
+    const d=m.data;
+    if(d.action==='start')startGame();
+    if(d.action==='reset')resetGame();
+    if(d.action==='add-manual')addParticipant(d.name,d.avatar||'');
+    if(d.action==='change-gift'){
+      state.pendingGift={name:d.name,img:d.img||'',diamonds:d.diamonds||0};
+      if(state.status==='idle'){cfg.manualGift=state.pendingGift;state.pendingGift=null;updateGiftDisplay();}
+    }
+    if(d.action==='test'){
+      // Add test participants
+      const names=['Ahmed','Sara','Mohamed','Nour','Ali','Yasmin','Omar','Hana'];
+      for(let i=0;i<6;i++){
+        addParticipant(names[i%names.length]+' '+(i+1),'');
+      }
+      if(state.status==='idle')startGame();
+    }
+  }
+  // Gift events from TikTok
+  if(m.type==='gift'&&(state.status==='active'||state.status==='eliminating'||state.status==='idle'||state.status==='finished')){
+    const gd=m.data;
+    if(isGiftQualifying(gd)){
+      const name=gd.nickname||gd.uniqueId||'Unknown';
+      const avatar=gd.profilePictureUrl||gd.avatar||'';
+      
+      const reqGift=getCurrentGift();
+      const giftDiamonds=(gd.diamondCount||0)*(gd.repeatCount||1);
+      const reqDiamonds=reqGift.diamonds||1;
+      const count=Math.max(1, Math.floor(giftDiamonds / reqDiamonds));
+      
+      if(state.status==='eliminating'||state.status==='finished'){
+        // هدية لحظة الاستبعاد/الفوز — بتتسجل للجولة الجديدة، الجولة اللي فاز فيها مقفولة
+        giftQueue.push({name:name,avatar:avatar,count:count});
+      } else {
+        // Add participant multiple times based on total gift value
+        for(let i=0; i<count; i++) {
+          addParticipant(name,avatar);
+        }
+      }
+    }
+  }
+}catch(err){console.error(err)}};
+})();
+</script>
+</body>
+</html>

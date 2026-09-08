@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>Gift Spinner</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:transparent;width:100vw;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#fff;direction:ltr}
+
+.spinner-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  pointer-events: none;
+}
+.spinner-container.active {
+  opacity: 1;
+}
+
+.spinner-title {
+  font-size: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 15px;
+  text-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  background: linear-gradient(to right, #ffd700, #ffa500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: none;
+}
+
+/* Spinner Frame - Now a Horizontal Bar */
+.spinner-frame {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5);
+  border: 4px solid rgba(255,255,255,0.1);
+  background: var(--box-color, #1a1a2e);
+  border-radius: var(--border-radius, 12px);
+  width: var(--frame-width, 800px);
+  height: var(--frame-height, 140px);
+  display: flex;
+  align-items: center; /* center vertically */
+}
+
+/* Glassmorphism effect */
+.spinner-frame.transparent {
+  background: rgba(25, 25, 35, 0.2) !important;
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Glow Style */
+.spinner-frame.glow {
+  box-shadow: 0 0 40px var(--box-color), inset 0 0 20px rgba(255,255,255,0.1);
+  border: 4px solid rgba(255,255,255,0.4);
+}
+
+/* Neon Style */
+.spinner-frame.neon {
+  background: rgba(0,0,0,0.6);
+  box-shadow: 0 0 15px var(--box-color), inset 0 0 25px var(--box-color);
+  border: 4px solid var(--box-color);
+}
+.spinner-frame.neon .spinner-highlight {
+  background: linear-gradient(180deg, transparent, var(--box-color) 50%, transparent);
+  border-left: 2px solid var(--box-color);
+  border-right: 2px solid var(--box-color);
+  opacity: 0.6;
+}
+
+/* Center Highlight line */
+.spinner-highlight {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--item-width, 120px);
+  height: 100%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,0.1) 50%, transparent);
+  border-left: 1px solid rgba(255,255,255,0.2);
+  border-right: 1px solid rgba(255,255,255,0.2);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* The rolling track */
+.spinner-track {
+  display: flex;
+  flex-direction: row; /* Horizontal */
+  height: 100%;
+  transform: translateX(0);
+}
+
+.spinner-item {
+  width: var(--item-width, 120px);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 10px;
+}
+
+.spinner-item img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+}
+.spinner-item img.shape-square {
+  object-fit: cover;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+}
+.spinner-item img.shape-circle {
+  object-fit: cover;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+
+.spinner-item-name {
+  font-size: 14px;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Arrow indicator pointing down from top center */
+.spinner-arrow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  z-index: 10;
+  border-style: solid;
+  border-width: var(--arrow-size) var(--arrow-size-half) 0 var(--arrow-size-half);
+  border-color: var(--arrow-color, #ffb100) transparent transparent transparent;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+/* Winner Overlay */
+.winner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: row; /* Horizontal display for winner screen */
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(10px);
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  border-radius: var(--border-radius, 12px);
+  text-align: center;
+  padding: 20px;
+}
+.winner-overlay.active {
+  opacity: 1;
+}
+
+.spinner-frame.transparent .winner-overlay {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(2px);
+}
+
+.winner-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.winner-user {
+  font-size: 14px;
+  color: #25f4ee;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+.winner-title {
+  font-size: 28px;
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow: 0 0 20px rgba(255,215,0,0.6);
+  margin-bottom: 5px;
+  animation: pulseTitle 1s infinite alternate;
+}
+@keyframes pulseTitle {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
+}
+.winner-gift-img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 15px rgba(255,255,255,0.4));
+  animation: floatGift 2s ease-in-out infinite;
+}
+.winner-gift-img.shape-square {
+  object-fit: cover;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.1);
+}
+.winner-gift-img.shape-circle {
+  object-fit: cover;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+@keyframes floatGift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.winner-gift-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+}
+
+</style>
+</head>
+<body>
+
+<div class="spinner-container" id="spinnerContainer">
+  <div class="spinner-title" id="spinnerTitle">Spinning...</div>
+  
+  <div class="spinner-frame" id="spinnerFrame">
+    <div class="spinner-highlight"></div>
+    <div class="spinner-arrow" id="arrowTop"></div>
+    
+    <div class="spinner-track" id="spinnerTrack">
+      <!-- Items generated here -->
+    </div>
+    
+    <div class="winner-overlay" id="winnerOverlay">
+      <img class="winner-gift-img" id="winnerGiftImg" src="" alt="Gift">
+      <div class="winner-info">
+        <div class="winner-user" id="winnerUser">User triggered</div>
+        <div class="winner-title">WINNER!</div>
+        <div class="winner-gift-name" id="winnerGiftName">Gift Name</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const widgetId = new URLSearchParams(window.location.search).get('id') || 'gift-spinner';
+  let cfg = {};
+  try { cfg = JSON.parse(String.raw`__INITIAL_CONFIG__`); } catch(e) { console.error("Config parse error:", e); }
+
+  const frame = document.getElementById('spinnerFrame');
+  const track = document.getElementById('spinnerTrack');
+  const arrowT = document.getElementById('arrowTop');
+  const winnerOverlay = document.getElementById('winnerOverlay');
+  const winnerUser = document.getElementById('winnerUser');
+  const winnerGiftImg = document.getElementById('winnerGiftImg');
+  const winnerGiftName = document.getElementById('winnerGiftName');
+
+  let items = [];
+  let isSpinning = false;
+  let itemWidth = 120;
+  
+  // Track construction
+  const REPEAT_COUNT = 25; // More repeats for a smoother long horizontal scroll
+
+  function applyConfig(c) {
+    cfg = c || {};
+    
+    // Apply shape / styling
+    const style = cfg.style || 'standard';
+    frame.className = 'spinner-frame';
+    frame.style.setProperty('--box-color', cfg.boxColor || '#1a1a2e');
+
+    if (style === 'transparent') {
+      frame.classList.add('transparent');
+      frame.style.setProperty('--box-color', 'transparent');
+    } else if (style === 'glow') {
+      frame.classList.add('glow');
+    } else if (style === 'neon') {
+      frame.classList.add('neon');
+    }
+    
+    // Fixed horizontal bar size
+    frame.style.setProperty('--frame-width', (cfg.width || 800) + 'px');
+    frame.style.setProperty('--frame-height', (cfg.height || 140) + 'px');
+
+    // Apply arrow settings
+    const arrowSize = cfg.arrowSize || 40;
+    frame.style.setProperty('--arrow-color', cfg.arrowColor || '#ffb100');
+    frame.style.setProperty('--arrow-size', arrowSize + 'px');
+    frame.style.setProperty('--arrow-size-half', (arrowSize / 1.5) + 'px');
+
+    items = cfg.gifts || [];
+    if (items.length === 0) {
+      // Dummy items if empty so it doesn't look broken
+      items = [
+        {name: 'No gifts', img: '', luck: 10},
+        {name: 'Please setup', img: '', luck: 10},
+        {name: 'in settings', img: '', luck: 10},
+        {name: 'Add gifts', img: '', luck: 10},
+        {name: 'To spin', img: '', luck: 10}
+      ];
+    }
+    
+    renderTrack();
+  }
+
+  function renderTrack() {
+    if (isSpinning) return;
+    track.innerHTML = '';
+    
+    for (let j = 0; j < REPEAT_COUNT; j++) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const imgSrc = item.img ? (item.img.startsWith('http') ? item.img : '/media/' + encodeURIComponent(item.img)) : '';
+        const div = document.createElement('div');
+        div.className = 'spinner-item';
+        div.innerHTML = `
+          ${imgSrc ? `<img src="${imgSrc}" class="shape-${cfg.imageShape || 'normal'}">` : '<span style="font-size:40px">🎁</span>'}
+          <div class="spinner-item-name">${escapeHtml(item.name)}</div>
+        `;
+        track.appendChild(div);
+      }
+    }
+    
+    track.style.transition = 'none';
+    const firstSetCenterOffset = Math.floor(items.length / 2);
+    const frameWidth = frame.offsetWidth;
+    const initialOffset = (frameWidth / 2) - (itemWidth / 2) - (firstSetCenterOffset * itemWidth);
+    track.style.transform = `translateX(${initialOffset}px)`;
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
+  }
+
+  function spin(winnerIndex, user) {
+    if (isSpinning) return;
+    if (items.length === 0) return;
+    isSpinning = true;
+    
+    const container = document.getElementById('spinnerContainer');
+    container.classList.add('active');
+    
+    winnerOverlay.classList.remove('active');
+
+    renderTrack();
+
+    const spinTime = (cfg.spinTime || 5);
+    const winnerTime = (cfg.winnerTime || 10);
+    
+    const targetGlobalIndex = (REPEAT_COUNT - 2) * items.length + winnerIndex;
+    
+    const frameWidth = frame.offsetWidth;
+    
+    const jitter = (Math.random() - 0.5) * (itemWidth * 0.6); 
+    const finalOffset = (frameWidth / 2) - (itemWidth / 2) - (targetGlobalIndex * itemWidth) + jitter;
+
+    track.style.transition = 'none';
+    const startOffset = (frameWidth / 2) - (itemWidth / 2);
+    track.style.transform = `translateX(${startOffset}px)`;
+    
+    void track.offsetWidth;
+    
+    track.style.transition = `transform ${spinTime}s cubic-bezier(0.2, 0.9, 0.3, 1.0)`;
+    track.style.transform = `translateX(${finalOffset}px)`;
+
+    setTimeout(() => {
+      const winnerItem = items[winnerIndex];
+      const winnerImgSrc = winnerItem.img ? (winnerItem.img.startsWith('http') ? winnerItem.img : '/media/' + encodeURIComponent(winnerItem.img)) : '';
+      winnerUser.textContent = (user || 'System') + ' triggered';
+      winnerGiftName.textContent = winnerItem.name;
+      winnerGiftImg.className = 'winner-gift-img shape-' + (cfg.imageShape || 'normal');
+      winnerGiftImg.src = winnerImgSrc;
+      winnerGiftImg.style.display = winnerImgSrc ? 'block' : 'none';
+      
+      const winnerTitleEl = document.querySelector('.winner-title');
+      if(cfg.hideWinnerText) {
+        winnerTitleEl.style.display = 'none';
+      } else {
+        winnerTitleEl.style.display = 'block';
+        winnerTitleEl.textContent = cfg.winnerText !== undefined ? cfg.winnerText : 'WINNER!';
+      }
+      
+      winnerOverlay.classList.add('active');
+      
+      setTimeout(() => {
+        winnerOverlay.classList.remove('active');
+        document.getElementById('spinnerContainer').classList.remove('active');
+        
+        setTimeout(() => {
+          isSpinning = false;
+          track.style.transition = 'none';
+          const resetOffset = (frameWidth / 2) - (itemWidth / 2) - (winnerIndex * itemWidth);
+          track.style.transform = `translateX(${resetOffset}px)`;
+        }, 500); // Wait for fade out
+      }, winnerTime * 1000);
+      
+    }, spinTime * 1000);
+  }
+
+  applyConfig(cfg);
+  
+  document.fonts.ready.then(() => {
+    const firstItem = track.querySelector('.spinner-item');
+    if (firstItem) itemWidth = firstItem.offsetWidth || 120;
+    frame.style.setProperty('--item-width', itemWidth + 'px');
+    renderTrack();
+  });
+
+  const es = new EventSource('/widgets/stream');
+  es.onmessage = (e) => {
+    try {
+      const m = JSON.parse(e.data);
+      if (m.type === 'config' && m.id === widgetId) {
+        applyConfig(m.config);
+      }
+      if (m.type === 'ext-' + widgetId) {
+        const d = m.data;
+        if (d.action === 'spin' && d.winnerIndex !== undefined) {
+          spin(d.winnerIndex, d.user);
+        }
+      }
+    } catch(err) {}
+  };
+})();
+</script>
+</body>
+</html>

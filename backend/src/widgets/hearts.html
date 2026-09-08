@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Likes Heart Fountain</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    body {
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      background: transparent;
+    }
+
+    #canvas {
+      position: absolute;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      border: 1px solid rgba(255,255,255,0.01);
+      pointer-events: none;
+    }
+
+    #fountain-container {
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .heart {
+      position: absolute;
+      bottom: -40px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-45deg);
+      animation-name: floatUp;
+      animation-timing-function: ease-out;
+      animation-fill-mode: forwards;
+      opacity: 0.9;
+    }
+
+    .heart::before,
+    .heart::after {
+      content: "";
+      position: absolute;
+      background-color: inherit;
+      border-radius: 50%;
+    }
+
+    .heart::before { top: -50%; left: 0; }
+    .heart::after  { top: 0; left: 50%; }
+
+    @keyframes floatUp {
+      0%   { bottom: -40px; opacity: 0; transform: translateX(calc(-50% + var(--dx-start))) rotate(-45deg) scale(0.5); }
+      10%  { opacity: 0.9; transform: translateX(calc(-50% + var(--dx-mid))) rotate(-45deg) scale(1.2); }
+      100% { bottom: var(--float-height); opacity: 0; transform: translateX(calc(-50% + var(--dx-end))) rotate(-45deg) scale(0.8); }
+    }
+
+    .sparkle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background-color: white;
+      border-radius: 50%;
+      box-shadow: 0 0 5px white;
+      animation-name: floatSparkle;
+      animation-timing-function: ease-out;
+      animation-fill-mode: forwards;
+    }
+
+    @keyframes floatSparkle {
+      0%   { bottom: -20px; opacity: 1; transform: translateX(calc(-50% + var(--dx-start))); }
+      100% { bottom: 60%; opacity: 0; transform: translateX(calc(-50% + var(--dx-end))); }
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas"></div>
+  <div id="fountain-container"></div>
+
+  <script>
+    const DEFAULTS = {
+      posX: 50,
+      spread: 200,
+      areaW: 200,
+      size: 30,
+      speed: 3,
+      height: 80,
+      max: 20,
+    };
+
+    // Load saved config from server injection
+    let savedConfig = {};
+    try {
+      const injected = '__INITIAL_CONFIG__';
+      if (!injected.startsWith('__')) {
+        savedConfig = JSON.parse(injected);
+      }
+    } catch(e) {}
+
+    let config = { ...DEFAULTS, ...savedConfig };
+    const container = document.getElementById('fountain-container');
+    const colors = ['#FF3B30', '#34C759', '#007AFF', '#FF9500', '#AF52DE', '#FF2D55', '#5856D6', '#FFCC00', '#00C7BE', '#A2845E'];
+
+    function applyConfig() {
+      container.style.left = config.posX + '%';
+      container.style.transform = 'translateX(-50%)';
+      container.style.width = config.areaW + 'px';
+      container.style.bottom = '0';
+      container.style.height = '100%';
+    }
+
+    function spawnHeart() {
+      const heart = document.createElement('div');
+      heart.className = 'heart';
+
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      heart.style.backgroundColor = color;
+
+      const sz = config.size;
+      heart.style.width = sz + 'px';
+      heart.style.height = sz + 'px';
+
+      const halfSz = sz / 2;
+      const uniqueClass = 'h' + Math.random().toString(36).substr(2, 6);
+      heart.classList.add(uniqueClass);
+      const styleTag = document.createElement('style');
+      styleTag.textContent = `
+        .${uniqueClass}::before, .${uniqueClass}::after { width: ${sz}px !important; height: ${sz}px !important; }
+        .${uniqueClass}::before { top: -${halfSz}px !important; }
+        .${uniqueClass}::after  { left: ${halfSz}px !important; }
+      `;
+      document.head.appendChild(styleTag);
+
+      const spread = config.spread;
+      const dxStart = (Math.random() - 0.5) * (spread * 0.25);
+      const dxMid = (Math.random() - 0.5) * (spread * 0.5);
+      const dxEnd = (Math.random() - 0.5) * spread;
+
+      heart.style.setProperty('--dx-start', `${dxStart}px`);
+      heart.style.setProperty('--dx-mid', `${dxMid}px`);
+      heart.style.setProperty('--dx-end', `${dxEnd}px`);
+      heart.style.setProperty('--float-height', `${config.height}%`);
+
+      const baseSpeed = config.speed;
+      const duration = baseSpeed + Math.random() * (baseSpeed * 0.6);
+      heart.style.animationDuration = `${duration}s`;
+
+      const delay = Math.random() * 0.5;
+      heart.style.animationDelay = `${delay}s`;
+
+      container.appendChild(heart);
+
+      for (let i = 0; i < 2; i++) {
+        const sparkle = document.createElement('div');
+        sparkle.className = 'sparkle';
+        sparkle.style.setProperty('--dx-start', `${dxStart + (Math.random()-0.5)*30}px`);
+        sparkle.style.setProperty('--dx-end', `${dxEnd + (Math.random()-0.5)*60}px`);
+        sparkle.style.animationDuration = `${duration * 0.8}s`;
+        sparkle.style.animationDelay = `${delay + Math.random()*0.3}s`;
+        container.appendChild(sparkle);
+        setTimeout(() => { if(sparkle.parentNode) sparkle.parentNode.removeChild(sparkle); }, (duration + delay) * 1000 + 500);
+      }
+
+      setTimeout(() => {
+        if (heart.parentNode) heart.parentNode.removeChild(heart);
+        if (styleTag.parentNode) styleTag.parentNode.removeChild(styleTag);
+      }, (duration + delay) * 1000 + 500);
+    }
+
+    applyConfig();
+
+    // ── SSE Event Listener ──
+    const evtSource = new EventSource('/widgets/stream');
+    evtSource.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      if (data.type === 'like') {
+        let count = data.data.likeCount || 1;
+        count = Math.min(count, config.max);
+        for (let i = 0; i < count; i++) {
+          setTimeout(() => spawnHeart(), i * 60);
+        }
+      }
+      if (data.type === 'config' && data.id === 'hearts') {
+        Object.assign(config, data.config);
+        applyConfig();
+      }
+      if (data.type === 'test' && data.id === 'hearts') {
+        const count = Math.min(config.max, 15);
+        for (let i = 0; i < count; i++) {
+          setTimeout(() => spawnHeart(), i * 60);
+        }
+      }
+    };
+  </script>
+</body>
+</html>

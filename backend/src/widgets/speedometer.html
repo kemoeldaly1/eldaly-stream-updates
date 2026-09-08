@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>Gift Speedometer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:transparent;width:100vw;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#fff;direction:ltr}
+.container{display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px}
+.meter-title{font-size:22px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);letter-spacing:.5px;min-height:30px}
+.meter-wrap{position:relative;width:400px;height:240px}
+.meter-svg{width:100%;height:100%}
+/* Arc colors */
+.arc-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:28;stroke-linecap:round}
+.arc-main{fill:none;stroke-width:28;stroke-linecap:round;filter:drop-shadow(0 0 6px rgba(0,0,0,.3))}
+.arc-glow{fill:none;stroke-width:32;stroke-linecap:round;opacity:.12;filter:blur(6px)}
+/* Needle */
+.needle-group{transition:transform .8s cubic-bezier(.34,1.56,.64,1)}
+.needle-line{stroke:#e0e0e0;stroke-width:4;stroke-linecap:round;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.needle-cap{fill:#333;stroke:#555;stroke-width:2;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+.cap-img{object-fit:cover;clip-path:circle(50%)}
+/* Tick marks */
+.tick{stroke:rgba(255,255,255,.2);stroke-width:1.5}
+.tick-center{stroke:rgba(255,255,255,.5);stroke-width:2.5}
+/* Labels */
+.side-label{font-size:18px;font-weight:800;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.side-gifts{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.side-gifts img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.sides{display:flex;justify-content:space-between;align-items:flex-start;width:100%;padding:0 10px}
+.side-col{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:140px}
+/* Status label */
+.status-label{font-size:14px;font-weight:700;padding:6px 20px;border-radius:20px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);min-width:100px;text-align:center;align-self:center;margin-top:8px}
+/* Custom background */
+.meter-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:0;pointer-events:none}
+/* Transparent mode */
+.transparent-mode .arc-bg,.transparent-mode .arc-main,.transparent-mode .arc-glow,.transparent-mode #ticks{opacity:0!important}
+/* Shake animation */
+@keyframes shake{0%,100%{transform:translate(0,0) rotate(0)}10%{transform:translate(-3px,-2px) rotate(-1deg)}20%{transform:translate(3px,2px) rotate(1deg)}30%{transform:translate(-2px,3px) rotate(0)}40%{transform:translate(2px,-3px) rotate(-1deg)}50%{transform:translate(-3px,2px) rotate(1deg)}60%{transform:translate(3px,-2px) rotate(0)}70%{transform:translate(-2px,3px) rotate(-1deg)}80%{transform:translate(2px,-3px) rotate(1deg)}90%{transform:translate(-3px,2px) rotate(0)}}
+.meter-wrap.shaking{animation:shake .5s ease-in-out}
+/* Glow pulse when maxed */
+@keyframes maxPulse{0%,100%{opacity:.12}50%{opacity:.35}}
+.maxed .arc-glow{animation:maxPulse .6s ease-in-out infinite}
+/* Style 2 - Neon */
+.style-2 .arc-main{stroke-width:22}
+.style-2 .arc-bg{stroke-width:22}
+.style-2 .needle-line{stroke:#fff;stroke-width:3}
+.style-2 .needle-cap{fill:rgba(0,0,0,.8);stroke:rgba(255,255,255,.3)}
+/* Style 3 - Bold */
+.style-3 .arc-main{stroke-width:36;stroke-linecap:butt}
+.style-3 .arc-bg{stroke-width:36;stroke-linecap:butt}
+.style-3 .needle-line{stroke:#ffd700;stroke-width:5}
+</style>
+</head>
+<body>
+<div class="container" id="container">
+  <div class="meter-title" id="meterTitle"></div>
+  <div class="meter-wrap" id="meterWrap">
+    <img class="meter-bg-img" id="bgImg" style="display:none" />
+    <svg class="meter-svg" id="meterSvg" viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg" style="position:relative;z-index:1;">
+      <defs>
+        <linearGradient id="arcGrad" gradientUnits="userSpaceOnUse" x1="60" y1="200" x2="340" y2="200">
+          <stop offset="0%" stop-color="#ff0000"/>
+          <stop offset="30%" stop-color="#ff6600"/>
+          <stop offset="50%" stop-color="#ffd700"/>
+          <stop offset="70%" stop-color="#a3e635"/>
+          <stop offset="100%" stop-color="#10b981"/>
+        </linearGradient>
+      </defs>
+      <!-- Background arc -->
+      <path class="arc-bg" id="arcBg" d="" />
+      <!-- Glow arc -->
+      <path class="arc-glow" id="arcGlow" d="" stroke="url(#arcGrad)"/>
+      <!-- Main colored arc -->
+      <path class="arc-main" id="arcMain" d="" stroke="url(#arcGrad)"/>
+      <!-- Tick marks -->
+      <g id="ticks"></g>
+      <!-- Needle -->
+      <g class="needle-group" id="needleGroup">
+        <line class="needle-line" id="needleLine" x1="200" y1="200" x2="200" y2="50"/>
+        <circle class="needle-cap" id="needleCap" cx="200" cy="200" r="16"/>
+        <image id="capImg" x="184" y="184" width="32" height="32" href="" style="display:none;clip-path:circle(50%);"/>
+      </g>
+    </svg>
+  </div>
+  <div class="sides" id="sides">
+    <div class="side-col" id="sideRed">
+      <span class="side-label" id="redLabel" style="color:#ff4444">مخربين</span>
+      <div class="side-gifts" id="redGifts"></div>
+    </div>
+    <div class="status-label" id="statusLabel">متوازن</div>
+    <div class="side-col" id="sideGreen">
+      <span class="side-label" id="greenLabel" style="color:#10b981">مساعدين</span>
+      <div class="side-gifts" id="greenGifts"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+let cfg={};try{cfg=JSON.parse('__INITIAL_CONFIG__')}catch(e){}
+const urlParams=new URLSearchParams(window.location.search);
+const widgetId=urlParams.get('id')||'speedometer';
+
+// State
+let maxValue=1000;
+let currentPower=0;
+let redGifts=[];
+let greenGifts=[];
+let title='';
+let redLabel='مخربين';
+let greenLabel='مساعدين';
+let styleClass='';
+
+// Default geometry
+let CX=200, CY=200, R=140;
+let needleLen=150; // distance from cap center to tip
+let capR=16;
+
+// DOM
+const meterWrap=document.getElementById('meterWrap');
+const meterTitle=document.getElementById('meterTitle');
+const meterSvg=document.getElementById('meterSvg');
+const needleGroup=document.getElementById('needleGroup');
+const needleLine=document.getElementById('needleLine');
+const needleCap=document.getElementById('needleCap');
+const capImg=document.getElementById('capImg');
+const statusLabel=document.getElementById('statusLabel');
+const redLabelEl=document.getElementById('redLabel');
+const greenLabelEl=document.getElementById('greenLabel');
+const redGiftsEl=document.getElementById('redGifts');
+const greenGiftsEl=document.getElementById('greenGifts');
+const arcBg=document.getElementById('arcBg');
+const arcMain=document.getElementById('arcMain');
+const arcGlow=document.getElementById('arcGlow');
+const ticksG=document.getElementById('ticks');
+const sidesEl=document.getElementById('sides');
+
+function polarToCart(angle,radius){
+  return{x:CX+radius*Math.cos(angle),y:CY-radius*Math.sin(angle)};
+}
+
+function describeArc(sa,ea,radius){
+  const start=polarToCart(sa,radius);
+  const end=polarToCart(ea,radius);
+  const diff=Math.abs(sa-ea);
+  const large=diff>Math.PI?1:0;
+  return`M${start.x},${start.y} A${radius},${radius} 0 ${large} 1 ${end.x},${end.y}`;
+}
+
+function drawArcs(){
+  const bgPath=describeArc(Math.PI,0,R);
+  arcBg.setAttribute('d',bgPath);
+  arcMain.setAttribute('d',bgPath);
+  arcGlow.setAttribute('d',bgPath);
+}
+
+function drawTicks(){
+  ticksG.innerHTML='';
+  const numTicks=9;
+  for(let i=0;i<=numTicks;i++){
+    const frac=i/numTicks;
+    const angle=Math.PI-frac*Math.PI;
+    const inner=polarToCart(angle,R-18);
+    const outer=polarToCart(angle,R+18);
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',inner.x);line.setAttribute('y1',inner.y);
+    line.setAttribute('x2',outer.x);line.setAttribute('y2',outer.y);
+    line.setAttribute('class',i===Math.floor(numTicks/2)?'tick-center':'tick');
+    ticksG.appendChild(line);
+  }
+}
+
+function rebuildNeedle(){
+  // Update needle line: from (CX,CY) upward by needleLen
+  needleLine.setAttribute('x1',CX);
+  needleLine.setAttribute('y1',CY);
+  needleLine.setAttribute('x2',CX);
+  needleLine.setAttribute('y2',CY-needleLen);
+  // Update cap
+  needleCap.setAttribute('cx',CX);
+  needleCap.setAttribute('cy',CY);
+  needleCap.setAttribute('r',capR);
+  // Update cap image position
+  capImg.setAttribute('x',CX-capR);
+  capImg.setAttribute('y',CY-capR);
+  capImg.setAttribute('width',capR*2);
+  capImg.setAttribute('height',capR*2);
+  // Update transform origin
+  needleGroup.style.transformOrigin=`${CX}px ${CY}px`;
+  // Update gradient coordinates
+  const grad=document.getElementById('arcGrad');
+  if(grad){
+    grad.setAttribute('x1',CX-R);
+    grad.setAttribute('y1',CY);
+    grad.setAttribute('x2',CX+R);
+    grad.setAttribute('y2',CY);
+  }
+}
+
+function updateNeedle(){
+  const ratio=Math.max(-1,Math.min(1,currentPower/maxValue));
+  const rotDeg=ratio*90;
+  needleGroup.style.transform=`rotate(${rotDeg}deg)`;
+
+  // Status label
+  const absPct=Math.abs(ratio)*100;
+  if(absPct<10){
+    statusLabel.textContent='متوازن';
+    statusLabel.style.color='#fff';
+    statusLabel.style.borderColor='rgba(255,255,255,.2)';
+  }else if(ratio<0){
+    statusLabel.textContent=redLabel;
+    statusLabel.style.color=cfg.redColor||'#ff4444';
+    statusLabel.style.borderColor=cfg.redColor||'#ff4444';
+  }else{
+    statusLabel.textContent=greenLabel;
+    statusLabel.style.color=cfg.greenColor||'#10b981';
+    statusLabel.style.borderColor=cfg.greenColor||'#10b981';
+  }
+
+  if(Math.abs(ratio)>=0.95){
+    meterWrap.classList.add('shaking','maxed');
+    setTimeout(()=>meterWrap.classList.remove('shaking'),500);
+  }else{
+    meterWrap.classList.remove('maxed');
+  }
+}
+
+function renderGifts(){
+  redGiftsEl.innerHTML=redGifts.map(g=>`<img src="${g.img||''}" alt="${g.name}" title="${g.name} (${g.value})" onerror="this.style.display='none'">`).join('');
+  greenGiftsEl.innerHTML=greenGifts.map(g=>`<img src="${g.img||''}" alt="${g.name}" title="${g.name} (${g.value})" onerror="this.style.display='none'">`).join('');
+}
+
+function applyConfig(c){
+  cfg=c||{};
+  maxValue=parseInt(c.maxValue)||1000;
+  title=c.title||'';
+  redLabel=c.redLabel||'مخربين';
+  greenLabel=c.greenLabel||'مساعدين';
+  redGifts=c.redGifts||[];
+  greenGifts=c.greenGifts||[];
+  styleClass=c.style||'';
+
+  meterTitle.textContent=title;
+  redLabelEl.textContent=redLabel;
+  greenLabelEl.textContent=greenLabel;
+  redLabelEl.style.color=c.redColor||'#ff4444';
+  greenLabelEl.style.color=c.greenColor||'#10b981';
+
+  // Arc gradient is ALWAYS fixed: Red(left) → Yellow(center) → Green(right)
+  // redColor/greenColor only affect label text, NOT the arc gradient
+
+  // Style class
+  const ct=document.getElementById('container');
+  ct.className='container '+(styleClass||'');
+
+  // Transparent mode
+  if(c.transparent)meterWrap.classList.add('transparent-mode');
+  else meterWrap.classList.remove('transparent-mode');
+
+  // Custom background image
+  const bgImg=document.getElementById('bgImg');
+  if(c.bgImage){
+    bgImg.src='/media/'+encodeURIComponent(c.bgImage);
+    bgImg.style.display='block';
+    bgImg.style.width=(c.bgW||100)+'%';
+    bgImg.style.height=(c.bgH||100)+'%';
+    bgImg.style.left=(c.bgX||0)+'px';
+    bgImg.style.top=(c.bgY||0)+'px';
+    bgImg.style.right='auto';
+    bgImg.style.bottom='auto';
+  }else{
+    bgImg.style.display='none';
+  }
+
+  // Gauge Y offset
+  const gaugeY=parseInt(c.gaugeY)||0;
+  meterWrap.style.marginTop=gaugeY+'px';
+
+  // Labels Y/X offset
+  const sideRed = document.getElementById('sideRed');
+  const sideGreen = document.getElementById('sideGreen');
+  if(sideRed) sideRed.style.transform = `translate(${c.redX||0}px, ${c.redY||0}px)`;
+  if(sideGreen) sideGreen.style.transform = `translate(${c.greenX||0}px, ${c.greenY||0}px)`;
+
+  // Status Pill Y/X offset & visibility
+  if(statusLabel) {
+    statusLabel.style.transform = `translate(${c.statusX||0}px, ${c.statusY||0}px)`;
+    statusLabel.style.display = c.hideStatus ? 'none' : 'block';
+  }
+
+  // Gifts visibility
+  if(redGiftsEl) redGiftsEl.style.display = c.hideGifts ? 'none' : 'flex';
+  if(greenGiftsEl) greenGiftsEl.style.display = c.hideGifts ? 'none' : 'flex';
+
+  // Needle color
+  if(c.needleColor) needleLine.style.stroke = c.needleColor;
+  else needleLine.style.removeProperty('stroke');
+
+  // Needle length
+  needleLen=parseInt(c.needleLength)||150;
+
+  // Cap radius
+  capR=parseInt(c.capRadius)||16;
+
+  // Cap image
+  if(c.capImage){
+    capImg.setAttribute('href','/media/'+encodeURIComponent(c.capImage));
+    capImg.style.display='block';
+  }else{
+    capImg.style.display='none';
+  }
+
+  // Cap / Center Position
+  CX = 200 + (parseInt(c.capX) || 0);
+  CY = 200 + (parseInt(c.capY) || 0);
+
+  renderGifts();
+  drawArcs();
+  drawTicks();
+  rebuildNeedle();
+  updateNeedle();
+}
+
+function handleGift(data){
+  const giftName=(data.giftName||'').toLowerCase();
+  const repeatCount=data.repeatCount||1;
+
+  for(const g of redGifts){
+    if(g.name.toLowerCase()===giftName){
+      const val=(parseInt(g.value)||1)*repeatCount;
+      currentPower=Math.max(-maxValue,currentPower-val);
+      updateNeedle();
+      if(Math.abs(currentPower)>=maxValue)triggerExtremeAnimation();
+      return;
+    }
+  }
+  for(const g of greenGifts){
+    if(g.name.toLowerCase()===giftName){
+      const val=(parseInt(g.value)||1)*repeatCount;
+      currentPower=Math.min(maxValue,currentPower+val);
+      updateNeedle();
+      if(Math.abs(currentPower)>=maxValue)triggerExtremeAnimation();
+      return;
+    }
+  }
+}
+
+function triggerExtremeAnimation(){
+  meterWrap.classList.add('shaking');
+  setTimeout(()=>{
+    meterWrap.classList.add('shaking');
+    setTimeout(()=>meterWrap.classList.remove('shaking'),500);
+  },500);
+}
+
+applyConfig(cfg);
+
+const es=new EventSource('/widgets/stream');
+es.onmessage=(e)=>{try{const m=JSON.parse(e.data);
+  if(m.type==='config'&&m.id===widgetId)applyConfig(m.config);
+  if(m.type==='gift')handleGift(m.data);
+  if(m.type==='ext-speedometer'){
+    if(m.data.action==='reset'){currentPower=0;updateNeedle();}
+    if(m.data.action==='test'){
+      const val=parseInt(m.data.value)||100;
+      if(m.data.side==='red')currentPower=Math.max(-maxValue,currentPower-val);
+      else currentPower=Math.min(maxValue,currentPower+val);
+      updateNeedle();
+    }
+  }
+}catch(err){}};
+})();
+</script>
+</body>
+</html>

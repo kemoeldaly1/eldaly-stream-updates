@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>Water Image Goal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow:hidden;background:transparent!important;width:100vw;height:100vh}
+body{font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:0}
+
+.widget-container{
+  display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px;
+}
+
+.liquid-container{
+  position:relative;width:var(--shape-size, 450px);height:var(--shape-size, 450px);
+  display:flex;align-items:center;justify-content:center;
+  filter:drop-shadow(0 4px 20px rgba(0,0,0,.3));
+}
+
+.shape-dark{
+  position:absolute;top:40px;left:40px;width:calc(100% - 80px);height:calc(100% - 80px);object-fit:contain;
+  filter:brightness(.15) saturate(.3);z-index:1;
+}
+.liquid-fill-wrapper{
+  position:absolute;top:40px;left:40px;width:calc(100% - 80px);height:calc(100% - 80px);z-index:2;
+  --fill-height: 0%;
+  -webkit-clip-path:inset(calc(100% - var(--fill-height)) 0 0 0);
+  clip-path:inset(calc(100% - var(--fill-height)) 0 0 0);
+  overflow:visible;
+  transition:clip-path var(--wave-speed, 0.8s) cubic-bezier(.4,0,.2,1), -webkit-clip-path var(--wave-speed, 0.8s) cubic-bezier(.4,0,.2,1);
+  filter: drop-shadow(0 0 10px var(--liquid-color, #3B82F6)) drop-shadow(0 0 25px var(--liquid-color, #3B82F6));
+}
+.shape-lit{
+  width:100%;height:100%;object-fit:contain;
+  filter:brightness(1.1) saturate(1.2);
+}
+.shape-outline{
+  position:absolute;top:40px;left:40px;width:calc(100% - 80px);height:calc(100% - 80px);object-fit:contain;
+  z-index:3;opacity:.15;mix-blend-mode:overlay;pointer-events:none;
+  animation:outlineGlow 3s ease-in-out infinite;
+}
+@keyframes outlineGlow{0%,100%{opacity:.2}50%{opacity:.4}}
+
+@keyframes particleFloat{
+  0%{transform:translateY(0);opacity:0}
+  10%{opacity:var(--p-opacity,.6)}
+  90%{opacity:.2}
+  100%{transform:translateY(calc(-1 * var(--p-travel, 120px)));opacity:0}
+}
+.particle{
+  position:absolute;border-radius:50%;
+  animation:particleFloat var(--dur,3s) linear infinite;
+  animation-delay:var(--delay,0s);
+  z-index:4;pointer-events:none;
+}
+.particle svg{width:100%;height:100%;fill:currentColor}
+
+.progress-overlay{
+  position:absolute;left:50%;transform:translate(-50%,-50%);
+  z-index:10;text-align:center;
+  top:var(--counter-top, 50%);
+}
+.progress-text{
+  font-size:var(--counter-size, 24px);font-weight:800;color:#fff;
+  text-shadow:0 0 10px rgba(0,0,0,.8),0 2px 6px rgba(0,0,0,.6),0 0 20px rgba(255,255,255,.3);
+  white-space:nowrap;direction:ltr;
+}
+
+.text-section{text-align:center;margin-top:var(--title-margin, 6px)}
+.goal-title{
+  font-size:var(--title-size, 22px);font-weight:800;margin:0 0 4px;
+  text-shadow:0 0 10px rgba(255,255,255,.3),0 2px 8px rgba(0,0,0,.5);
+}
+.goal-subtitle{
+  font-size:var(--subtitle-size, 16px);font-weight:500;color:rgba(255,255,255,.7);margin:0;
+  text-shadow:0 1px 4px rgba(0,0,0,.5);
+}
+
+.mini-bar{
+  width:min(100%,300px);height:5px;background:rgba(255,255,255,.08);
+  border-radius:999px;margin-top:8px;overflow:hidden;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.3);
+}
+.mini-bar-fill{
+  height:100%;border-radius:999px;
+  background:linear-gradient(90deg,var(--liquid-color, #3B82F6),color-mix(in srgb,var(--liquid-color, #3B82F6) 60%,white),var(--liquid-color, #3B82F6));
+  background-size:200% auto;
+  box-shadow:0 0 12px var(--liquid-color, #3B82F6);
+  transition:width 1s cubic-bezier(.34,1.4,.64,1);
+  animation:barShift 3s linear infinite;
+}
+@keyframes barShift{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+.mini-bar-shine{
+  position:absolute;top:0;left:-30%;width:30%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);
+  animation:miniShine 2.6s ease-in-out infinite;pointer-events:none;
+}
+@keyframes miniShine{0%{left:-30%}100%{left:130%}}
+
+.default-shape{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:80px;filter:drop-shadow(0 0 10px var(--liquid-color, #3B82F6));
+}
+</style>
+</head>
+<body>
+<div class="widget-container" id="widgetContainer">
+  <div class="liquid-container" id="liquidContainer">
+    <div class="default-shape shape-dark" id="shapeDark" style="filter:brightness(.15) saturate(.3);">💧</div>
+    <div class="liquid-fill-wrapper" id="liquidFill">
+      <div class="default-shape shape-lit" id="shapeLit">💧</div>
+    </div>
+    <div class="default-shape shape-outline" id="shapeOutline">💧</div>
+    <div class="progress-overlay" id="progressOverlay">
+      <span class="progress-text" id="progressText">0 / 100</span>
+    </div>
+    <div id="particlesContainer" style="position:absolute;width:100%;height:100%;overflow:hidden;pointer-events:none;z-index:4;"></div>
+  </div>
+
+  <div class="text-section" id="textSection">
+    <h2 class="goal-title" id="goalTitle">Follow Goal</h2>
+    <p class="goal-subtitle" id="goalSubtitle">✦ ساعدني للوصول للهدف! ✦</p>
+  </div>
+
+  <div class="mini-bar" style="position:relative;">
+    <div class="mini-bar-fill" id="miniBarFill" style="width:0%"></div>
+    <div class="mini-bar-shine"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const root=document.documentElement;
+  let cfg={};try{cfg=JSON.parse('__INITIAL_CONFIG__')}catch(e){}
+  const urlParams=new URLSearchParams(window.location.search);
+  const widgetId=urlParams.get('id')||'water-image-goal';
+  const goalType=urlParams.get('type')||cfg.goalType||'follows';
+
+  let goal=parseInt(cfg.goal)||100;
+  let title=cfg.title||'Follow Goal';
+  let subtitle=cfg.subtitle||'✦ ساعدني للوصول للهدف! ✦';
+  let currentValue=0;
+  let giftName=(cfg.giftName||'').toLowerCase();
+  let liquidColor=cfg.liquidColor||'#3B82F6';
+  let customImageUrl=cfg.imageUrl||'';
+
+  // Settings
+  let waveSpeed=parseFloat(cfg.waveSpeed)||0.8;
+  let particleSpeed=parseFloat(cfg.particleSpeed)||3;
+  let particleSize=parseFloat(cfg.particleSize)||14;
+  let particleCount=parseInt(cfg.particleCount)||10;
+  let counterTop=parseInt(cfg.counterTop)||50;
+  let titleMargin=parseInt(cfg.titleMargin)||6;
+  let counterSize=parseInt(cfg.counterSize)||24;
+  let titleSize=parseInt(cfg.titleSize)||22;
+
+  const titleEl=document.getElementById('goalTitle');
+  const subtitleEl=document.getElementById('goalSubtitle');
+  const progressEl=document.getElementById('progressText');
+  const miniBarFill=document.getElementById('miniBarFill');
+  const liquidFill=document.getElementById('liquidFill');
+
+  function resolveImageUrl(imgPath){
+    if(!imgPath)return '';
+    // If already a URL, use as-is
+    if(imgPath.startsWith('http')||imgPath.startsWith('/'))return imgPath;
+    // Convert local file path to /media/ URL
+    return '/media/'+encodeURIComponent(imgPath);
+  }
+
+  function applyImage(url){
+    if(!url)return;
+    const resolvedUrl=resolveImageUrl(url);
+    const darkEl=document.getElementById('shapeDark');
+    const litEl=document.getElementById('shapeLit');
+    const outlineEl=document.getElementById('shapeOutline');
+    if(darkEl){
+      if(darkEl.tagName==='IMG'){darkEl.src=resolvedUrl;}
+      else{darkEl.outerHTML=`<img class="shape-dark" id="shapeDark" src="${resolvedUrl}"/>`;}
+    }
+    if(litEl){
+      if(litEl.tagName==='IMG'){litEl.src=resolvedUrl;}
+      else{litEl.outerHTML=`<img class="shape-lit" id="shapeLit" src="${resolvedUrl}"/>`;}
+    }
+    if(outlineEl){
+      if(outlineEl.tagName==='IMG'){outlineEl.src=resolvedUrl;}
+      else{outlineEl.outerHTML=`<img class="shape-outline" id="shapeOutline" src="${resolvedUrl}"/>`;}
+    }
+  }
+
+  function applyCSSVars(){
+    root.style.setProperty('--liquid-color',liquidColor);
+    root.style.setProperty('--wave-speed',waveSpeed+'s');
+    root.style.setProperty('--counter-top',counterTop+'%');
+    root.style.setProperty('--counter-size',counterSize+'px');
+    root.style.setProperty('--title-size',titleSize+'px');
+    root.style.setProperty('--title-margin',titleMargin+'px');
+    root.style.setProperty('--p-travel',(80+particleSpeed*20)+'px');
+  }
+
+  function applyConfig(c){
+    cfg=c||{};
+    goal=parseInt(c.goal)||100;
+    title=c.title||'Follow Goal';
+    subtitle=c.subtitle||'✦ ساعدني للوصول للهدف! ✦';
+    giftName=(c.giftName||'').toLowerCase();
+    liquidColor=c.liquidColor||'#3B82F6';
+    customImageUrl=c.imageUrl||'';
+    waveSpeed=parseFloat(c.waveSpeed)||0.8;
+    particleSpeed=parseFloat(c.particleSpeed)||3;
+    particleSize=parseFloat(c.particleSize)||14;
+    particleCount=parseInt(c.particleCount)||10;
+    counterTop=parseInt(c.counterTop)||50;
+    titleMargin=parseInt(c.titleMargin)||6;
+    counterSize=parseInt(c.counterSize)||24;
+    titleSize=parseInt(c.titleSize)||22;
+    applyCSSVars();
+    if(customImageUrl)applyImage(customImageUrl);
+    recreateParticles();
+    updateDisplay();
+  }
+
+  function updateDisplay(){
+    const pct=Math.min(100,Math.max(0,(currentValue/goal)*100));
+    titleEl.textContent=title;
+    subtitleEl.textContent=subtitle;
+    progressEl.textContent=`${currentValue.toLocaleString()} / ${goal.toLocaleString()}`;
+    liquidFill.style.setProperty('--fill-height', pct + '%');
+    miniBarFill.style.width=pct+'%';
+  }
+
+  function updateGoal(val){currentValue=Math.min(val,goal);updateDisplay();}
+
+  function recreateParticles(){
+    const ct=document.getElementById('particlesContainer');
+    ct.innerHTML='';
+    for(let i=0;i<particleCount;i++){
+      const p=document.createElement('div');
+      p.className='particle';
+      const sz=particleSize*(0.6+Math.random()*0.8);
+      const dur=particleSpeed*(0.6+Math.random()*0.8);
+      p.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*80+10}%;color:${liquidColor};
+        filter:drop-shadow(${liquidColor} 0 0 2px) drop-shadow(${liquidColor} 0 0 4px);
+        --dur:${dur}s;--delay:${Math.random()*dur}s;bottom:5%;`;
+      p.innerHTML=`<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+      ct.appendChild(p);
+    }
+  }
+
+  // Init
+  if(customImageUrl)applyImage(customImageUrl);
+  applyCSSVars();
+  recreateParticles();
+  updateDisplay();
+
+  const es=new EventSource('/widgets/stream');
+  es.onmessage=(e)=>{try{const m=JSON.parse(e.data);
+    if(m.type==='config'&&m.id===widgetId)applyConfig(m.config);
+    if(m.type==='stats'){
+      const gt=cfg.goalType||goalType;
+      if(gt==='likes'&&m.stats.likes!==undefined)updateGoal(m.stats.likes);
+      if(gt==='follows'&&m.stats.followers!==undefined)updateGoal(m.stats.followers);
+    }
+    if(m.type==='gift'&&(cfg.goalType||goalType)==='gift'){
+      if(giftName&&(m.data.giftName||'').toLowerCase()===giftName){currentValue+=(m.data.repeatCount||1);updateGoal(currentValue);}
+    }
+    if(m.type==='ext-water-image-goal'){
+      const d=m.data;
+      if(d.action==='test'){currentValue+=(d.value||10);updateGoal(currentValue);}
+      if(d.action==='reset'){currentValue=0;updateGoal(0);}
+    }
+  }catch(err){}};
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ELDALY STREAM — Song Requests</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#d4af37;--gold2:#f2dc93;--panel:rgba(16,14,10,.92);--border:rgba(212,175,55,.4);--txt:#ece9e1;--dim:#b7a98a}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:transparent;font-family:'Inter',Tahoma,sans-serif;overflow:hidden}
+body{width:100vw;height:100vh}
+#wrap{position:absolute;bottom:2vh;right:1.5vw;width:26vw;min-width:320px;transform-origin:bottom right}
+.card{position:relative;background:var(--panel);border:2px solid var(--border);border-radius:16px;padding:16px;backdrop-filter:blur(6px);box-shadow:0 14px 44px rgba(0,0,0,.55)}
+.brand{font-size:11px;font-weight:800;letter-spacing:2.5px;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.brand i{width:7px;height:7px;border-radius:50%;background:var(--gold);display:inline-block;box-shadow:0 0 8px rgba(212,175,55,.8)}
+
+/* مشغل ساوند كلاود — مرسوم جوه الشاشة ومغطي بواجهة الكارت:
+   لو خرجناه بره الشاشة المتصفح/OBS بيوقف صوته، فبنسيبه بيترسم عادي
+   والكارت المقصود فوقه بيغطيه بالكامل — الصوت شغال والشكل نضيف */
+#sc-player{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:0}
+.card-cover{position:absolute;inset:0;background:rgba(16,14,10,.97);z-index:1;border-radius:14px}
+.brand,#npBody,#upnext{position:relative;z-index:2}
+
+/* Now Playing — صورة الأغنية هي البطل */
+.np{display:flex;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.art{width:84px;height:84px;border-radius:12px;object-fit:cover;border:1.5px solid var(--gold);background:#0d0d10}
+.info{flex:1;min-width:0}
+.title{font-size:15px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.artist{font-size:12px;color:var(--gold2);font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.req{font-size:11px;color:var(--dim);margin-top:3px}
+
+/* الطابور */
+.q-head{font-size:11px;font-weight:800;letter-spacing:1px;color:var(--dim);margin:12px 0 6px}
+.q-item{display:flex;align-items:center;gap:9px;padding:6px 0;opacity:.8}
+.q-item img{width:36px;height:36px;border-radius:8px;object-fit:cover}
+.q-info{flex:1;min-width:0}
+.q-t{font-size:12px;color:var(--txt);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-s{font-size:10px;color:var(--dim);direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
+.empty{font-size:22px;text-align:center;opacity:.45;padding:12px 0}
+.hidden{display:none!important}
+/* لافتة PRO للمستخدم المجاني — بدل صفحة فاضية */
+.pro-banner{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.pro-banner .pb-card{background:rgba(16,14,10,.94);border:2px solid var(--gold);border-radius:18px;padding:22px 34px;text-align:center;box-shadow:0 14px 44px rgba(0,0,0,.55);font-family:'Inter',Tahoma,sans-serif}
+.pro-banner .pb-lock{font-size:30px;margin-bottom:8px}
+.pro-banner .pb-title{font-size:15px;font-weight:800;letter-spacing:2px;color:var(--gold);margin-bottom:5px}
+.pro-banner .pb-sub{font-size:11px;font-weight:700;color:#b7a98a}
+</style>
+<script src="https://w.soundcloud.com/player/api.js"></script>
+</head>
+<body>
+<div id="wrap">
+  <div class="card">
+    <div class="card-cover"></div>
+    <div class="brand"><i></i>ELDALY STREAM • SONG REQUESTS</div>
+
+    <!-- مشغل ساوند كلاود — مصدر الصوت، مغطي بالكامل بواجهة الكارت -->
+    <iframe id="sc-player" frameborder="no" allow="autoplay" src="about:blank"></iframe>
+
+    <!-- Now Playing -->
+    <div class="np hidden" id="npBody">
+      <img class="art" id="npArt" src="" alt="">
+      <div class="info">
+        <div class="title" id="npTitle"></div>
+        <div class="artist" id="npArtist"></div>
+        <div class="req" id="npReq"></div>
+      </div>
+    </div>
+
+    <!-- الطابور — العنوان بيتضاف ديناميكياً لما فيه طابور -->
+    <div id="upnext"></div>
+  </div>
+</div>
+
+<script>
+const D=(id)=>document.getElementById(id);
+const esc=(s)=>{const d=document.createElement('div');d.textContent=s??'';return d.innerHTML;};
+const fmt=(ms)=>{const s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+// توكن الحساب من رابط الصفحة (‎/widget/<token>/overlay-music) — إلزامي مع
+// كل طلب حالة؛ السيرفر بيرفض أي طلب أغاني من غيره
+const TOKEN=(location.pathname.split('/').filter(Boolean)[1]||'').toLowerCase();
+const stateHeaders={'x-overlay-token':TOKEN};
+let cfg={songrequests:{overlayPermanent:true}};
+let scWidget=null; let currentVol=80;
+let lastKey=null;
+
+function visibility(cur){
+  // مفيش مشغل ظاهر — الكارت كله بيكمن لما مفيش أغنية ومفيش عرض دائم
+  const has=!!cur,permanent=cfg.songrequests?.overlayPermanent!==false;
+  D('wrap').style.display=(has||permanent)?'block':'none';
+  D('npBody').style.display=has?'flex':'none';
+  D('upnext').style.display=has||permanent?'block':'none';
+}
+
+function renderNow(cur){
+  if(!cur){D('npBody').classList.add('hidden');visibility(null);return;}
+  D('npBody').classList.remove('hidden');
+  visibility({current:cur});
+
+  D('npArt').src=cur.artwork||'';
+  D('npTitle').textContent=cur.title;
+  D('npArtist').textContent=cur.artist;
+  D('npReq').textContent='🎵 by '+(cur.requestedBy||'');
+
+  // الصوت بيجي من المشغل المخفي — بنغير الـ src بس والصوت بيشتغل عادي
+  const embed='https://w.soundcloud.com/player/?url='+encodeURIComponent(cur.permalink)
+    +'&auto_play=true'
+    +'&hide_related=true'
+    +'&show_comments=false'
+    +'&show_user=true'
+    +'&visual=false';
+  const frame=D('sc-player');
+  if(frame.src!==embed){
+    frame.src=embed;
+    frame.onload=bindWidget;
+  }
+}
+
+function renderUpnext(queue,cur){
+  const list=(queue||[]).slice(0,5);
+  // أول أغنية في الطابور بتبدأ بعد ما الحالية تخلص — نحسب المتبقي منها
+  let elapsed=cur?Math.max(0,(cur.durationMs||0)-(Date.now()-(cur.startedAt||Date.now()))):0;
+  D('upnext').innerHTML=list.length?'<div class="q-head">UP NEXT</div>':'';
+  D('upnext').innerHTML+=list.map((q,i)=>{
+    const s=elapsed; elapsed+=q.durationMs||30000;
+    return '<div class="q-item"><img src="'+esc(q.artwork||'')+'" style="width:36px;height:36px;border-radius:8px;object-fit:cover">'
+      +'<div class="q-info" style="flex:1;min-width:0"><div class="q-t" style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(q.title)+' — '+esc(q.artist)+'</div>'
+      +'<div class="q-s" style="font-size:10px;color:var(--dim,#6d6960)">Starts in '+fmt(s)+' • by '+esc(q.requestedBy||'')+'</div></div></div>';
+  }).join('');
+}
+
+// مقاس الأوفرلاي على الشاشة — من إعدادات لوحة التحكم (overlayScale %)
+// transform-origin مضبوط bottom right فالتكبير بيمشي من نفس مكانه
+function applyScale(){
+  const pct=parseFloat(cfg.songrequests?.overlayScale);
+  const scale=isNaN(pct)?1:Math.max(0.4,Math.min(2,pct/100));
+  D('wrap').style.transform='scale('+scale+')';
+}
+
+function applyState(data){
+  const cur=data.current||null;
+  const queue=data.queue||[];
+  visibility(cur);
+  renderNow(cur);
+  renderUpnext(queue,cur);
+}
+
+// WebSocket للسيرفر — وظيفته الوحيدة: إبلاغه إن الأغنية الحالية خلصت
+// (بنفس توكن الأوفرلاي — من غيره السيرفر بيتجاهل الإشارة)
+let ws=null;
+function connectWs(){
+  try{
+    ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?overlay='+encodeURIComponent(TOKEN));
+    ws.onclose=()=>{ ws=null; setTimeout(connectWs,3000); };
+  }catch(e){ setTimeout(connectWs,3000); }
+}
+connectWs();
+
+// ربط مشغل ساوند كلاود لكل أغنية جديدة:
+//   • الصوت المحفوظ — على READY وعلى PLAY (الـ PLAY بيضمن الصوت الصح حتى لو
+//     حدث READY فات قبل ما نلحق نربط — ده اللي كان بيخلي الأغنية الجديدة 100%)
+//   • لما الأغنية تخلص (FINISH) → نبعت trackEnded للسيرفر يشغل اللي في الطابور
+function bindWidget(){
+  try{
+    scWidget=SC.Widget(D('sc-player'));
+    const applyVol=()=>{ try{ scWidget.setVolume(currentVol); }catch(e){} };
+    scWidget.bind(SC.Widget.Events.READY,applyVol);
+    scWidget.bind(SC.Widget.Events.PLAY,applyVol);
+    setTimeout(applyVol,1500);
+    setTimeout(applyVol,4000);
+    scWidget.bind(SC.Widget.Events.FINISH,()=>{
+      try{ if(ws&&ws.readyState===1) ws.send(JSON.stringify({type:'trackEnded'})); }catch(e){}
+    });
+  }catch(e){}
+}
+
+// SSE للتحديث اللحظي — التوكن مع الاتصال إلزامي:
+// سياسة no-referrer بتمنع السيرفر من معرفة مصدر الطلب من الـ Referer وحده
+// + رقم إصدار الصفحة: لو السيرفر فيه نسخة أحدث بيبعت reload فالصفحة تتحديث لوحدها
+const WIDGET_PAGE_VERSION='2';
+const sse=new EventSource('/widgets/stream?t='+encodeURIComponent(TOKEN)+'&v='+WIDGET_PAGE_VERSION);
+sse.onmessage=(e)=>{
+  try{
+    const m=JSON.parse(e.data);
+    if(m.type==='reload'){ location.reload(); return; }
+    if(m.topic==='songqueue'){ applyState(m); }
+    else if(m.topic==='sr-settings'){
+      if(m.settings){
+        cfg.songrequests={...cfg.songrequests,...m.settings};
+        // الصوت — يتطبق على المشغل في نفس اللحظة
+        if(m.settings.volume!==undefined){
+          currentVol=m.settings.volume;
+          try{ if(scWidget) scWidget.setVolume(currentVol); }catch(e){}
+        }
+        // المقاس — يتطبق فورًا على الكارت
+        if(m.settings.overlayScale!==undefined) applyScale();
+      }
+    }
+  }catch(err){}
+};
+
+// لافتة PRO — للمستخدم المجاني بدل صفحة ساكتة
+function showProBanner(){
+  if(document.getElementById('proBanner')) return;
+  const b=document.createElement('div');
+  b.id='proBanner';b.className='pro-banner';
+  b.innerHTML='<div class="pb-card"><div class="pb-lock">🔒</div><div class="pb-title">SONG REQUESTS — PRO</div><div class="pb-sub">Available for PRO subscribers • متاحة لمشتركي الباقة المدفوعة</div></div>';
+  D('wrap').style.display='none';
+  document.body.appendChild(b);
+}
+function isProRequired(s){ return !!(s && s.proRequired); }
+
+// التحميل الأولي + polling احتياطي
+(async()=>{
+  try{
+    const s=await (await fetch('/api/songs/state',{headers:stateHeaders})).json();
+    if(isProRequired(s)){ showProBanner(); return; }
+    if(s.settings) cfg.songrequests={...cfg.songrequests,...s.settings};
+    if(cfg.songrequests?.volume!==undefined) currentVol=cfg.songrequests.volume;
+    applyScale(); // المقاس المحفوظ من أول فتح
+    if(s.current) renderNow(s.current);
+    renderUpnext(s.queue||[],s.current);
+    visibility(s.current);
+  }catch(e){}
+})();
+// polling احتياطي فقط — البث اللحظي جاي من SSE؛ 30 ثانية عشان يبقى تحت
+// حد الـ rate limit (40 طلب/ربع ساعة) براحته حتى لو SSE وقع فترة طويلة
+setInterval(async()=>{
+  try{
+    const s=await (await fetch('/api/songs/state',{headers:stateHeaders})).json();
+    if(isProRequired(s)){ showProBanner(); return; }
+    applyState(s);
+    // احتياطي لو الـ SSE وقع: طبّق الصوت والمقاس من الـ state
+    if(s.settings){
+      if(s.settings.volume!==undefined&&s.settings.volume!==currentVol){
+        currentVol=s.settings.volume;
+        try{ if(scWidget) scWidget.setVolume(currentVol); }catch(e){}
+      }
+      if(s.settings.overlayScale!==undefined&&s.settings.overlayScale!==cfg.songrequests?.overlayScale){
+        cfg.songrequests={...cfg.songrequests,overlayScale:s.settings.overlayScale};
+        applyScale();
+      }
+    }
+    // طبق الصوت على أي مشغل جديد
+    try{ if(scWidget) scWidget.setVolume(currentVol); }catch(e){}
+  }catch(e){}
+},30000);
+</script>
+</body>
+</html>

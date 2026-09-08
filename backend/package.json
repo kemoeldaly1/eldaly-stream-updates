@@ -1,0 +1,27 @@
+{
+  "name": "eldaly-stream-backend",
+  "version": "2.1.8",
+  "description": "ELDALY STREAM — Backend API & Overlay Server for TikTok LIVE Streaming Tool",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "build": "node scripts/build.js",
+    "test": "node test/store-cloud-test.js"
+  },
+  "dependencies": {
+    "bytenode": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "google-tts-api": "^2.0.2",
+    "jsdom": "^29.1.1",
+    "node-edge-tts": "^1.2.10",
+    "tiktok-live-connector": "^2.1.1-beta1",
+    "uuid": "^14.0.0",
+    "ws": "^8.20.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

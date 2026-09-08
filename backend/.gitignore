@@ -1,0 +1,29 @@
+# ========== Dependencies ==========
+node_modules/
+
+# ========== نسخة النشر المُجمّعة (bytecode) — بتتولد من scripts/build.js ==========
+deploy/
+
+# ========== بيانات التشغيل (حسابات + إعدادات محلية) — حساسة جدًا ==========
+data/
+!data/gifts.json
+
+# ========== Logs ==========
+*.log
+server.log
+server.err.log
+npm-debug.log*
+
+# ========== Environment — المفاتيح السرية (FIREBASE_WEB_API_KEY إلخ) ==========
+.env
+.env.*
+
+# ========== Temporary ==========
+temp_tts/
+*.tmp
+
+# ========== OS / Editor ==========
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

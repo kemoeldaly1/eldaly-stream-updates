@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Song Requests — Control Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   SoundCloud Song Requests — صفحة تحكم كاملة (مستقلة)
+   تشتغل مع أي سيرفر ينفذ مسارات /api/songs/* و /ws
+   ============================================================ */
+:root{
+  --green:#53FC18;--green-soft:rgba(83,252,24,.12);--green-line:rgba(83,252,24,.35);
+  --bg:#0B0E0F;--surface:#131517;--surface-2:#1B1E1F;--border:#262B2C;
+  --text:#F3F5F5;--dim:#9BA5A5;--danger:#FF3B5C;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:#0d1011}
+::-webkit-scrollbar-thumb{background:#2b3132;border-radius:8px;border:2px solid #0d1011}
+::-webkit-scrollbar-thumb:hover{background:var(--green)}
+body{background:var(--bg);color:var(--text);font-family:'Inter',Tahoma,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+
+/* شريط علوي مخصص */
+.titlebar{height:44px;background:#000;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding-inline-start:16px;user-select:none}
+.titlebar .brand{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff}
+.titlebar .brand b{color:var(--green);font-weight:400}
+.titlebar .tag{font-size:10px;font-weight:800;letter-spacing:2px;color:var(--dim);margin-inline-start:8px}
+.titlebar .spacer{flex:1}
+.lang-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--green);font-family:inherit;font-weight:800;border-radius:8px;padding:6px 14px;cursor:pointer}
+
+main{max-width:1080px;width:100%;margin:0 auto;padding:26px 24px 60px}
+.page-h h1{font-size:22px;font-weight:900;display:flex;align-items:center;gap:10px}
+.page-h p{color:var(--dim);font-size:13.5px;margin-top:5px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:18px}
+.card-h{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--border);font-weight:800;font-size:14px}
+.card-b{padding:16px 20px 20px}
+
+input[type=text],input[type=number]{background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:9px 13px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s}
+input:focus{border-color:var(--green)}
+.btn{border:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:13.5px;border-radius:10px;padding:9px 18px;transition:filter .15s}
+.btn:active{transform:scale(.97)}
+.btn-green{background:var(--green);color:#000}
+.btn-green:hover{filter:brightness(1.1)}
+.btn-dark{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+.btn-dark:hover{border-color:var(--green)}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.btn-sm{padding:7px 14px;font-size:12.5px}
+
+.urlbox{display:flex;gap:8px;align-items:center;background:var(--surface-2);border:1px solid var(--green-line);border-radius:10px;padding:8px 12px;margin-bottom:14px}
+.urlbox .url{color:var(--dim);direction:ltr;text-align:left;font-family:monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px dashed var(--border)}
+.set-row:last-child{border-bottom:none}
+.set-row .lbl{font-size:14px;font-weight:600}
+.set-row .hint{font-size:12px;color:var(--dim);margin-top:3px;font-weight:400;line-height:1.7}
+.switch{position:relative;width:46px;height:25px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;cursor:pointer;transition:.2s}
+.slider::before{content:'';position:absolute;height:17px;width:17px;left:3px;top:3px;background:var(--dim);border-radius:50%;transition:.2s}
+.switch input:checked+.slider{background:var(--green);border-color:var(--green)}
+.switch input:checked+.slider::before{background:#000;transform:translateX(23px)}
+
+.grid2{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;align-items:start}
+@media(max-width:950px){.grid2{grid-template-columns:1fr}}
+
+.songqueue{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto}
+.sq-row{display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.sq-row.now{border-color:var(--green-line);box-shadow:0 0 14px rgba(83,252,24,.12)}
+.sq-row img{width:52px;height:52px;border-radius:9px;object-fit:cover;flex-shrink:0}
+.sq-info{flex:1;min-width:0}
+.sq-t{font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sq-s{font-size:11.5px;color:var(--dim);margin-top:3px;direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
+.sq-s .now-tag{color:var(--green);font-weight:800}
+.sq-empty{color:var(--dim);text-align:center;padding:22px;font-size:13.5px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+
+.sc-state{font-size:13px;font-weight:800}
+.sc-state.ok{color:var(--green)}.sc-state.fail{color:var(--danger)}
+.chk-row{display:flex;gap:18px;flex-wrap:wrap;padding-top:8px}
+.chk{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer}
+.chk input{accent-color:var(--green);width:15px;height:15px}
+.cmds-help{display:flex;flex-direction:column;gap:9px;font-size:13px;color:var(--dim);line-height:1.8}
+.cmds-help b{color:var(--green)}
+.cmd-row{display:flex;gap:9px;align-items:center}
+.cmd-row input{flex:1;direction:ltr;text-align:left}
+.slider-row{display:flex;align-items:center;gap:10px;width:220px}
+.slider-row input[type=range]{flex:1;accent-color:var(--green);cursor:pointer;background:transparent}
+.slider-row b{min-width:44px;text-align:center;color:var(--green);font-variant-numeric:tabular-nums;font-size:13px}
+
+.sr-table{width:100%;border-collapse:collapse;font-size:13px}
+.sr-table th{text-align:right;background:var(--surface-2);color:var(--dim);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--border)}
+.sr-table td{padding:9px 12px;border-bottom:1px solid var(--border)}
+.sr-table .st{font-weight:800}
+.sr-table .st.played{color:var(--green)}
+.sr-table .st.skipped{color:#ff9d00}
+.sr-table .st.revoked{color:var(--dim)}
+.sr-table .st.rejected{color:var(--danger)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-weight:800;padding:11px 26px;border-radius:12px;opacity:0;pointer-events:none;transition:.25s;z-index:99}
+.toast.show{opacity:1}
+[dir=ltr] .sr-table th,[dir=ltr] .sr-table td{text-align:left}
+[dir=ltr] .set-row .hint,[dir=ltr] .page-h p{text-align:left}
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <span class="brand">ELDALY<b>STREAM</b></span>
+  <span class="tag" data-i18n="srTitleTag">SONG REQUESTS</span>
+  <span class="spacer"></span>
+  <button class="lang-btn" id="langToggle">EN</button>
+</div>
+
+<main>
+  <div class="page-h">
+    <h1>🎵 <span data-i18n="srTitle">طلبات الأغاني — ساوند كلاود</span></h1>
+    <p data-i18n="srDesc">المشاهد يطلب أغنية بأمر في الشات وتتشغل على البث عبر مشغل ساوند كلاود الرسمي</p>
+  </div>
+
+  <!-- طابور التشغيل -->
+  <div class="card">
+    <div class="card-h">📜 <span data-i18n="srQueueTitle">طابور التشغيل</span></div>
+    <div class="card-b">
+      <div class="urlbox"><span class="url" id="ovMusic"></span><button class="btn btn-dark btn-sm" id="btnCopyUrl" data-i18n="copy">نسخ</button></div>
+      <div class="songqueue" id="songQueue"></div>
+      <div class="actions">
+        <button class="btn btn-dark btn-sm" id="btnSkipSong">⏭ <span data-i18n="srSkip">تخطي الحالية</span></button>
+        <button class="btn btn-danger btn-sm" id="btnClearQueue" data-i18n="srClear">تفريغ الطابور</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <!-- الإعدادات -->
+    <div class="card">
+      <div class="card-h">⚙️ <span data-i18n="srSettings">الإعدادات</span></div>
+      <div class="card-b">
+        <div class="set-row"><div class="lbl" data-i18n="srScState">حالة البحث في ساوند كلاود</div><span class="sc-state" id="scState">…</span></div>
+        <div class="set-row"><div class="lbl" data-i18n="srEnabled">تفعيل نظام الطلبات</div><label class="switch"><input type="checkbox" id="srEnabled"><span class="slider"></span></label></div>
+        <div class="set-row"><div class="lbl" data-i18n="srPlayEnabled">تفعيل أمر <b dir="ltr">!play</b></div><label class="switch"><input type="checkbox" id="srPlayEnabled"><span class="slider"></span></label></div>
+        <div class="set-row"><div class="lbl" data-i18n="srPlayCost">تكلفة <b dir="ltr">!play</b> (نقاط)</div><input type="number" id="srPlayCost" min="0" max="100000"></div>
+        <div class="set-row"><div class="lbl" data-i18n="srSkipEnabled">تفعيل أمر <b dir="ltr">!skip</b></div><label class="switch"><input type="checkbox" id="srSkipEnabled"><span class="slider"></span></label></div>
+        <div class="set-row"><div class="lbl" data-i18n="srSkipCost">تكلفة <b dir="ltr">!skip</b> (نقاط)</div><input type="number" id="srSkipCost" min="0" max="100000"></div>
+        <div class="set-row"><div class="lbl" data-i18n="srAllowSkipOwn">السماح لصاحب الطلب بتخطي أغنيته مجاناً</div><label class="switch"><input type="checkbox" id="srAllowSkipOwn"><span class="slider"></span></label></div>
+        <div class="set-row"><div class="lbl" data-i18n="srExplicit">السماح بالمحتوى الصريح</div><label class="switch"><input type="checkbox" id="srExplicit"><span class="slider"></span></label></div>
+        <div class="set-row"><div class="lbl" data-i18n="srMaxQueue">أقصى طول للطابور (كلي)</div><input type="number" id="srMaxQueue" min="1" max="100"></div>
+        <div class="set-row"><div class="lbl" data-i18n="srMaxUser">أقصى طول للطابور (للمستخدم)</div><input type="number" id="srMaxUser" min="1" max="20"></div>
+        <div class="set-row"><div class="lbl" data-i18n="srPermanent">عرض الأوفرلاي بشكل دائم</div><label class="switch"><input type="checkbox" id="srPermanent"><span class="slider"></span></label></div>
+        <div class="set-row"><div class="lbl" data-i18n="srVolume">مستوى صوت الموسيقى</div><div class="slider-row"><input type="range" id="srVolume" min="0" max="100"><b id="srVolumeVal">80</b></div></div>
+        <div class="set-row"><div class="lbl" data-i18n="srScale">مقاس الأوفرلاي على الشاشة</div><div class="slider-row"><input type="range" id="srScale" min="40" max="200"><b id="srScaleVal">100%</b></div></div>
+        <div class="set-row"><div><div class="lbl" data-i18n="srFallback">أغنية تلقائية لما الطابور يفضى</div><div class="hint" data-i18n="srFallbackHint">لينك ساوند كلاود — اتركه فارغ للإيقاف</div></div><input type="text" id="srFallback" dir="ltr" style="width:190px" placeholder="https://soundcloud.com/..."></div>
+        <div class="set-row"><div class="lbl" data-i18n="srPoints">نقاط يكسبها المشاهد لكل رسالة</div><input type="number" id="srPoints" min="0" max="100"></div>
+        <div class="set-row" style="flex-direction:column;align-items:stretch">
+          <div class="lbl" data-i18n="srAllowedFor">الأوامر متاحة لـ</div>
+          <div class="chk-row">
+            <label class="chk"><input type="checkbox" id="srAll"> <span data-i18n="srAllUsers">كل المستخدمين</span></label>
+            <label class="chk"><input type="checkbox" id="srSubs"> <span data-i18n="srSubs">المشتركين</span></label>
+            <label class="chk"><input type="checkbox" id="srMods"> <span data-i18n="srMods">المودز</span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <!-- الأوامر -->
+      <div class="card">
+        <div class="card-h">⌨️ <span data-i18n="srCmdsTitle">الأوامر</span></div>
+        <div class="card-b cmds-help">
+          <div><b dir="ltr">!play [link or name]</b> — <span data-i18n="srCmdPlay">إضافة أغنية للطابور</span></div>
+          <div><b dir="ltr">!revoke</b> — <span data-i18n="srCmdRevoke">إلغاء آخر طلب من الطابور</span></div>
+          <div><b dir="ltr">!skip</b> — <span data-i18n="srCmdSkip">تخطي الأغنية الحالية</span></div>
+          <div><b dir="ltr">!queue</b> — <span data-i18n="srCmdQueue">عرض الطابور</span></div>
+          <div><b dir="ltr">!points</b> — <span data-i18n="srCmdPoints">عرض نقاطك</span></div>
+        </div>
+      </div>
+      <!-- منطقة التجربة -->
+      <div class="card">
+        <div class="card-h">🧪 <span data-i18n="srTestTitle">منطقة التجربة</span></div>
+        <div class="card-b">
+          <div class="cmd-row">
+            <input type="text" id="srTestInput" data-i18n-ph="srTestPh" placeholder="اكتب اسم أغنية أو لينك…">
+            <button class="btn btn-green btn-sm" id="btnSongTest" data-i18n="srTest">تجربة</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- السجل -->
+  <div class="card">
+    <div class="card-h">🕘 <span data-i18n="srHistory">سجل الطلبات</span>
+      <span style="margin-inline-start:auto"><input type="text" id="srHistoryFilter" data-i18n-ph="srSearch" placeholder="بحث…" style="padding:5px 12px;font-size:12px;width:150px"></span>
+    </div>
+    <div class="card-b">
+      <table class="sr-table">
+        <thead><tr><th data-i18n="srDate">التاريخ</th><th data-i18n="srUser">المستخدم</th><th data-i18n="srTrack">الأغنية</th><th data-i18n="srStatus">الحالة</th></tr></thead>
+        <tbody id="srHistoryBody"></tbody>
+      </table>
+      <div class="sq-empty" id="srHistoryEmpty" data-i18n="srNoData">لا يوجد سجل بعد</div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast">تم ✓</div>
+
+<script>
+/* ============================================================
+   Song Requests — Control Page Logic
+   ============================================================ */
+const $=(id)=>document.getElementById(id);
+let LANG=localStorage.getItem('eldaly_lang')||'ar';
+let songState={current:null,queue:[],history:[],searchAvailable:null};
+
+// ---------- الحماية ----------
+// الصفحة بتتقدم من رابط ‎/widget/<token>/songs-page — التوكن ده بيتشاف
+// للسيرفر مع كل طلب (x-overlay-token) زي جلسة التطبيق بالظبط، ومن غيره
+// مفيش أي عملية على نظام الأغاني.
+const TOKEN=(location.pathname.split('/').filter(Boolean)[1]||'').toLowerCase();
+function srApi(path,opts={}){
+  return fetch(path,{...opts,headers:{'Content-Type':'application/json','x-overlay-token':TOKEN,...(opts.headers||{})}});
+}
+
+// ---------- الترجمة ----------
+const I18N={
+ar:{dir:'rtl',srTitleTag:'طلبات الأغاني',srTitle:'طلبات الأغاني — ساوند كلاود',srDesc:'المشاهد يطلب أغنية بأمر في الشات وتتشغل على البث عبر مشغل ساوند كلاود الرسمي',
+srQueueTitle:'طابور التشغيل',copy:'نسخ',srQueueEmpty:'مفيش أغنيات في الطابور — اطلب بزرار التجربة أو من الشات بـ !play',
+srSkip:'تخطي الحالية',srClear:'تفريغ الطابور',srSettings:'الإعدادات',srScState:'حالة البحث في ساوند كلاود',
+srEnabled:'تفعيل نظام الطلبات',srPlayEnabled:'تفعيل أمر',srPlayCost:'تكلفة الطلب (نقاط)',srSkipEnabled:'تفعيل أمر التخطي',
+srSkipCost:'تكلفة التخطي (نقاط)',srAllowSkipOwn:'السماح لصاحب الطلب بتخطي أغنيته مجاناً',srExplicit:'السماح بالمحتوى الصريح',
+srMaxQueue:'أقصى طول للطابور (كلي)',srMaxUser:'أقصى طول للطابور (للمستخدم)',srPermanent:'عرض الأوفرلاي بشكل دائم',
+srVolume:'مستوى صوت الموسيقى',srScale:'مقاس الأوفرلاي على الشاشة',srFallback:'أغنية تلقائية لما الطابور يفضى',srFallbackHint:'لينك ساوند كلاود — اتركه فارغ للإيقاف',
+srPoints:'نقاط يكسبها المشاهد لكل رسالة',srAllowedFor:'الأوامر متاحة لـ',srAllUsers:'كل المستخدمين',srSubs:'المشتركين',srMods:'المودز',
+srCmdsTitle:'الأوامر',srCmdPlay:'إضافة أغنية للطابور',srCmdRevoke:'إلغاء آخر طلب من الطابور',srCmdSkip:'تخطي الأغنية الحالية',
+srCmdQueue:'عرض الطابور',srCmdPoints:'عرض نقاطك',srTestTitle:'منطقة التجربة',srTestPh:'اكتب اسم أغنية أو لينك…',srTest:'تجربة',
+srTestEmpty:'اكتب اسم أغنية أولاً',srHistory:'سجل الطلبات',srSearch:'بحث…',srDate:'التاريخ',srUser:'المستخدم',srTrack:'الأغنية',srStatus:'الحالة',
+srNoData:'لا يوجد سجل بعد',srStartIn:'تبدأ بعد',scOk:'متاح ✓',scFail:'غير متاح ✗'},
+en:{dir:'ltr',srTitleTag:'SONG REQUESTS',srTitle:'Song Requests — SoundCloud',srDesc:'Viewers request songs with a chat command — played on stream through the official SoundCloud player',
+srQueueTitle:'Playback queue',copy:'Copy',srQueueEmpty:'Queue is empty — test from here or let viewers use !play in chat',
+srSkip:'Skip current',srClear:'Clear queue',srSettings:'Settings',srScState:'SoundCloud search state',
+srEnabled:'Enable song requests',srPlayEnabled:'Enable',srPlayCost:'!play cost (points)',srSkipEnabled:'Enable !skip',
+srSkipCost:'!skip cost (points)',srAllowSkipOwn:'Requester can skip their own song for free',srExplicit:'Allow explicit content',
+srMaxQueue:'Max queue length (overall)',srMaxUser:'Max queue length (single user)',srPermanent:'Display overlay permanently',
+srVolume:'Music volume',srScale:'Overlay size on screen',srFallback:'Fallback track when queue is empty',srFallbackHint:'SoundCloud link — leave empty to stop',
+srPoints:'Points earned per chat message',srAllowedFor:'Commands available for',srAllUsers:'All Users',srSubs:'Subscribers',srMods:'Mods',
+srCmdsTitle:'Commands',srCmdPlay:'Add a song to the queue',srCmdRevoke:'Revoke your last request',srCmdSkip:'Skip the current track',
+srCmdQueue:'Show the queue',srCmdPoints:'Show your points',srTestTitle:'Testing Area',srTestPh:'Enter song name or link…',srTest:'Test',
+srTestEmpty:'Type a song name first',srHistory:'History',srSearch:'Search…',srDate:'Date',srUser:'User',srTrack:'Track',srStatus:'Status',
+srNoData:'No data',srStartIn:'Starts in',scOk:'Available ✓',scFail:'Unavailable ✗'}};
+
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.ar[k]||k;}
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.documentElement.dir=I18N[LANG].dir;
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>el.placeholder=t(el.dataset.i18nPh));
+  $('langToggle').textContent=LANG==='ar'?'EN':'ع';
+}
+$('langToggle').addEventListener('click',()=>{
+  LANG=LANG==='ar'?'en':'ar';
+  localStorage.setItem('eldaly_lang',LANG);
+  applyLang();renderSongQueue();renderSongHistory();loadSongState();
+});
+
+// ---------- أدوات ----------
+function esc(s){const d=document.createElement('div');d.textContent=s??'';return d.innerHTML;}
+function toast(m){const el=$('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200);}
+function fmtMs(ms){const s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+
+// ---------- الحالة ----------
+async function loadSongState(){
+  try{
+    const s=await (await srApi('/api/songs/state')).json();
+    songState=s;
+    renderSongQueue();renderSongHistory();applySongSettings(s.settings||{});
+    const sc=$('scState');
+    sc.textContent=s.searchAvailable?t('scOk'):t('scFail');
+    sc.className='sc-state '+(s.searchAvailable?'ok':'fail');
+  }catch(e){}
+}
+
+// ---------- الطابور ----------
+function renderSongQueue(){
+  const box=$('songQueue'),s=songState;
+  if(!s.current&&!s.queue.length){box.innerHTML=`<div class="sq-empty">${t('srQueueEmpty')}</div>`;return;}
+  let html='';
+  if(s.current){
+    const elapsed=Math.min(Date.now()-s.current.startedAt,s.current.durationMs||0);
+    html+=`<div class="sq-row now"><img src="${esc(s.current.artwork||'')}"><div class="sq-info">
+      <div class="sq-t">${esc(s.current.title)} - ${esc(s.current.artist)}</div>
+      <div class="sq-s"><span class="now-tag">NOW </span>${fmtMs(elapsed)} / ${fmtMs(s.current.durationMs)}</div></div>
+      <button class="btn btn-danger btn-sm" id="btnSkipRow">⏭</button></div>`;
+  }
+  let startIn=s.current?Math.max(0,(s.current.durationMs||0)-(Date.now()-s.current.startedAt)):0;
+  s.queue.forEach(q=>{
+    html+=`<div class="sq-row"><img src="${esc(q.artwork||'')}"><div class="sq-info">
+      <div class="sq-t">${esc(q.title)} - ${esc(q.artist)}</div>
+      <div class="sq-s">${t('srStartIn')} ${fmtMs(startIn)} • ${esc(q.requestedBy)}</div></div>
+      <button class="btn btn-danger btn-sm sq-del" data-id="${esc(q.id)}">✕</button></div>`;
+    startIn+=q.durationMs||0;
+  });
+  box.innerHTML=html;
+  $('btnSkipRow')?.addEventListener('click',()=>srApi('/api/songs/skip',{method:'POST'}).then(loadSongState));
+  box.querySelectorAll('.sq-del').forEach(b=>b.addEventListener('click',()=>
+    srApi('/api/songs/remove',{method:'POST',body:JSON.stringify({id:b.dataset.id})}).then(loadSongState)));
+}
+
+// ---------- السجل ----------
+function renderSongHistory(){
+  const filter=$('srHistoryFilter').value.trim().toLowerCase();
+  const rows=songState.history.filter(h=>!filter||h.track.toLowerCase().includes(filter)||h.user.toLowerCase().includes(filter));
+  $('srHistoryEmpty').style.display=rows.length?'none':'block';
+  $('srHistoryBody').innerHTML=rows.slice(0,50).map(h=>{
+    const d=new Date(h.date).toLocaleString(LANG==='ar'?'ar-EG':'en-GB',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return `<tr><td>${esc(d)}</td><td>${esc(h.user)}</td><td>${esc(h.track)}</td><td class="st ${esc(h.status)}">${esc(h.status)}</td></tr>`;
+  }).join('');
+}
+$('srHistoryFilter').addEventListener('input',renderSongHistory);
+
+// ---------- إعدادات ----------
+function applySongSettings(s){
+  $('srEnabled').checked=s.enabled!==false;
+  $('srPlayEnabled').checked=s.playEnabled!==false;
+  $('srPlayCost').value=s.playCost??0;
+  $('srSkipEnabled').checked=s.skipEnabled!==false;
+  $('srSkipCost').value=s.skipCost??0;
+  $('srAllowSkipOwn').checked=s.allowSkipRequested!==false;
+  $('srExplicit').checked=s.allowExplicit!==false;
+  $('srMaxQueue').value=s.maxQueue??20;
+  $('srMaxUser').value=s.maxQueuePerUser??2;
+  $('srPermanent').checked=s.overlayPermanent!==false;
+  $('srVolume').value=Math.max(0,Math.min(100,s.volume??80));
+  $('srVolumeVal').textContent=$('srVolume').value;
+  $('srScale').value=Math.max(40,Math.min(200,s.overlayScale??100));
+  $('srScaleVal').textContent=$('srScale').value+'%';
+  $('srFallback').value=s.fallbackUrl||'';
+  $('srPoints').value=s.pointsPerMessage??1;
+  $('srAll').checked=s.allowedFor?.all!==false;
+  $('srSubs').checked=!!s.allowedFor?.subs;
+  $('srMods').checked=s.allowedFor?.mods!==false;
+}
+function collectSongSettings(){
+  return {
+    enabled:$('srEnabled').checked,playEnabled:$('srPlayEnabled').checked,
+    playCost:parseInt($('srPlayCost').value,10)||0,skipEnabled:$('srSkipEnabled').checked,
+    skipCost:parseInt($('srSkipCost').value,10)||0,allowSkipRequested:$('srAllowSkipOwn').checked,
+    allowExplicit:$('srExplicit').checked,maxQueue:parseInt($('srMaxQueue').value,10)||20,
+    maxQueuePerUser:parseInt($('srMaxUser').value,10)||2,overlayPermanent:$('srPermanent').checked,
+    volume:Math.max(0,Math.min(100,parseInt($('srVolume').value,10)||80)),
+    overlayScale:Math.max(40,Math.min(200,parseInt($('srScale').value,10)||100)),
+    fallbackUrl:$('srFallback').value.trim(),pointsPerMessage:parseInt($('srPoints').value,10)||0,
+    allowedFor:{all:$('srAll').checked,subs:$('srSubs').checked,mods:$('srMods').checked},
+  };
+}
+// حفظ لحظي: أي تغيير (وبالذات تحريك السلايدر) بيتنفذ على الأوفرلاي في نفس اللحظة —
+// debounce قصير عشان سحبة السلايدر الواحدة تبعت طلب واحد مش طلب لكل بكسل
+let songSettingsTimer=null;
+function scheduleSongSettingsSave(){
+  clearTimeout(songSettingsTimer);
+  songSettingsTimer=setTimeout(()=>{
+    srApi('/api/songs/settings',{method:'POST',body:JSON.stringify(collectSongSettings())}).catch(()=>{});
+  },200);
+}
+// عرض قيمة السلايدر لايف أثناء السحب
+$('srVolume').addEventListener('input',()=>{$('srVolumeVal').textContent=$('srVolume').value;scheduleSongSettingsSave();});
+$('srScale').addEventListener('input',()=>{$('srScaleVal').textContent=$('srScale').value+'%';scheduleSongSettingsSave();});
+['srEnabled','srPlayEnabled','srPlayCost','srSkipEnabled','srSkipCost','srAllowSkipOwn','srExplicit','srMaxQueue','srMaxUser','srPermanent','srFallback','srPoints','srAll','srSubs','srMods']
+.forEach(id=>$(id).addEventListener('input',scheduleSongSettingsSave));
+
+// ---------- أزرار ----------
+$('btnCopyUrl').addEventListener('click',()=>{
+  navigator.clipboard.writeText($('ovMusic').textContent).then(()=>toast(t('copy')+' ✓'));
+});
+$('btnSkipSong').addEventListener('click',()=>srApi('/api/songs/skip',{method:'POST'}).then(loadSongState));
+$('btnClearQueue').addEventListener('click',()=>srApi('/api/songs/clear',{method:'POST'}).then(loadSongState));
+$('btnSongTest').addEventListener('click',async()=>{
+  const q=$('srTestInput').value.trim();
+  if(!q) return toast(t('srTestEmpty'));
+  const btn=$('btnSongTest');btn.disabled=true;
+  const r=await (await srApi('/api/songs/test',{method:'POST',body:JSON.stringify({query:q})})).json();
+  btn.disabled=false;
+  if(r.ok){$('srTestInput').value='';toast(r.track.title+' ✓');loadSongState();}
+  else toast(r.error);
+});
+
+// ---------- WebSocket + init ----------
+// التوكن معانا في الاتصال — بدون مطابقته للسيرفر مفيش بث للأغاني
+const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?overlay='+encodeURIComponent(TOKEN));
+ws.onmessage=(e)=>{
+  const msg=JSON.parse(e.data);
+  if(msg.topic==='songqueue'){songState.current=msg.current;songState.queue=msg.queue||[];renderSongQueue();}
+};
+$('ovMusic').textContent=`${location.origin}/widget/${TOKEN}/overlay-music`;
+applyLang();
+loadSongState();
+setInterval(()=>{if(songState.current)renderSongQueue();},1000);
+</script>
+</body>
+</html>

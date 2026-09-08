@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=500, initial-scale=1.0">
+  <title>Label Widget</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: transparent;
+      color: white;
+    }
+
+    .widget-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 10px;
+    }
+    
+    .label-wrapper {
+      display: flex;
+      align-items: center;
+      padding: 12px 24px 12px 12px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      min-width: 300px;
+    }
+    
+    .icon {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 15px;
+      border: 2px solid rgba(255,255,255,0.5);
+      z-index: 2;
+      flex-shrink: 0;
+    }
+    
+    .info {
+      display: flex;
+      flex-direction: column;
+      z-index: 2;
+    }
+    
+    .title {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.8;
+      font-weight: 600;
+      margin-bottom: 2px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    }
+    
+    .value {
+      font-size: 22px;
+      font-weight: bold;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+      white-space: nowrap;
+    }
+
+    /* Style 1: Glass Box */
+    .style-1 {
+      background: rgba(20, 20, 30, 0.8);
+      border-radius: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    /* Style 2: Elegant Ribbon */
+    .style-2 {
+      background: linear-gradient(90deg, #1f1c2c 0%, #928DAB 100%);
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+    .style-2::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 5px; height: 100%;
+      background: #00d2ff;
+    }
+
+    /* Style 3: Minimal */
+    .style-3 {
+      background: rgba(0,0,0,0.5);
+      border-radius: 10px;
+      padding: 14px 24px;
+    }
+    .style-3 .icon { border-color: transparent; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    .style-3 .title { color: #00d2ff; }
+
+  </style>
+</head>
+<body>
+  <div class="widget-container">
+    <div class="label-wrapper style-1" id="wrapper">
+      <img class="icon" id="icon" src="https://ui-avatars.com/api/?name=User&background=random" />
+      <div class="info">
+        <div class="title" id="title">Top Gifter</div>
+        <div class="value" id="text">Waiting...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const widgetId = urlParams.get('id');
+    const type = urlParams.get('type') || 'top_gifter';
+    
+    let config = {};
+    try {
+      const injected = '__INITIAL_CONFIG__';
+      if (!injected.startsWith('__')) {
+        config = JSON.parse(injected);
+      }
+    } catch(e) {}
+
+    let titleText = config.title || 'Top Gifter';
+    let color1 = config.c1 || '#00d2ff';
+    let color2 = config.c2 || '#3a7bd5';
+    let style = config.style || 'style-1';
+    
+    const wrapper = document.getElementById('wrapper');
+    const titleEl = document.getElementById('title');
+    const textEl = document.getElementById('text');
+    const iconEl = document.getElementById('icon');
+
+    function applyConfig() {
+      titleText = config.title || (type.replace('_', ' ').toUpperCase());
+      color1 = config.c1 || '#00d2ff';
+      color2 = config.c2 || '#3a7bd5';
+      style = config.style || 'style-1';
+      
+      wrapper.className = `label-wrapper ${style}`;
+      titleEl.textContent = titleText;
+      titleEl.style.color = (style === 'style-3') ? color1 : 'white';
+      
+      if (style === 'style-2') {
+        wrapper.style.background = `linear-gradient(90deg, #1f1c2c 0%, ${color2}40 100%)`;
+      } else {
+        wrapper.style.background = '';
+      }
+    }
+
+    applyConfig();
+
+    function updateData(dataObj) {
+      if (!dataObj) return;
+      if (dataObj.icon) iconEl.src = dataObj.icon;
+      else iconEl.src = `https://ui-avatars.com/api/?name=${dataObj.user}&background=random`;
+      
+      let valText = dataObj.user;
+      if (type === 'top_gifter') valText += ` (${dataObj.count}💎)`;
+      if (type === 'top_liker') valText += ` (${dataObj.count}❤️)`;
+      if (type === 'last_gift') valText += ` (${dataObj.count}x ${dataObj.giftName})`;
+      
+      textEl.textContent = valText;
+    }
+
+    const evtSource = new EventSource('/widgets/stream');
+    evtSource.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      
+      if (data.type === 'stats') {
+        if (type === 'top_gifter' && data.stats.topGifter) updateData(data.stats.topGifter);
+        if (type === 'top_liker' && data.stats.topLiker) updateData(data.stats.topLiker);
+        if (type === 'last_follower' && data.stats.lastFollower) updateData(data.stats.lastFollower);
+        if (type === 'last_gift' && data.stats.lastGift) updateData(data.stats.lastGift);
+      }
+      
+      if (data.type === 'config' && data.id === widgetId) {
+        config = data.config;
+        applyConfig();
+      }
+    };
+  </script>
+</body>
+</html>

@@ -9,3 +9,18 @@ __pycache__/
 *.zip
 repomix-output.xml
 .vscode/
+
+# ======= ملفات حساسة / ثنائية لا تُنشر =======
+data/
+!backend/data/gifts.json
+*.rar
+*.7z
+*.exe
+*.jsc
+fbtoken.txt
+.firebase/
+eldaly-website/.firebase/
+license*.json
+*.pem
+*.key
+*.p12

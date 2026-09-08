@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scoreboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--lc:#ff2d55;--rc:#25f4ee}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:transparent;width:100vw;height:100vh;overflow:hidden;margin:0;padding:0}
+.sb{position:absolute;top:50%;left:50%;width:1920px;height:1080px;transform:translate(-50%,-50%);transform-origin:center center;display:flex;align-items:center;justify-content:center;gap:24px;padding:24px 40px}
+.bg-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;pointer-events:none;z-index:-1}
+.side{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:8px;width:450px;flex-shrink:0}
+.side.hidden{display:none}
+.tn{font-size:28px;letter-spacing:.5px;transition:transform .3s;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.sc{font-size:96px;line-height:1;transition:transform .15s cubic-bezier(.34,1.56,.64,1);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.sc.bump{transform:scale(1.2)}
+.vs{position:relative;z-index:1;width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.85);border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;text-shadow:0 0 12px rgba(255,255,255,.3);box-shadow:0 0 30px rgba(0,0,0,.5)}
+.style-1 .side{background:rgba(0,0,0,.6);border-radius:20px;padding:20px 32px;border:2px solid rgba(255,255,255,.1);backdrop-filter:blur(12px)}
+.style-2 .side{background:rgba(0,0,0,.8);border-radius:16px;padding:20px 32px}
+.style-2 .side.left{border:2px solid var(--lc);box-shadow:0 0 40px var(--lc),inset 0 0 30px rgba(255,45,85,.1)}
+.style-2 .side.right{border:2px solid var(--rc);box-shadow:0 0 40px var(--rc),inset 0 0 30px rgba(37,244,238,.1)}
+.style-3 .side{padding:12px 24px}
+.style-3 .vs{display:none}
+.style-3 .tn{font-size:20px;opacity:.8}
+.style-3 .sc{font-size:120px}
+
+/* Effect Styles */
+.effect-classic .tn { font-weight:600; text-shadow:0 2px 4px rgba(0,0,0,0.5); }
+.effect-classic .sc { font-weight:600; text-shadow:0 2px 4px rgba(0,0,0,0.5); }
+.effect-bold .tn { font-weight:800; text-shadow:0 2px 6px rgba(0,0,0,0.6); }
+.effect-bold .sc { font-weight:900; text-shadow:0 2px 6px rgba(0,0,0,0.6); }
+.effect-glowing .tn { font-weight:800; text-shadow:0 0 15px currentColor, 0 2px 8px rgba(0,0,0,0.5); }
+.effect-glowing .sc { font-weight:900; text-shadow:0 0 30px currentColor, 0 4px 15px rgba(0,0,0,0.5); }
+.effect-neon .tn { font-weight:900; text-shadow:0 0 10px currentColor, 0 0 25px currentColor, 0 2px 8px rgba(0,0,0,0.5); }
+.effect-neon .sc { font-weight:900; text-shadow:0 0 20px currentColor, 0 0 50px currentColor, 0 0 80px currentColor, 0 4px 15px rgba(0,0,0,0.5); }
+</style>
+</head>
+<body>
+<div class="sb style-1" id="sb">
+  <div class="side left" id="sl"><div class="tn" id="ln" style="color:var(--lc)">Team A</div><div class="sc" id="ls" style="color:var(--lc)">0</div></div>
+  <div class="vs" id="vsb">VS</div>
+  <div class="side right" id="sr"><div class="tn" id="rn" style="color:var(--rc)">Team B</div><div class="sc" id="rs" style="color:var(--rc)">0</div></div>
+</div>
+<script>
+(function(){
+let cfg={};try{cfg=JSON.parse('__INITIAL_CONFIG__')}catch(e){}
+const ls=document.getElementById('ls'),rs=document.getElementById('rs'),ln=document.getElementById('ln'),rn=document.getElementById('rn'),sl=document.getElementById('sl'),sr=document.getElementById('sr'),sb=document.getElementById('sb'),vsb=document.getElementById('vsb');
+let sc={l:0,r:0};
+let prevSc={l:0,r:0};
+
+// ===== SOUND SYSTEM =====
+let audioCtx=null;
+let incSoundBuffer=null, decSoundBuffer=null;
+let incSoundSrc='', decSoundSrc='';
+
+function getAudioCtx(){
+  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+
+// Generate built-in default sounds using Web Audio API oscillator
+function playDefaultIncrement(){
+  if(cfg.soundEnabled===false) return;
+  const ctx=getAudioCtx();
+  const vol=(cfg.soundVolume ?? 70)/100;
+  const gain=ctx.createGain();
+  gain.gain.setValueAtTime(vol*0.4,ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);
+  gain.connect(ctx.destination);
+  // Two-tone rising "ding"
+  const o1=ctx.createOscillator();o1.type='sine';o1.frequency.setValueAtTime(800,ctx.currentTime);o1.frequency.exponentialRampToValueAtTime(1200,ctx.currentTime+0.15);
+  o1.connect(gain);o1.start(ctx.currentTime);o1.stop(ctx.currentTime+0.3);
+  const o2=ctx.createOscillator();o2.type='sine';o2.frequency.setValueAtTime(1200,ctx.currentTime+0.05);o2.frequency.exponentialRampToValueAtTime(1600,ctx.currentTime+0.2);
+  const g2=ctx.createGain();g2.gain.setValueAtTime(vol*0.25,ctx.currentTime+0.05);g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);
+  g2.connect(ctx.destination);o2.connect(g2);o2.start(ctx.currentTime+0.05);o2.stop(ctx.currentTime+0.3);
+}
+
+function playDefaultDecrement(){
+  if(cfg.soundEnabled===false) return;
+  const ctx=getAudioCtx();
+  const vol=(cfg.soundVolume ?? 70)/100;
+  const gain=ctx.createGain();
+  gain.gain.setValueAtTime(vol*0.35,ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.25);
+  gain.connect(ctx.destination);
+  // Descending tone "boop"
+  const o1=ctx.createOscillator();o1.type='sine';o1.frequency.setValueAtTime(600,ctx.currentTime);o1.frequency.exponentialRampToValueAtTime(300,ctx.currentTime+0.2);
+  o1.connect(gain);o1.start(ctx.currentTime);o1.stop(ctx.currentTime+0.25);
+}
+
+// Load and cache a custom audio file
+async function loadAudioFile(url){
+  try{
+    const resp=await fetch(url);
+    const buf=await resp.arrayBuffer();
+    const ctx=getAudioCtx();
+    return await ctx.decodeAudioData(buf);
+  }catch(e){console.warn('Audio load failed:',e);return null;}
+}
+
+function playBuffer(buffer){
+  if(!buffer) return;
+  const ctx=getAudioCtx();
+  const vol=(cfg.soundVolume ?? 70)/100;
+  const source=ctx.createBufferSource();
+  source.buffer=buffer;
+  const gain=ctx.createGain();
+  gain.gain.value=vol;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  source.start(0);
+}
+
+async function updateSoundBuffers(){
+  // Increment sound
+  const newIncSrc=cfg.incrementSound||'';
+  if(newIncSrc!==incSoundSrc){
+    incSoundSrc=newIncSrc;
+    if(newIncSrc){incSoundBuffer=await loadAudioFile('/media/'+encodeURIComponent(newIncSrc));}
+    else{incSoundBuffer=null;}
+  }
+  // Decrement sound
+  const newDecSrc=cfg.decrementSound||'';
+  if(newDecSrc!==decSoundSrc){
+    decSoundSrc=newDecSrc;
+    if(newDecSrc){decSoundBuffer=await loadAudioFile('/media/'+encodeURIComponent(newDecSrc));}
+    else{decSoundBuffer=null;}
+  }
+}
+
+function playIncSound(){
+  if(cfg.soundEnabled===false) return;
+  if(incSoundBuffer){playBuffer(incSoundBuffer);}
+  else{playDefaultIncrement();}
+}
+
+function playDecSound(){
+  if(cfg.soundEnabled===false) return;
+  if(decSoundBuffer){playBuffer(decSoundBuffer);}
+  else{playDefaultDecrement();}
+}
+// ===== END SOUND SYSTEM =====
+
+function apply(c){
+  cfg=c;sb.className='sb '+(c.style||'style-1')+' effect-'+(c.textEffect||'glowing');
+  
+  if (c.customFontFile) {
+    const existingStyle = document.getElementById('imported-font-style');
+    if (existingStyle) existingStyle.remove();
+    const style = document.createElement('style');
+    style.id = 'imported-font-style';
+    style.textContent = `
+      @font-face {
+        font-family: "${c.fontFamily}";
+        src: url("/media/${encodeURIComponent(c.customFontFile)}");
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  ln.textContent=c.leftName||'Team A';rn.textContent=c.rightName||'Team B';
+  document.documentElement.style.setProperty('--lc',c.leftNameColor||c.leftColor||'#ff2d55');
+  document.documentElement.style.setProperty('--rc',c.rightNameColor||c.rightColor||'#25f4ee');
+  const lnc=c.leftNameColor||c.nameColor||c.leftColor||'#ff2d55';
+  const rnc=c.rightNameColor||c.nameColor||c.rightColor||'#25f4ee';
+  const lsc=c.leftScoreColor||c.scoreColor||c.leftColor||'#ff2d55';
+  const rsc=c.rightScoreColor||c.scoreColor||c.rightColor||'#25f4ee';
+  ln.style.color=lnc;rn.style.color=rnc;
+  ls.style.color=lsc;rs.style.color=rsc;
+  if(c.fontFamily){const ff='"'+c.fontFamily+'"';[ln,rn,ls,rs].forEach(el=>el.style.fontFamily=ff+',Inter,sans-serif')}
+  if(c.nameSize){ln.style.fontSize=c.nameSize+'px';rn.style.fontSize=c.nameSize+'px'}
+  if(c.scoreSize){ls.style.fontSize=c.scoreSize+'px';rs.style.fontSize=c.scoreSize+'px'}
+  if(c.textAlign){[sl,sr].forEach(el=>el.style.alignItems=c.textAlign==='left'?'flex-start':c.textAlign==='right'?'flex-end':'center')}
+  sl.classList.toggle('hidden',c.mode==='right-only');
+  sr.classList.toggle('hidden',c.mode==='left-only');
+  
+  if(c.hideVs) {
+    vsb.style.display = 'none';
+  } else {
+    vsb.style.display = (c.mode==='dual'||!c.mode)?'flex':'none';
+  }
+  
+  const vSize = c.vsSize || 64;
+  vsb.style.width = vSize + 'px';
+  vsb.style.height = vSize + 'px';
+  vsb.style.fontSize = Math.round(vSize * 0.35) + 'px';
+  vsb.style.transform = `translate(${c.vsX||0}px, ${c.vsY||0}px)`;
+
+  ln.style.transform='translate('+(c.leftNameX||0)+'px,'+(c.leftNameY||0)+'px)';
+  rn.style.transform='translate('+(c.rightNameX||0)+'px,'+(c.rightNameY||0)+'px)';
+  ls.style.transform='translate('+(c.leftScoreX||0)+'px,'+(c.leftScoreY||0)+'px)';
+  rs.style.transform='translate('+(c.rightScoreX||0)+'px,'+(c.rightScoreY||0)+'px)';
+  let bg=document.querySelector('.bg-img');
+  if(c.bgImage){if(!bg){bg=document.createElement('img');bg.className='bg-img';sb.insertBefore(bg,sb.firstChild)}bg.src='/media/'+encodeURIComponent(c.bgImage);const bgs=parseFloat(c.bgScale)||1;bg.style.transform='scale('+bgs+')'}else if(bg){bg.remove()}
+  // Update sound buffers when config changes
+  updateSoundBuffers();
+  upd();
+}
+function upd(){
+  if(cfg.enableTarget){
+    const baseTarget = cfg.targetScore || 100;
+    let lTarget = baseTarget;
+    let rTarget = baseTarget;
+    if(cfg.autoIncreaseTarget){
+      lTarget = baseTarget * (Math.floor(Math.max(0, sc.l) / baseTarget) + 1);
+      rTarget = baseTarget * (Math.floor(Math.max(0, sc.r) / baseTarget) + 1);
+    }
+    ls.textContent=sc.l+'/'+lTarget;
+    rs.textContent=sc.r+'/'+rTarget;
+  } else {
+    ls.textContent=sc.l;
+    rs.textContent=sc.r;
+  }
+}
+function bump(el){el.classList.add('bump');setTimeout(()=>el.classList.remove('bump'),200)}
+if(cfg&&Object.keys(cfg).length>0)apply(cfg);
+const es=new EventSource('/widgets/stream');
+es.onmessage=(e)=>{try{const m=JSON.parse(e.data);
+  if(m.type==='config'&&m.id==='scoreboard')apply(m.config);
+  if(m.type==='ext-scoreboard'){const d=m.data;
+    if(d.action==='update'){
+      const oldL=sc.l,oldR=sc.r;
+      sc.l=d.left;sc.r=d.right;upd();
+      // Determine if increment or decrement happened and play sound
+      const totalNew=sc.l+sc.r;
+      const totalOld=oldL+oldR;
+      if(totalNew>totalOld){playIncSound();}
+      else if(totalNew<totalOld){playDecSound();}
+      if(d.bumped==='left')bump(ls);
+      if(d.bumped==='right')bump(rs);
+    }
+    if(d.action==='reset'){sc.l=0;sc.r=0;upd();}
+  }
+}catch(err){}};
+
+function resizeScoreboard() {
+  const baseWidth = 1920;
+  const baseHeight = 1080;
+  const winWidth = window.innerWidth;
+  const winHeight = window.innerHeight;
+  const scale = Math.min(winWidth / baseWidth, winHeight / baseHeight);
+  sb.style.transform = `translate(-50%, -50%) scale(${scale})`;
+}
+window.addEventListener('resize', resizeScoreboard);
+resizeScoreboard();
+
+})();
+</script>
+</body>
+</html>

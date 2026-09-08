@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Goal Widget</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: transparent;
+      color: white;
+    }
+    .widget-container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .goal-bar-wrapper {
+      position: relative;
+      width: 80%;
+      max-width: 600px;
+      height: 40px;
+      background: rgba(0, 0, 0, 0.6);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      overflow: hidden;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    /* Style 1: Skewed (Default) */
+    .style-1 {
+      transform: skewX(-15deg);
+      border-radius: 4px;
+    }
+    .style-1 .goal-text { transform: skewX(15deg); }
+    
+    /* Style 2: Rounded Glow */
+    .style-2 {
+      border-radius: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Style 3: Minimalist Line */
+    .style-3 {
+      height: 12px;
+      border-radius: 6px;
+      border: none;
+      background: rgba(0, 0, 0, 0.3);
+    }
+    .style-3 .goal-text {
+      top: -25px;
+      height: auto;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+      font-size: 16px;
+      justify-content: flex-start;
+      padding-left: 10px;
+    }
+    
+    /* Style 4: Glassmorphism */
+    .style-4 {
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .goal-fill {
+      position: absolute;
+      top: 0; left: 0; height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+    }
+    
+    .goal-text {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <div class="widget-container">
+    <div class="goal-bar-wrapper style-1" id="wrapper">
+      <div class="goal-fill" id="fill"></div>
+      <div class="goal-text" id="text">Loading Goal...</div>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const widgetId = urlParams.get('id');
+    const type = urlParams.get('type') || 'likes';
+    
+    // Parse Initial Config injected by server
+    let config = {};
+    try {
+      const injected = '__INITIAL_CONFIG__';
+      if (!injected.startsWith('__')) {
+        config = JSON.parse(injected);
+      }
+    } catch(e) {}
+
+    // Fallbacks
+    let goal = parseInt(config.goal) || 1000;
+    let title = config.title || 'Goal';
+    let color1 = config.c1 || '#00d2ff';
+    let color2 = config.c2 || '#3a7bd5';
+    let style = config.style || 'style-1';
+    let currentValue = 0;
+
+    function applyConfig() {
+      goal = parseInt(config.goal) || 1000;
+      title = config.title || 'Goal';
+      color1 = config.c1 || '#00d2ff';
+      color2 = config.c2 || '#3a7bd5';
+      style = config.style || 'style-1';
+      
+      const wrapper = document.getElementById('wrapper');
+      wrapper.className = `goal-bar-wrapper ${style}`;
+      
+      const fill = document.getElementById('fill');
+      fill.style.background = `linear-gradient(90deg, ${color1} 0%, ${color2} 100%)`;
+      fill.style.boxShadow = `0 0 10px ${color1}80`; // 50% opacity hex
+      
+      updateGoal(currentValue);
+    }
+
+    function updateGoal(val) {
+      currentValue = val;
+      const baseline = config._baseline || 0;
+      const displayCurrent = Math.max(0, currentValue - baseline);
+      
+      const percentage = Math.min(100, Math.max(0, (displayCurrent / goal) * 100));
+      document.getElementById('fill').style.width = percentage + '%';
+      
+      const displayTitle = title ? title + ' - ' : '';
+      document.getElementById('text').innerHTML = `${displayTitle}${displayCurrent.toLocaleString()} / ${goal.toLocaleString()}`;
+    }
+
+    applyConfig();
+
+    // Listen to Server-Sent Events
+    const evtSource = new EventSource('/widgets/stream');
+    evtSource.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      
+      if (data.type === 'stats') {
+        if (type === 'likes' && data.stats.likes !== undefined) updateGoal(data.stats.likes);
+        if (type === 'shares' && data.stats.shares !== undefined) updateGoal(data.stats.shares);
+        if (type === 'follows' && data.stats.followers !== undefined) updateGoal(data.stats.followers);
+      }
+      
+      if (data.type === 'config' && data.id === widgetId) {
+        config = data.config;
+        applyConfig();
+      }
+    };
+  </script>
+</body>
+</html>
