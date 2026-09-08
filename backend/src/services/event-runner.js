@@ -662,49 +662,71 @@ class EventRunner extends EventEmitter {
         }
 
         if (opts.minecraft_enabled && action.mc_cmd) {
-          const mc = this.store.get("minecraft") || {
-            ip: "127.0.0.1",
-            port: "4567",
-            password: "",
-            player: "",
-          };
-          const lines = action.mc_cmd
-            .split("\n")
-            .filter((l) => l.trim().length > 0);
-          const jobs = [];
-          let delayAcc = 0;
-          for (const line of lines) {
-            const trimmed = line.trim();
-            const delayMatch = trimmed.match(/^delay\s+(\d+)$/i);
-            if (delayMatch) {
-              delayAcc += parseInt(delayMatch[1], 10) || 0;
-              logFn(
+    const mc = this.store.get("minecraft") || {
+        ip: "127.0.0.1",
+        port: "4567",
+        password: "",
+        player: "",
+    };
+    const lines = action.mc_cmd
+        .split("\n")
+        .filter((l) => l.trim().length > 0);
+    const jobs = [];
+    let delayAcc = 0;
+    for (const line of lines) {
+        const trimmed = line.trim();
+        const delayMatch = trimmed.match(/^delay\s+(\d+)$/i);
+        if (delayMatch) {
+            delayAcc += parseInt(delayMatch[1], 10) || 0;
+            logFn(
                 `[Action: ${action.name}] Minecraft ⏱ delay ${delayMatch[1]}ms`,
-              );
-              continue;
-            }
-            if (/^(break_delays|skip_delays)$/i.test(trimmed)) {
-              delayAcc = 0;
-              continue;
-            }
-            let cmdStr = this.formatText(trimmed, context);
-            if (cmdStr.startsWith("/")) cmdStr = cmdStr.slice(1);
-            if (!cmdStr) continue;
-            jobs.push({ command: cmdStr, delay: delayAcc });
-            logFn(`[Action: ${action.name}] Minecraft → /${cmdStr}`);
-          }
-          if (jobs.length > 0) {
-            this.emit("client:minecraft", {
-              mc: {
-                ip: mc.ip || "127.0.0.1",
-                port: String(mc.port || "4567"),
-                password: mc.password || "",
-              },
-              jobs,
-              actionName: action.name,
-            });
-          }
+            );
+            continue;
         }
+        if (/^(break_delays|skip_delays)$/i.test(trimmed)) {
+            delayAcc = 0;
+            continue;
+        }
+        let cmdStr = this.formatText(trimmed, context);
+        if (cmdStr.startsWith("/")) cmdStr = cmdStr.slice(1);
+        if (!cmdStr) continue;
+        jobs.push({ command: cmdStr, delay: delayAcc });
+        logFn(`[Action: ${action.name}] Minecraft → /${cmdStr}`);
+    }
+    if (jobs.length > 0) {
+        // ✅ تنفيذ مباشر من الباك إند بدل ما نبعث للفرونت إند
+        for (const job of jobs) {
+            const command = job.command;
+            const delay = Math.max(0, job.delay || 0);
+            const sendCmd = async () => {
+                try {
+                    const res = await fetch(`http://${mc.ip}:${mc.port}/v1/server/exec`, {
+                        method: "POST",
+                        headers: {
+                            key: mc.password || "",
+                            "Content-Type": "application/x-www-form-urlencoded",
+                        },
+                        body: "command=" + encodeURIComponent(command),
+                    });
+                    if (res.ok) {
+                        logFn(`[Minecraft] ✅ /${command} executed`);
+                    } else {
+                        logFn(`[Minecraft] ❌ HTTP ${res.status} /${command}`);
+                    }
+                } catch (err) {
+                    logFn(`[Minecraft] ❌ Connection error: ${err.message}`);
+                }
+            };
+            if (delay > 0) {
+                setTimeout(sendCmd, delay);
+            } else {
+                sendCmd();
+            }
+        }
+        // اختياري: لو عايز تفضل تبعت للفرونت إند للتوثيق
+        // this.emit("client:minecraft", { mc, jobs, actionName: action.name });
+    }
+}
       } catch (err) {
         logFn(`[Action: ${action.name}] ERROR: ${err.message}`);
       }
