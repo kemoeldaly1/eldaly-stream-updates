@@ -994,6 +994,7 @@ function setupIPC() {
           (page || 1),
       );
       if (j && j.error) return null;
+      if (!j || !Array.isArray(j.results) || j.results.length === 0) return null;
       return j;
     };
     const viaCurl = () => {
