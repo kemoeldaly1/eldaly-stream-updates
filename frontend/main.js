@@ -934,6 +934,27 @@ function setupIPC() {
       const hash = crypto.createHash("sha1").update(String(url)).digest("hex").slice(0, 20);
       const extMatch = String(url).split("?")[0].match(/\.(mp3|wav|ogg|m4a)$/i);
       const dest = path.join(dir, "sl-" + hash + (extMatch ? extMatch[1] : ".mp3"));
+      const cookieJar = path.join(dir, "myinstants.cookies");
+      const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+      execFileSync(
+        "curl",
+        [
+          "-sS",
+          "-L",
+          "--max-time",
+          "30",
+          "-c",
+          cookieJar,
+          "-b",
+          cookieJar,
+          "-A",
+          userAgent,
+          "-o",
+          "NUL",
+          "https://www.myinstants.com/en/",
+        ],
+        { encoding: "utf8" }
+      );
       execFileSync(
         "curl",
         [
@@ -942,8 +963,12 @@ function setupIPC() {
           "--max-time",
           "120",
           "-L",
+          "-b",
+          cookieJar,
           "-A",
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+          userAgent,
+          "-H",
+          "Referer: https://www.myinstants.com/",
           "-o",
           dest,
           String(url),
