@@ -36,6 +36,11 @@ jobs:
         shell: pwsh
         run: |
           $version = (Get-Content frontend/package.json | ConvertFrom-Json).version
+          # إنشاء الـ release لو مش موجود (upload بيطلب release موجود مسبقًا)
+          gh release view $env:GITHUB_REF_NAME 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:GITHUB_REF_NAME --title "ELDALY STREAM $version" --notes "ELDALY STREAM v$version" --target main
+          }
           gh release upload $env:GITHUB_REF_NAME `
             "frontend/dist/ELDALY-STREAM-Setup-$version.exe" `
             "frontend/dist/ELDALY-STREAM-Setup-$version.exe.blockmap" `
