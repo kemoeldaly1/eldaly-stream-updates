@@ -873,8 +873,51 @@ function addFeedItem(p36, p37, p38, p39) {
   }
 }
 let actionsData = [];
+const MEDIA_PATH_FIELDS = ["audio_path", "video_path", "picture_path", "anim_path"];
+
+function isCloudMediaPath(p) {
+  return !p || /^https?:\/\//i.test(p) || p.startsWith("data:");
+}
+
+async function autoMigrateLocalMedia(actions) {
+  if (!Array.isArray(actions) || !window.__cloudUpload) {
+    return { changed: false, actions };
+  }
+
+  let changed = false;
+  const migrated = JSON.parse(JSON.stringify(actions));
+
+  for (const item of migrated) {
+    if (!item || typeof item !== "object") continue;
+    for (const field of MEDIA_PATH_FIELDS) {
+      const current = item[field];
+      if (isCloudMediaPath(current)) continue;
+      try {
+        const migratedValue = await window.__cloudUpload(current, null, () => {});
+        if (migratedValue && migratedValue !== current && !isCloudMediaPath(migratedValue)) {
+          // لو مفيش رابط سحابي، لازم نترك المسار الحالي
+          continue;
+        }
+        if (migratedValue && migratedValue !== current && /^https?:\/\//i.test(migratedValue)) {
+          item[field] = migratedValue;
+          changed = true;
+        }
+      } catch (e) {
+        // تجاهل الفشل — اللوجيك الأساسي هيبقى على المسار المحلي
+      }
+    }
+  }
+
+  return { changed, actions: migrated };
+}
+
 async function loadActions() {
   actionsData = (await api.actions.getAll()) || [];
+  const migration = await autoMigrateLocalMedia(actionsData);
+  if (migration.changed) {
+    actionsData = migration.actions;
+    await saveActionsData();
+  }
   renderActions();
 }
 function renderActions(p40 = "") {
@@ -5302,14 +5345,34 @@ async function openSoundLibrary(p353) {
       const v525 = document.getElementById(p353);
       if (!v525) return;
       v523.textContent = "⏳ ...";
-      // بينزّل الصوت ملف محلي — التشغيل في البث مضمون بدون أي موقع
-      api.system.downloadSound(v524).then((r2) => {
+      // نزّل الصوت محليًا ثم ارفعه للسحابة تلقائيًا، عشان يبقى محفوظًا للـ restore/إعادة التثبيت.
+      api.system.downloadSound(v524).then(async (r2) => {
         if (r2 && r2.ok && r2.path) {
-          v525.textContent = r2.path;
-          vF27();
-          addFeedItem("system", "Sound Library", "Sound saved locally ✓", "🎧");
+          try {
+            const finalPath = typeof window.__cloudUpload === "function"
+              ? await window.__cloudUpload(r2.path, null, () => {})
+              : r2.path;
+
+            v525.textContent = finalPath || r2.path;
+            vF27();
+            addFeedItem(
+              "system",
+              "Sound Library",
+              finalPath && /^https?:\/\//i.test(finalPath)
+                ? "Sound uploaded to cloud ✓"
+                : "Sound saved locally ✓",
+              "🎧",
+            );
+            if (!(finalPath && /^https?:\/\//i.test(finalPath))) {
+              uiAlert("تم حفظ الصوت محليًا فقط — لو الـ cloud upload فشل، سيحتاج إعادة رفع عند التثبيت الجديد ⚠");
+            }
+          } catch (err) {
+            v525.textContent = r2.path;
+            vF27();
+            uiAlert("تعذر إنهاء رفع الصوت للسحابة — تم حفظ النسخة المحلية بدلًا منها ⚠");
+          }
         } else {
-          v525.textContent = v524; // fallback: اللينك نفسه
+          v525.textContent = v524;
           vF27();
           uiAlert("تعذر تنزيل الصوت — الاتصال باللينك نفسه (ممكن ميشتغلش في البث) ⚠");
         }
