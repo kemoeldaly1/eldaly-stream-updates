@@ -14,7 +14,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const OVERLAY_PAGE_VERSION = "8"; // رفع الإصدار يجبر صفحات OBS تعمل reload وتشغل الكود المصلح
+const OVERLAY_PAGE_VERSION = "9"; // رفع الإصدار يجبر صفحات OBS تعمل reload وتشغل الكود المصلح
 const WIDGET_PAGE_VERSION = "2"; // نفس الفكرة لصفحات الويدجت (overlay-music) — SSE بيبعت reload لو الإصدار مختلف
 const TOTAL_SCREENS = 10;
 

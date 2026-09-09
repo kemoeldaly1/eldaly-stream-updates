@@ -694,37 +694,7 @@ class EventRunner extends EventEmitter {
         logFn(`[Action: ${action.name}] Minecraft → /${cmdStr}`);
     }
     if (jobs.length > 0) {
-        // ✅ تنفيذ مباشر من الباك إند بدل ما نبعث للفرونت إند
-        for (const job of jobs) {
-            const command = job.command;
-            const delay = Math.max(0, job.delay || 0);
-            const sendCmd = async () => {
-                try {
-                    const res = await fetch(`http://${mc.ip}:${mc.port}/v1/server/exec`, {
-                        method: "POST",
-                        headers: {
-                            key: mc.password || "",
-                            "Content-Type": "application/x-www-form-urlencoded",
-                        },
-                        body: "command=" + encodeURIComponent(command),
-                    });
-                    if (res.ok) {
-                        logFn(`[Minecraft] ✅ /${command} executed`);
-                    } else {
-                        logFn(`[Minecraft] ❌ HTTP ${res.status} /${command}`);
-                    }
-                } catch (err) {
-                    logFn(`[Minecraft] ❌ Connection error: ${err.message}`);
-                }
-            };
-            if (delay > 0) {
-                setTimeout(sendCmd, delay);
-            } else {
-                sendCmd();
-            }
-        }
-        // اختياري: لو عايز تفضل تبعت للفرونت إند للتوثيق
-        // this.emit("client:minecraft", { mc, jobs, actionName: action.name });
+      this.emit("client:minecraft", { mc, jobs, actionName: action.name });
     }
 }
       } catch (err) {

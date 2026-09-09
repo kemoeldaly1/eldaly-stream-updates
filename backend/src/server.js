@@ -3,6 +3,8 @@ const http = require("http");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
 const express = require("express");
 const { WebSocketServer, WebSocket } = require("ws");
 
@@ -17,6 +19,7 @@ const PatreonSync = require("./services/patreon-sync");
 const EventRunner = require("./services/event-runner");
 const defaultGifts = require("../data/gifts");
 const googleTtsApi = require("google-tts-api");
+const execFileAsync = promisify(execFile);
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "::"; // :: يقبل IPv4 + IPv6 (localhost بيتحل أحيانًا لـ ::1)
@@ -142,6 +145,13 @@ const authRateLimiter = makeRateLimiter(
   QUARTER_HOUR_MS,
   "محاولات كتير — استنى ربع ساعة وحاول تاني",
 );
+// الويبهوك والسكوربورد الخارجيين بيشتغلوا أثناء البث، فحد تسجيل الدخول
+// (5 محاولات/ربع ساعة) كان بيوقفهم بعد كام ضغطة.
+const externalActionRateLimiter = makeRateLimiter(
+  300,
+  QUARTER_HOUR_MS,
+  "طلبات خارجية كتير — استنى شوية وحاول تاني",
+);
 // استعادة الجلسة: برنامج الديسكتوب بيستدعيها كل دقيقتين ونص (watchdog) —
 // فالحد ليها منفصل وأعلى: 15 كل ربع ساعة لكل IP (يكفي دورة طبيعية + هامش)
 const sessionRateLimiter = makeRateLimiter(
@@ -190,7 +200,7 @@ overlayHttp.register(app);
 // حد الرفع: 30 ملف كل 10 دقايق لكل IP — يمنع استغلال التخزين
 const mediaRate = new Map();
 function mediaRateGate(req, res) {
-  const ip = req.socket.remoteAddress || "unknown";
+  const ip = clientIp(req);
   const now = Date.now();
   let e = mediaRate.get(ip);
   if (!e || now - e.start > 600000) { e = { start: now, count: 0 }; mediaRate.set(ip, e); }
@@ -334,6 +344,18 @@ function activeSessionOnOtherDevice(email, hwid) {
   );
 }
 
+// العملية الحالية فيها Store/License/TikTok واحد فقط؛ السماح لحساب مختلف
+// باستبدال الجلسة هنا يخلط بيانات الحسابين. نرفضه بدل استبدال الحالة بصمت.
+function activeSessionOnOtherAccount(email) {
+  const clean = String(email || "").trim().toLowerCase();
+  return !!(
+    appSession.token &&
+    appSession.email &&
+    clean &&
+    appSession.email !== clean
+  );
+}
+
 function clearAppSession() {
   const old = appSession.token;
   appSession = { token: null, email: null, hwid: null, lastSeen: 0 };
@@ -361,6 +383,7 @@ const PUBLIC_API_PATHS = [
   "/api/auth/payment-links",
   "/api/auth/state",
   "/api/auth/tier",
+  "/api/system/sounds",
 ];
 function isPublicApiPath(p) {
   return (
@@ -845,6 +868,13 @@ function getTierLimits() {
 
 app.post("/api/auth/register", authRateLimiter, async (req, res) => {
   const { email, password, hwid } = req.body || {};
+  if (activeSessionOnOtherAccount(email)) {
+    return res.status(409).json({
+      ok: false,
+      conflict: true,
+      reason: "حساب آخر مفتوح على نفس السيرفر — اقفل الجلسة الحالية أولاً",
+    });
+  }
   // الجهاز الشغال الأول هو المسيطر — الجهاز التاني بيترفض ومش بيتسرق الجلسة
   if (activeSessionOnOtherDevice(email, hwid)) {
     return res.status(403).json({
@@ -865,6 +895,13 @@ app.post("/api/auth/register", authRateLimiter, async (req, res) => {
 
 app.post("/api/auth/login", authRateLimiter, async (req, res) => {
   const { email, password, hwid } = req.body || {};
+  if (activeSessionOnOtherAccount(email)) {
+    return res.status(409).json({
+      ok: false,
+      conflict: true,
+      reason: "حساب آخر مفتوح على نفس السيرفر — اقفل الجلسة الحالية أولاً",
+    });
+  }
   // الجهاز الشغال الأول هو المسيطر — الجهاز التاني بيترفض ومش بيتسرق الجلسة
   // (البرنامج اللي شغال مش بيتقفل في وش العميل خالص)
   if (activeSessionOnOtherDevice(email, hwid)) {
@@ -1819,21 +1856,30 @@ app.get("/api/system/sounds", async (req, res) => {
       "https://www.myinstants.com/en/search/?name=" +
       encodeURIComponent(query || "") +
       (page > 1 ? "&page=" + page : "");
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": UA,
-        Accept: "text/html",
-        Referer: "https://www.myinstants.com/",
-      },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!response.ok) {
-      return res.json({ error: "اتصال مكتبة الأصوات فشل (" + response.status + ") — جرّب تاني" });
+    let html = "";
+    const cookieJar = path.join(require("os").tmpdir(), "eldaly-myinstants-" + process.pid + "-" + Date.now() + ".cookies");
+    try {
+      const curl = await execFileAsync("curl", [
+        "-sS", "-L", "--max-time", "20", "-A", UA,
+        "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "-H", "Accept-Language: en-US,en;q=0.9", "-c", cookieJar,
+        "-o", process.platform === "win32" ? "NUL" : "/dev/null",
+        "https://www.myinstants.com/en/", "--next", "-sS", "-L", "--max-time", "20",
+        "-A", UA, "-H", "Referer: https://www.myinstants.com/", "-b", cookieJar, url,
+      ], { maxBuffer: 10 * 1024 * 1024 });
+      html = curl.stdout || "";
+    } catch (e) {
+      try {
+        const response = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html", Referer: "https://www.myinstants.com/" }, signal: AbortSignal.timeout(10000) });
+        if (response.ok) html = await response.text();
+      } catch (fallbackError) {}
+    } finally {
+      try { fs.unlinkSync(cookieJar); } catch (e) {}
     }
-    const html = await response.text();
+    if (!html) return res.json({ error: "اتصال مكتبة الأصوات فشل — جرّب تاني" });
     const results = [];
     const seen = new Set();
-    const re = /onclick="play\('([^']+)',\s*'[^']*',\s*'([^']*)'\)"\s+title="Play\s+([^"]+)"/g;
+    const re = /onclick\s*=\s*"play\(\s*'([^']+)'\s*,\s*'[^']*'\s*,\s*'([^']*)'\s*\)"[\s\S]*?title\s*=\s*"Play\s+([^"]+)"/gi;
     let m;
     while ((m = re.exec(html)) && results.length < 50) {
       const sound = m[1].startsWith("http") ? m[1] : "https://www.myinstants.com" + m[1];
@@ -1895,13 +1941,13 @@ function publicKeyGuard(req, res) {
   return true;
 }
 
-app.all("/api/webhook/:id", authRateLimiter, (req, res) => {
+app.all("/api/webhook/:id", externalActionRateLimiter, (req, res) => {
   if (!publicKeyGuard(req, res)) return;
   if (overlayServer._onWebhook) overlayServer._onWebhook(req.params.id);
   res.json({ ok: true, message: "Webhook triggered successfully" });
 });
 
-app.all("/api/scoreboard/:cmd", authRateLimiter, (req, res) => {
+app.all("/api/scoreboard/:cmd", externalActionRateLimiter, (req, res) => {
   if (!publicKeyGuard(req, res)) return;
   const cmd = req.params.cmd;
   const url = new URL(req.url, "http://" + (req.headers.host || "127.0.0.1"));

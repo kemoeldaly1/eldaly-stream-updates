@@ -12,7 +12,7 @@ const path = require("path");
 const fs = require("fs");
 
 const TOTAL_SCREENS = 10;
-const OVERLAY_PAGE_VERSION = "6";
+const OVERLAY_PAGE_VERSION = "9";
 const DEFAULT_PORT = parseInt(process.env.LOCAL_OVERLAY_PORT || "7330", 10);
 
 const MIME_TYPES = {
@@ -634,7 +634,10 @@ function notifyDone() {
   fetch('/done/' + TOKEN + '/' + SCREEN_ID, { method: 'POST' }).catch(() => {});
 }
 function mediaUrl(p) {
-  return p.startsWith('http') ? p : '/media/' + encodeURIComponent(p) + '?t=' + TOKEN;
+  if (!p) return '';
+  if (/^https?:\/\//i.test(p) || p.startsWith('data:')) return p;
+  if (p.startsWith('/')) return p;
+  return '/media/' + encodeURIComponent(p) + '?t=' + TOKEN;
 }
 
 const evtSource = new EventSource('/events/' + TOKEN + '/' + SCREEN_ID + '?v=' + PAGE_VERSION);
@@ -647,12 +650,48 @@ evtSource.onmessage = (e) => {
   else if (data.type === 'tts') { handleTTS(data); }
 };
 
+function clearMediaNodes() {
+  const nodes = stage.querySelectorAll('.media');
+  nodes.forEach((node) => node.remove());
+}
+
+function buildAlertBanner(data) {
+  const banner = document.createElement('div');
+  banner.className = 'alert-banner';
+  const floatEl = document.createElement('div');
+  floatEl.className = 'alert-float';
+  if (data.alertFontSize) floatEl.style.setProperty('--alert-fs', data.alertFontSize);
+  if (data.alertPhotoSize) floatEl.style.setProperty('--alert-photo-size', data.alertPhotoSize);
+  const bob = document.createElement('div');
+  bob.className = 'alert-bob';
+  let html = '';
+  if (data.userPhoto) {
+    html += '<img class="alert-photo" src="' + encodeURI(data.userPhoto).replace(/"/g, '%22').replace(/'/g, '%27') + '" onerror="this.remove()">';
+  }
+  let line = '';
+  if (data.alertUser) {
+    const uc = data.userColor || '#30D5C8';
+    line += '<span class="alert-name" style="color:' + uc + '">' + escapeHtml(data.alertUser) + '</span>';
+  }
+  if (data.alertUser && data.alertText) line += '<span class="alert-sep">—</span>';
+  if (data.alertText) {
+    const tc = data.textColor || '#30D5C8';
+    line += '<span class="alert-msg" style="color:' + tc + '">' + escapeHtml(data.alertText) + '</span>';
+  }
+  if (line) html += '<div class="alert-line">' + line + '</div>';
+  bob.innerHTML = html;
+  floatEl.appendChild(bob);
+  banner.appendChild(floatEl);
+  return banner;
+}
+
 function handleMedia(data) {
   const url = mediaUrl(data.path);
   const volume = (data.volume ?? 80) / 100;
   const duration = (data.duration || 5) * 1000;
   const shouldFade = data.fade !== false;
-  stage.innerHTML = '';
+  clearMediaNodes();
+
   let mediaFinished = false;
   const finishMedia = (el) => {
     if (mediaFinished) return;
@@ -667,37 +706,20 @@ function handleMedia(data) {
       stage.innerHTML = ''; notifyDone();
     }
   };
+
   if (data.alertText || data.alertUser) {
-    const banner = document.createElement('div');
-    banner.className = 'alert-banner';
-    const floatEl = document.createElement('div');
-    floatEl.className = 'alert-float';
-    if (data.alertFontSize) floatEl.style.setProperty('--alert-fs', data.alertFontSize);
-    if (data.alertPhotoSize) floatEl.style.setProperty('--alert-photo-size', data.alertPhotoSize);
-    const bob = document.createElement('div');
-    bob.className = 'alert-bob';
-    let html = '';
-    if (data.userPhoto) {
-      html += '<img class="alert-photo" src="' + encodeURI(data.userPhoto).replace(/"/g, '%22').replace(/'/g, '%27') + '" onerror="this.remove()">';
-    }
-    let line = '';
-    if (data.alertUser) {
-      const uc = data.userColor || '#30D5C8';
-      line += '<span class="alert-name" style="color:' + uc + '">' + escapeHtml(data.alertUser) + '</span>';
-    }
-    if (data.alertUser && data.alertText) line += '<span class="alert-sep">—</span>';
-    if (data.alertText) {
-      const tc = data.textColor || '#30D5C8';
-      line += '<span class="alert-msg" style="color:' + tc + '">' + escapeHtml(data.alertText) + '</span>';
-    }
-    if (line) html += '<div class="alert-line">' + line + '</div>';
-    bob.innerHTML = html;
-    floatEl.appendChild(bob);
-    banner.appendChild(floatEl);
+    const existingBanner = stage.querySelector('.alert-banner');
+    if (existingBanner) existingBanner.remove();
+    const banner = buildAlertBanner(data);
     stage.appendChild(banner);
-    requestAnimationFrame(() => floatEl.classList.add('show'));
+    requestAnimationFrame(() => {
+      const floatEl = banner.querySelector('.alert-float');
+      if (floatEl) floatEl.classList.add('show');
+    });
   }
+
   if (data.kind === 'video') {
+    if (!url) { currentTimeout = setTimeout(() => finishMedia(null), duration); return; }
     const el = document.createElement('video');
     el.src = url; el.autoplay = true; el.className = 'media'; el.volume = volume; el.playsInline = true;
     el.style.background = 'transparent';
@@ -722,6 +744,7 @@ function handleMedia(data) {
       });
     }
   } else if (data.kind === 'audio') {
+    if (!url) { currentTimeout = setTimeout(() => finishMedia(null), duration); return; }
     const el = document.createElement('audio');
     el.src = url; el.autoplay = true; el.volume = volume;
     el.onended = () => finishMedia(el);
@@ -742,6 +765,7 @@ function handleMedia(data) {
       });
     }
   } else if (data.kind === 'picture') {
+    if (!url) { currentTimeout = setTimeout(() => finishMedia(null), duration); return; }
     const el = document.createElement('img');
     el.src = url; el.className = 'media'; el.style.background = 'transparent';
     el.onload = () => { requestAnimationFrame(() => el.classList.add('show')); };
