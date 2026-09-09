@@ -1649,47 +1649,16 @@ function escapeHtml(p133) {
   return divEl13.innerHTML;
 }
 
-// ===== رسالة التحديث — بنفس ستايل البرنامج (ذهبي/داكن/سينزل) =====
-let __updateShown = false;
-if (api.update && api.update.onReady) {
-  api.update.onReady((version) => {
-    if (__updateShown) return;
-    __updateShown = true;
-    const overlay = document.createElement("div");
-    overlay.id = "update-overlay";
-    overlay.style.cssText = "position:fixed;inset:0;background:rgba(4,4,6,.82);backdrop-filter:blur(6px);z-index:200000;display:flex;align-items:center;justify-content:center;font-family:'Cairo','Segoe UI',sans-serif";
-    overlay.innerHTML = `
-      <div style="width:min(430px,calc(100vw - 40px));background:linear-gradient(180deg,rgba(212,175,55,.08),transparent 40%),#101015;border:1px solid rgba(212,175,55,.35);border-radius:20px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.75),0 0 0 1px rgba(212,175,55,.08);animation:updPop .25s ease">
-        <div style="height:3px;background:linear-gradient(90deg,transparent,#d4af37 30%,#f6e7a8 50%,#d4af37 70%,transparent)"></div>
-        <div style="padding:30px 30px 24px;text-align:center">
-          <div style="width:66px;height:66px;margin:0 auto 16px;border-radius:18px;background:linear-gradient(135deg,rgba(212,175,55,.2),rgba(212,175,55,.05));border:1px solid rgba(212,175,55,.45);display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 8px 30px rgba(212,175,55,.15)">⬆️</div>
-          <div style="font-family:'Cinzel','Cairo',serif;font-size:20px;font-weight:700;letter-spacing:2px;background:linear-gradient(135deg,#f6e7a8,#d4af37 55%,#a17c1e);-webkit-background-clip:text;-webkit-text-fill-color:transparent">ELDALY STREAM</div>
-          <div style="font-size:15.5px;font-weight:800;color:#ece9e1;margin-top:12px">نسخة جديدة ${version ? "(" + version + ")" : ""} جاهزة للتثبيت</div>
-          <div style="font-size:12.5px;color:#a6a198;line-height:1.9;margin-top:8px">اختار «حدّث الآن» والبرنامج هيقفل ويرجع يفتح لوحده على النسخة الجديدة،<br>أو خليه يثبّت لوحده أول ما تقفل البرنامج</div>
-          <div style="display:flex;gap:10px;margin-top:24px">
-            <button id="upd-later" style="flex:1;padding:12px;font-family:Cairo,sans-serif;font-size:12.5px;font-weight:800;border-radius:10px;background:rgba(255,255,255,.03);color:#a6a198;border:1px solid rgba(255,255,255,.12);cursor:pointer;transition:all .15s">بعد ما أقفل البرنامج</button>
-            <button id="upd-now" style="flex:1.4;padding:12px;font-family:Cairo,sans-serif;font-size:13px;font-weight:800;border-radius:10px;background:linear-gradient(180deg,#ecca72,#c69c2d);color:#201803;border:none;cursor:pointer;box-shadow:0 3px 16px rgba(212,175,55,.25),inset 0 1px 0 rgba(255,255,255,.3);transition:all .15s">⚡ حدّث الآن</button>
-          </div>
-        </div>
-      </div>
-      <style>@keyframes updPop{from{transform:scale(.93);opacity:0}to{transform:scale(1);opacity:1}}</style>`;
-    document.body.appendChild(overlay);
-    overlay.querySelector("#upd-now").addEventListener("click", () => {
-      overlay.querySelector("#upd-now").textContent = "...جاري التحديث";
-      try { api.update.installNow(); } catch (e) {}
-    });
-    overlay.querySelector("#upd-later").addEventListener("click", () => overlay.remove());
-  });
-}
 function escapeAttr(p134) {
   return (p134 || "").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 // عرض مسار الميديا: اللينكات السحابية تظهر كاسم ملف بس (اللينك الكامل ممنوع يظهر للمستخدم)
 function mediaDisplayPath(p) {
-  if (!p) return "No file selected";
-  // اللينكات السحابية مبتظهرش تفاصيلها نهائياً
-  if (/^https?:/i.test(String(p))) return "☁ Media from cloud ✓";
-  return p;
+  // لا تعرض مسار الملف المحلي/السحابي للعميل.
+  // التشفير/التخزين يبقى داخل التطبيق، والـ UI يظل نظيفًا.
+  if (!p) return "";
+  if (/^https?:/i.test(String(p))) return "";
+  return "";
 }
 
 // ===== بداية نظيفة: عند الترقية من نسخة قديمة، البروفايلات والأكشنات
