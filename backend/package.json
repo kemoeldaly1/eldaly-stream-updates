@@ -1,6 +1,6 @@
 {
   "name": "eldaly-stream-backend",
-  "version": "2.1.8",
+  "version": "2.1.9",
   "description": "ELDALY STREAM — Backend API & Overlay Server for TikTok LIVE Streaming Tool",
   "main": "src/server.js",
   "scripts": {
