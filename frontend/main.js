@@ -13,7 +13,6 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const { execFileSync, execFile, exec } = require("child_process");
-const { autoUpdater } = require("electron-updater");
 const { WebSocket } = require("ws");
 
 const KeyboardService = require("./src/services/keyboard");
@@ -585,44 +584,7 @@ function startLicenseWatchdog() {
   }, 150000);
 }
 
-function startUpdateWatcher() {
-  try {
-    autoUpdater.autoDownload = true;
-    autoUpdater.autoInstallOnAppQuit = true;
-    autoUpdater.logger = console;
-    let updateDialogShown = false;
-    // رسالة فورية بمجرد جاهزية التحديث — المستخدم يختار: الآن أو عند الإقفال
-    autoUpdater.on("update-downloaded", async (info) => {
-      if (updateDialogShown) return;
-      updateDialogShown = true;
-      // الرسالة بتظهر جوه البرنامج بستايله (renderer) — النظامية fallback بس
-      try {
-        mainWindow?.webContents.send("update:ready", info && info.version);
-      } catch (err) {}
-      setTimeout(async () => {
-        if (mainWindow) return;
-        try {
-          const result = await dialog.showMessageBox({
-            type: "info",
-            title: "تحديث جديد متاح",
-            message: "نسخة جديدة جاهزة للتثبيت",
-            buttons: ["حدّث الآن", "إغلاق"],
-            defaultId: 0,
-            noLink: true,
-          });
-          if (result.response === 0) {
-            try { autoUpdater.quitAndInstall(true, true); } catch (err) {}
-          }
-        } catch (err) {}
-      }, 8000);
-    });
-    const checkFn = () => autoUpdater.checkForUpdates().catch(() => {});
-    checkFn(); // فحص فوري أول ما البرنامج يفتح — من غير أي تأخير
-    setInterval(checkFn, 21600000);
-  } catch (err) {
-    console.error("[updater] init failed:", err);
-  }
-}
+// التحديثات موقوفة بالكامل في هذا البناء — لا فحص ولا رسائل ولا تثبيت تلقائي.
 
 // نبضة كل 10 دقايق — تمنع سيرفر Render من النوم (free tier بينام بعد 15 دقيقة
 // سكون). النبضة الأولى فور التشغيل بتصرّي السيرفر فأول الاتصالات بتبقى أسرع.
@@ -652,7 +614,6 @@ app.whenReady().then(async () => {
   createWindow();
   connectBackendWebSocket();
   startLicenseWatchdog();
-  startUpdateWatcher();
   setupIPC();
 
   // أي تنزيل من التطبيق (زي ملف النسخة الاحتياطية) يفتح نافذة حفظ عادية
@@ -779,10 +740,6 @@ function setupIPC() {
     return true;
   });
   ipcMain.handle("license:openExternal", (event, url) => safeOpenExternal(url));
-  ipcMain.handle("update:installNow", () => {
-    try { autoUpdater.quitAndInstall(); } catch (err) {}
-    return true;
-  });
 
   // TikTok Controls
   ipcMain.handle("tiktok:connect", (event, username) =>

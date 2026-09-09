@@ -191,13 +191,6 @@ async function initTier() {
   loadOverlayUrls();
 }
 initTier();
-if (window.api && typeof api.onUpdateReady === "function") {
-  api.onUpdateReady(p11 => {
-    try {
-      addFeedItem("system", "ELDALY STREAM", "Update " + (p11 || "") + " downloaded — it will be installed when you close the app.", "🔄");
-    } catch (e) {}
-  });
-}
 function lockCard(p12, p13) {
   const v20 = document.getElementById(p12);
   if (!v20) {
@@ -919,6 +912,21 @@ async function loadActions() {
     await saveActionsData();
   }
   renderActions();
+  // إعادة محاولة دورية: أي صوت/فيديو لسه محلي (فشل رفعه) يتجرب تاني كل 5 دقايق
+  // عشان الصوت يضمن إنه يوصل للسحابة ولا يروح أبدًا حتى لو النت كان ضعيف أول مرة
+  if (!window.__mediaMigrateTimer) {
+    window.__mediaMigrateTimer = setInterval(async () => {
+      try {
+        if (window.__uploading) return;
+        const retry = await autoMigrateLocalMedia(actionsData);
+        if (retry.changed) {
+          actionsData = retry.actions;
+          await saveActionsData();
+          renderActions();
+        }
+      } catch (e) {}
+    }, 5 * 60 * 1000);
+  }
 }
 function renderActions(p40 = "") {
   const v52 = document.getElementById("actions-tbody");
@@ -1195,6 +1203,7 @@ window.__mediaBar = (elId, pct) => {
 };
 
 // رفع ملف ميديا محلي للسحابة — بيرجع الرابط السحابي أو المسار المحلي لو الرفع فشل
+// بيجرب 3 مرات قبل ما يستسلم عشان الصوت/الفيديو ميفقدش بسبب ضعف النت المؤقت
 window.__cloudUpload = async (localPath, barId, onText) => {
   const ext = (String(localPath).split(".").pop() || "").toLowerCase();
   if (!["mp3", "wav", "ogg", "m4a", "mp4", "webm", "mov", "gif", "png", "jpg", "jpeg", "webp"].includes(ext)) {
@@ -1202,22 +1211,35 @@ window.__cloudUpload = async (localPath, barId, onText) => {
   }
   window.__uploading = true;
   try {
-    const up = await api.media.uploadFile(localPath, (pct) => {
-      window.__mediaBar(barId, pct);
-      if (typeof onText === "function") onText(pct);
-    });
-    if (up && up.ok) {
-      window.__uploading = false;
-      window.__mediaBar(barId, 100);
-      return up.url;
+    let lastError = "";
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const up = await api.media.uploadFile(localPath, (pct) => {
+          window.__mediaBar(barId, pct);
+          if (typeof onText === "function") onText(pct);
+        });
+        if (up && up.ok) {
+          window.__uploading = false;
+          window.__mediaBar(barId, 100);
+          return up.url;
+        }
+        lastError = (up && up.error) || "فشل الرفع";
+      } catch (e) {
+        lastError = (e && e.message) || "خطأ غير معروف";
+      }
+      if (attempt < 3) {
+        // استنى شوية قبل إعادة المحاولة (1s ثم 3s)
+        if (typeof onText === "function") onText("⚠" );
+        await new Promise((r) => setTimeout(r, attempt === 1 ? 1000 : 3000));
+      }
     }
-    // الرفع فشل — نعرض السبب بدل الصمت
+    // الرفع فشل بعد 3 محاولات — نعرض تحذير واضح ومؤقت أطول
     if (barId) {
       const el = document.getElementById(barId);
       if (el) {
-        el.textContent = "⚠ فشل رفع الملف" + (up && up.error ? " — " + up.error : "") + " — سيتم استخدام النسخة المحلية";
+        el.textContent = "⚠ لم يتم رفع الملف للسحابة (" + lastError + ") — الصوت محفوظ محليًا فقط ولن يظهر بعد إعادة تثبيت البرنامج";
         el.style.color = "#d97a74";
-        setTimeout(() => { el.style.color = ""; }, 6000);
+        setTimeout(() => { el.style.color = ""; }, 15000);
       }
     }
   } catch (e) {}
@@ -1654,11 +1676,11 @@ function escapeAttr(p134) {
 }
 // عرض مسار الميديا: اللينكات السحابية تظهر كاسم ملف بس (اللينك الكامل ممنوع يظهر للمستخدم)
 function mediaDisplayPath(p) {
-  // لا تعرض مسار الملف المحلي/السحابي للعميل.
-  // التشفير/التخزين يبقى داخل التطبيق، والـ UI يظل نظيفًا.
   if (!p) return "";
-  if (/^https?:/i.test(String(p))) return "";
-  return "";
+  if (/^https?:/i.test(String(p))) {
+    return String(p).split(/[\\/]/).pop() || "";
+  }
+  return String(p);
 }
 
 // ===== بداية نظيفة: عند الترقية من نسخة قديمة، البروفايلات والأكشنات
@@ -5324,17 +5346,7 @@ async function openSoundLibrary(p353) {
 
             v525.textContent = finalPath || r2.path;
             vF27();
-            addFeedItem(
-              "system",
-              "Sound Library",
-              finalPath && /^https?:\/\//i.test(finalPath)
-                ? "Sound uploaded to cloud ✓"
-                : "Sound saved locally ✓",
-              "🎧",
-            );
-            if (!(finalPath && /^https?:\/\//i.test(finalPath))) {
-              uiAlert("تم حفظ الصوت محليًا فقط — لو الـ cloud upload فشل، سيحتاج إعادة رفع عند التثبيت الجديد ⚠");
-            }
+            // لا نعرض رسالة فورية عند حفظ الصوت من المكتبة.
           } catch (err) {
             v525.textContent = r2.path;
             vF27();
@@ -5606,29 +5618,6 @@ async function initTTS() {
   });
 }
 initTTS();
-(function initUpdatePrompt() {
-  if (typeof window.api?.onUpdateReady !== "function") {
-    return;
-  }
-  let v565 = null;
-  window.api.onUpdateReady(async p361 => {
-    if (v565 === p361) {
-      return;
-    }
-    v565 = p361;
-    const v566 = await uiConfirm("🔄 فيه تحديث جديد جاهز (النسخة " + p361 + ").\nتحب نحدّث البرنامج دلوقتي؟\nلو اخترت «لاحقًا» — التحديث هيتسطب تلقائيًا أول ما تقفل البرنامج من غير ما تعمل حاجة.", {
-      title: "تحديث جديد",
-      icon: "🔄",
-      okText: "حدّث دلوقتي",
-      cancelText: "لاحقًا عند القفل"
-    });
-    if (v566) {
-      try {
-        await window.api.installUpdateNow();
-      } catch (err) {}
-    }
-  });
-})();
 async function checkSubscriptionBanner() {
   try {
     const vLSSubexpirybanner = "sub-expiry-banner";

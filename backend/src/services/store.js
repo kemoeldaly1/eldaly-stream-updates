@@ -28,6 +28,7 @@ class StoreService {
     this._cloudTimer = null;
     this._cloudSaving = false;
     this._cloudLoaded = false;
+    this._cloudRetryDelay = 15000;
     this._ensureDir();
     this._load();
   }
@@ -186,7 +187,11 @@ class StoreService {
         token = null;
       }
     }
-    if (!token) return;
+    if (!token) {
+      // مفيش توكن دلوقتي — أعد المحاولة لاحقًا بدل ما نسيب البيانات عالقة
+      this._scheduleCloudFlush();
+      return;
+    }
 
     const payload = {};
     for (const key of dirtyKeys) {
@@ -195,13 +200,45 @@ class StoreService {
 
     this._cloudSaving = true;
     try {
-      await this.cloud.saveAppDataKeys(this.currentEmail, token, payload);
+      try {
+        await this.cloud.saveAppDataKeys(this.currentEmail, token, payload);
+      } catch (e) {
+        // لو فشل بسبب التوكن (401/403) — نعمل refresh ونحاول مرة تانية قبل نستسلم
+        const status = e && e.status;
+        if (status === 401 || status === 403) {
+          let fresh = null;
+          if (typeof this.getToken === "function") {
+            try {
+              fresh = await this.getToken();
+            } catch (e2) {}
+          }
+          if (fresh && fresh !== token) {
+            await this.cloud.saveAppDataKeys(this.currentEmail, fresh, payload);
+          } else {
+            throw e;
+          }
+        } else {
+          throw e;
+        }
+      }
       for (const key of dirtyKeys) delete this._cloudDirty[key];
     } catch (e) {
       console.error("[Store] cloud flush error:", e.message);
+      // البيانات لسه معلّقة — نعيد الجدولة بفاصل أطول عشان ما تضيعش
+      if (!this._cloudRetryDelay) this._cloudRetryDelay = 15000;
+      const delay = this._cloudRetryDelay;
+      this._cloudRetryDelay = Math.min(this._cloudRetryDelay * 2, 300000);
+      if (this._cloudTimer) clearTimeout(this._cloudTimer);
+      this._cloudTimer = setTimeout(() => {
+        this._cloudTimer = null;
+        this.flushCloud().catch(() => {});
+      }, delay);
+      return;
     } finally {
       this._cloudSaving = false;
     }
+    // نجاح — صفّر فاصل إعادة المحاولة
+    this._cloudRetryDelay = 15000;
   }
 
   clearAccount() {

@@ -12,13 +12,6 @@ const api = {
     setUrl: (url) => ipcRenderer.invoke("server:setUrl", url),
   },
 
-  // التحديث التلقائي
-  update: {
-    onReady: (callback) =>
-      ipcRenderer.on("update:ready", (_, version) => callback(version)),
-    installNow: () => ipcRenderer.invoke("update:installNow"),
-  },
-
   // Backup — نافذة التصدير/الاستيراد المشفرة (المنطق كله في الباك إند)
   backupIO: {
     export: (categories) => ipcRenderer.invoke("backup:export", categories),
@@ -266,11 +259,6 @@ const api = {
   logout: () => ipcRenderer.invoke("license:logout"),
   getLicenseState: () => ipcRenderer.invoke("license:getState"),
   getPaymentLinks: () => ipcRenderer.invoke("license:getPaymentLinks"),
-
-  // Auto Updater
-  onUpdateReady: (callback) =>
-    ipcRenderer.on("update:ready", (_, version) => callback(version)),
-  installUpdateNow: () => ipcRenderer.invoke("update:installNow"),
 };
 
 contextBridge.exposeInMainWorld("api", api);

@@ -1062,6 +1062,7 @@ body {
 }
 .form-file-btn:hover { border-color: rgba(212, 175, 55, 0.5); color: var(--gold-light); }
 .form-file-path {
+  display: none;
   font-size: 10.5px;
   color: var(--text-muted);
   margin-top: 4px;

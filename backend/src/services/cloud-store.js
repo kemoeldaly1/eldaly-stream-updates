@@ -54,6 +54,9 @@ class CloudStore {
 
   async saveAppDataKeys(email, idToken, keyValues) {
     const keys = Object.keys(keyValues);
+    if (!idToken) {
+      throw new Error("cloud save failed: no auth token");
+    }
     if (keys.length === 0) return true;
     const fields = {};
     for (const key of keys) {
@@ -86,7 +89,17 @@ class CloudStore {
       body: JSON.stringify({ fields }),
     });
     if (!response.ok) {
-      throw new Error("cloud save failed: " + response.status);
+      // نستخرج سبب الفشل من جسم الرد عشان التشخيص يبقى واضح
+      let detail = "";
+      try {
+        const body = await response.json();
+        detail = (body && body.error && body.error.message) || "";
+      } catch (e) {}
+      const err = new Error(
+        "cloud save failed: " + response.status + (detail ? " — " + detail : ""),
+      );
+      err.status = response.status;
+      throw err;
     }
     return true;
   }
