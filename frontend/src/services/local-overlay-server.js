@@ -635,7 +635,8 @@ function notifyDone() {
 }
 function mediaUrl(p) {
   if (!p) return '';
-  if (/^https?:\/\//i.test(p) || p.startsWith('data:')) return p;
+  var isUrl = p.startsWith('http://') || p.startsWith('https://') || p.startsWith('data:');
+  if (isUrl) return p;
   if (p.startsWith('/')) return p;
   return '/media/' + encodeURIComponent(p) + '?t=' + TOKEN;
 }
