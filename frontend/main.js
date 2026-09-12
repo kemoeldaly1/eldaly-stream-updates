@@ -278,12 +278,27 @@ function consumeAuthTokens(result) {
   if (!result || typeof result !== "object") return;
   if (result.sessionToken && result.sessionToken !== appSessionToken) {
     appSessionToken = result.sessionToken;
+    hkLog("session token ready");
     // اتصل فورًا بالـ WebSocket بالجلسة الجديدة بدل انتظار إعادة المحاولة
     connectBackendWebSocket();
   }
   if (result.overlayToken && result.overlayToken !== overlayToken) {
     applyOverlayAuth(result.overlayToken);
   }
+}
+
+// سجل تشخيصي لاختصارات الكيبورد — userData/logs/hotkeys.log
+// بيكتب كل خطوة: الهوك اشتغل، التسجيل حصل بإيه، الضغطات الواصلة —
+// عشان أي مشكلة اختصارات تتعرف بالظبط من غير تخمين
+function hkLog(msg) {
+  try {
+    const dir = app.getPath("userData");
+    fs.mkdirSync(path.join(dir, "logs"), { recursive: true });
+    fs.appendFileSync(
+      path.join(dir, "logs", "hotkeys.log"),
+      new Date().toISOString().slice(11, 23) + " " + msg + "\n",
+    );
+  } catch (e) {}
 }
 
 // WebSocket Connection to Backend Server
@@ -1184,6 +1199,12 @@ function setupLocalHotkeys() {
   function registerAll() {
     globalShortcut.unregisterAll();
     keyMap.clear();
+    hkLog(
+      "registerAll — scoreboard=" +
+        JSON.stringify(scoreboardHotkeys) +
+        " custom=" +
+        customHotkeys.length,
+    );
 
     const bindKey = (key, callback) => {
       if (!key || key === "Press...") return;
@@ -1191,8 +1212,14 @@ function setupLocalHotkeys() {
       if (code !== undefined) {
         if (!keyMap.has(code)) keyMap.set(code, []);
         keyMap.get(code).push(callback);
+        hkLog("bind " + key + " -> uiohook code " + code);
       } else {
-        try { globalShortcut.register(key, callback); } catch (e) {}
+        try {
+          globalShortcut.register(key, callback);
+          hkLog("bind " + key + " -> globalShortcut fallback");
+        } catch (e) {
+          hkLog("bind " + key + " -> FAILED: " + e.message);
+        }
       }
     };
 
@@ -1202,19 +1229,24 @@ function setupLocalHotkeys() {
         const { uIOhook } = require("uiohook-napi");
         uIOhook.on("keydown", (e) => {
           const cbs = keyMap.get(e.keycode);
-          if (cbs) cbs.forEach(cb => cb());
+          if (cbs) {
+            hkLog("keydown " + e.keycode + " -> " + cbs.length + " callback(s)");
+            cbs.forEach(cb => cb());
+          }
         });
         uIOhook.start();
+        hkLog("uiohook started OK");
       } catch (err) {
         console.error("uIOhook failed:", err.message);
+        hkLog("uiohook FAILED: " + err.message);
       }
     }
 
-    if (scoreboardHotkeys.leftUp) bindKey(scoreboardHotkeys.leftUp, () => apiFetch("/api/ext/scoreboard/update", { method: "POST", body: JSON.stringify({ side: "left", amount: 1 }) }));
-    if (scoreboardHotkeys.leftDown) bindKey(scoreboardHotkeys.leftDown, () => apiFetch("/api/ext/scoreboard/update", { method: "POST", body: JSON.stringify({ side: "left", amount: -1 }) }));
-    if (scoreboardHotkeys.rightUp) bindKey(scoreboardHotkeys.rightUp, () => apiFetch("/api/ext/scoreboard/update", { method: "POST", body: JSON.stringify({ side: "right", amount: 1 }) }));
-    if (scoreboardHotkeys.rightDown) bindKey(scoreboardHotkeys.rightDown, () => apiFetch("/api/ext/scoreboard/update", { method: "POST", body: JSON.stringify({ side: "right", amount: -1 }) }));
-    if (scoreboardHotkeys.reset) bindKey(scoreboardHotkeys.reset, () => apiFetch("/api/ext/scoreboard/reset", { method: "POST" }));
+    if (scoreboardHotkeys.leftUp) bindKey(scoreboardHotkeys.leftUp, () => { hkLog("hotkey: scoreboard left +1"); apiFetch("/api/ext/scoreboard/update", { method: "POST", body: JSON.stringify({ side: "left", amount: 1 }) }); });
+    if (scoreboardHotkeys.leftDown) bindKey(scoreboardHotkeys.leftDown, () => { hkLog("hotkey: scoreboard left -1"); apiFetch("/api/ext/scoreboard/update", { method: "POST", body: JSON.stringify({ side: "left", amount: -1 }) }); });
+    if (scoreboardHotkeys.rightUp) bindKey(scoreboardHotkeys.rightUp, () => { hkLog("hotkey: scoreboard right +1"); apiFetch("/api/ext/scoreboard/update", { method: "POST", body: JSON.stringify({ side: "right", amount: 1 }) }); });
+    if (scoreboardHotkeys.rightDown) bindKey(scoreboardHotkeys.rightDown, () => { hkLog("hotkey: scoreboard right -1"); apiFetch("/api/ext/scoreboard/update", { method: "POST", body: JSON.stringify({ side: "right", amount: -1 }) }); });
+    if (scoreboardHotkeys.reset) bindKey(scoreboardHotkeys.reset, () => { hkLog("hotkey: scoreboard reset"); apiFetch("/api/ext/scoreboard/reset", { method: "POST" }); });
 
     for (const hk of customHotkeys) {
       bindKey(hk.key, () => {
@@ -1232,6 +1264,7 @@ function setupLocalHotkeys() {
   });
 
   ipcMain.handle("ext:scoreboard:registerHotkeys", (event, hotkeys) => {
+    hkLog("registerHotkeys IPC called with: " + JSON.stringify(hotkeys || {}));
     scoreboardHotkeys = hotkeys || {};
     registerAll();
     return true;
