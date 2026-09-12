@@ -17,6 +17,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { WebSocketServer } = require("ws");
 
 const OVERLAY_PAGE_VERSION = "9"; // رفع الإصدار يجبر صفحات OBS تعمل reload وتشغل الكود المصلح
 const WIDGET_PAGE_VERSION = "2"; // نفس الفكرة لصفحات الويدجت (overlay-music) — SSE بيبعت reload لو الإصدار مختلف
@@ -46,8 +47,10 @@ class OverlayHttpService {
     // نبضة كل 25 ثانية على اتصالات SSE — البروكسي بيقفل الاتصال الخامل
     // فالأحداث بتضيع في فجوة إعادة الاتصال (الأوفرلاي "مش بيسمع على طول").
     // الكومنت ": ka" مش حدث — الصفحات بتتجاهله والم proxies بتعده نشاط.
+    // عملاء WS ليهم نبضة protocol-ping لوحدهم فبنعديهم من غير كتابة.
     const ka = ": ka\n\n";
     const alive = (res) => {
+      if (res && res.__ws) return true;
       try {
         res.write(ka);
         return true;
@@ -63,6 +66,85 @@ class OverlayHttpService {
       }
       this.widgetClients = this.widgetClients.filter((c) => alive(c.res));
     }, 25000).unref();
+
+    // =========================================================================
+    // WebSocket للأوفرلاي والويدجت (/overlay-ws) — البديل اللحظي المستمر
+    // لـ SSE: قلب نابض protocol-ping كل 25 ثانية، الصفحة بتبعت ping كل 20
+    // ثانية فالاتصال عايش دايمًا ومش بيفصل، ولو فصل الصفحة بتعيد الاتصال
+    // لوحدها في ثانيتين من غير أي refresh.
+    // =========================================================================
+    this.wss = new WebSocketServer({ noServer: true });
+    this.wss.on("connection", (ws, req) => {
+      const url = new URL(req.url || "/", "http://x");
+      const token = String(url.searchParams.get("t") || "");
+      const ctx = this.resolveToken(token);
+      if (!ctx) {
+        try { ws.close(4001, "bad token"); } catch (e) {}
+        return;
+      }
+      ws.isAlive = true;
+      ws.on("pong", () => { ws.isAlive = true; });
+      const v = url.searchParams.get("v");
+      const screenNum = parseInt(url.searchParams.get("screen"), 10);
+      if (screenNum >= 1 && screenNum <= TOTAL_SCREENS) {
+        // عميل شاشة — يستقبل media/alerts/tts
+        if (v !== OVERLAY_PAGE_VERSION) {
+          try { ws.send(JSON.stringify({ type: "reload" })); } catch (e) {}
+        }
+        const key = String(screenNum);
+        let screens = this.screenClients.get(token);
+        if (!screens) {
+          screens = {};
+          this.screenClients.set(token, screens);
+        }
+        if (!screens[key]) screens[key] = [];
+        const wrapper = { __ws: ws };
+        screens[key].push(wrapper);
+        ws.on("close", () => {
+          const cur = this.screenClients.get(token);
+          if (!cur) return;
+          cur[key] = (cur[key] || []).filter((c) => c !== wrapper);
+          if ((cur[key] || []).length === 0) delete cur[key];
+        });
+      } else {
+        // عميل ويدجت — يستقبل stats/event/ext/test/config
+        if (v !== WIDGET_PAGE_VERSION) {
+          try { ws.send(JSON.stringify({ type: "reload" })); } catch (e) {}
+        }
+        const wrapper = { res: { __ws: ws }, token };
+        this.widgetClients.push(wrapper);
+        ws.on("close", () => {
+          this.widgetClients = this.widgetClients.filter((c) => c !== wrapper);
+        });
+      }
+    });
+    setInterval(() => {
+      this.wss.clients.forEach((ws) => {
+        if (ws.isAlive === false) {
+          try { ws.terminate(); } catch (e) {}
+          return;
+        }
+        ws.isAlive = false;
+        try { ws.ping(); } catch (e) {}
+      });
+    }, 25000).unref();
+  }
+
+  // ربط الترقية (upgrade) على سيرفر HTTP الباك — /overlay-ws بتاعتنا بس
+  // (مسار /ws بتاع التطبيق ليه معالجه في مكتبة ws نفسها)
+  attach(server) {
+    server.on("upgrade", (req, socket, head) => {
+      let pathname = "";
+      try {
+        pathname = new URL(req.url || "/", "http://x").pathname;
+      } catch (e) {
+        return;
+      }
+      if (pathname !== "/overlay-ws") return;
+      this.wss.handleUpgrade(req, socket, head, (ws) =>
+        this.wss.emit("connection", ws, req),
+      );
+    });
   }
 
   // ===== الأحداث الواردة من EventRunner/OverlayServer لحساب معين =====
@@ -141,10 +223,15 @@ class OverlayHttpService {
   }
 
   write(clients, payload) {
-    const chunk = "data: " + JSON.stringify(payload) + "\n\n";
-    return clients.filter((res) => {
+    const data = JSON.stringify(payload);
+    const chunk = "data: " + data + "\n\n";
+    return clients.filter((c) => {
       try {
-        res.write(chunk);
+        if (c.__ws) {
+          c.__ws.send(data); // عميل WebSocket — نفس الـ payload من غير غلاف SSE
+          return true;
+        }
+        c.write(chunk); // عميل SSE
         return true;
       } catch (e) {
         return false;
@@ -256,18 +343,29 @@ class OverlayHttpService {
           .replace(/</g, "\\u003c")
           .replace(/>/g, "\\u003e");
         html = html.replace("__INITIAL_CONFIG__", () => injected);
-        // صفحات الويدجت بتتصل بـ /widgets/stream من غير توكن ولا نسخة —
-        // OBS مش بيبعت Referer فـ _authed كانت بترفض الاتصال (Not found)
-        // والويدجت عمرها ما تستقبل حدث، وفحص النسخة كان يبعتهم في حلقة
-        // reload لا نهائية. الحقن بيحل الاتنين: توكن + نسخة في الرابط.
-        html = html
-          .split("/widgets/stream")
-          .join(
-            "/widgets/stream?t=" +
-              encodeURIComponent(String(token || "")) +
-              "&v=" +
-              WIDGET_PAGE_VERSION,
-          );
+        // صفحات الويدجت بتتصل بـ EventSource من غير توكن — OBS مش بيبعت
+        // Referer فكان الاتصال بيرفض ومبيوصلهاش أي حدث لايف. الحقن بيبدّل
+        // الاتصال بـ WebSocket (overlay-ws) جواه التوكن والنسخة، مع إعادة
+        // اتصال تلقائية كل ثانيتين ونبضة كل 20 ثانية — صفحة عايشة دايمًا.
+        const tokenJson = JSON.stringify(String(token || ""));
+        const pingJson = JSON.stringify('{"type":"ping"}');
+        const wsClient =
+          "(function(){var o={onmessage:null},w=null,s=false;" +
+          "function c(){if(s)return;" +
+          "try{w=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/overlay-ws?t='+" +
+          tokenJson +
+          "+'&v=" +
+          WIDGET_PAGE_VERSION +
+          "');}catch(e){setTimeout(c,2500);return;}" +
+          "w.onmessage=function(e){var m=null;try{m=JSON.parse(e.data);}catch(_){return;}if(m&&m.type==='reload'){location.reload();return;}if(o.onmessage&&m){o.onmessage({data:e.data});}};" +
+          "w.onclose=function(){if(!s)setTimeout(c,2000);};" +
+          "w.onerror=function(){try{w.close();}catch(_){}};}" +
+          "c();" +
+          "setInterval(function(){if(w&&w.readyState===1){try{w.send(" +
+          pingJson +
+          ");}catch(_){}}},20000);" +
+          "return o;})()";
+        html = html.split("new EventSource('/widgets/stream')").join(wsClient);
         res.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate" });
         return res.end(html);
       }
@@ -351,7 +449,47 @@ function mediaUrl(p) {
   return '/media/' + encodeURIComponent(p) + '?t=' + TOKEN;
 }
 
-const evtSource = new EventSource('/events/' + TOKEN + '/' + SCREEN_ID + '?v=' + PAGE_VERSION);
+// اتصال WebSocket مستمر — قلب نابض كل 25 ثانية من السيرفر و ping كل 20
+// ثانية من الصفحة، وإعادة اتصال تلقائية في ثانيتين لو انفصل — من غير
+// أي refresh والأحداث بتوصل لحظيًا.
+const evtSource = (function () {
+  var o = { onmessage: null };
+  var w = null;
+  var stopped = false;
+  function conn() {
+    if (stopped) return;
+    try {
+      w = new WebSocket(
+        (location.protocol === 'https:' ? 'wss://' : 'ws://') +
+          location.host +
+          '/overlay-ws?t=' +
+          encodeURIComponent(TOKEN) +
+          '&screen=' +
+          SCREEN_ID +
+          '&v=' +
+          PAGE_VERSION,
+      );
+    } catch (e) {
+      setTimeout(conn, 2500);
+      return;
+    }
+    w.onmessage = function (e) {
+      var m = null;
+      try { m = JSON.parse(e.data); } catch (_) { return; }
+      if (m && m.type === 'reload') { location.reload(); return; }
+      if (o.onmessage && m) o.onmessage({ data: e.data });
+    };
+    w.onclose = function () { if (!stopped) setTimeout(conn, 2000); };
+    w.onerror = function () { try { w.close(); } catch (_) {} };
+  }
+  conn();
+  setInterval(function () {
+    if (w && w.readyState === 1) {
+      try { w.send('{"type":"ping"}'); } catch (_) {}
+    }
+  }, 20000);
+  return o;
+})();
 evtSource.onmessage = (e) => {
   const data = JSON.parse(e.data);
   if (data.type === 'reload') { location.reload(); return; }

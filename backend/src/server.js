@@ -173,7 +173,23 @@ const server = http.createServer(app);
 // خلال دقيقة بيتقفل — ومفيش اتصال عايش بلا فايدة لأكتر من دقيقة وسكند
 server.headersTimeout = 60000;
 server.keepAliveTimeout = 65000;
-const wss = new WebSocketServer({ server, path: "/ws" });
+// noServer + معالج ترقية يدوي — عشان /overlay-ws (بتاعة الأوفرلاي) ليها
+// معالجها في overlayHttp.attach من غير ما الاتنين يتخانقوا على الترقية
+const wss = new WebSocketServer({ noServer: true });
+server.on("upgrade", (req, socket, head) => {
+  let pathname = "";
+  try {
+    pathname = new URL(req.url || "/", "http://x").pathname;
+  } catch (e) {
+    return;
+  }
+  if (pathname === "/ws") {
+    wss.handleUpgrade(req, socket, head, (ws) =>
+      wss.emit("connection", ws, req),
+    );
+  }
+  // /overlay-ws بيتعامل معاه overlayHttp.attach
+});
 
 const mediaStore = new MediaStore();
 const patreonSync = new PatreonSync();
@@ -291,6 +307,8 @@ const overlayHttp = new (require("./services/overlay-http"))({
   widgetsDir: path.join(__dirname, "widgets"),
 });
 overlayHttp.register(app);
+// WebSocket الأوفرلاي — /overlay-ws (صفحات الشاشات والويدجت لايف)
+overlayHttp.attach(server);
 
 // رفع الميديا للسحابة — قبل ميدل وير الـ JSON عشان الجسم الخام
 // (بيتحقق من الجلسة بنفسه لأنه متسجل قبل ميدل وير الحماية)

@@ -100,17 +100,94 @@ class LocalOverlayServer {
             });
             this.server.listen(0, "127.0.0.1", () => {
               this.port = this.server.address().port;
+              this._setupWs();
               resolve(this.port);
             });
           }
         });
         this.server.listen(port, "127.0.0.1", () => {
           this.port = port;
+          this._setupWs();
           resolve(this.port);
         });
       };
       create(DEFAULT_PORT, 20);
     });
+  }
+
+  // =========================================================================
+  // WebSocket للأوفرلاي والويدجت (/overlay-ws) — قلب نابض و إعادة اتصال
+  // تلقائية في الصفحات: اتصال عايش دايمًا والأحداث توصل لحظيًا من غير
+  // أي refresh. صفحة ويدجت بتاخد لقطة الإحصائيات الحالية على الاتصال.
+  // =========================================================================
+  _setupWs() {
+    if (this.wss || !this.server) return;
+    const { WebSocketServer } = require("ws");
+    this.wss = new WebSocketServer({ noServer: true });
+    this.wss.on("connection", (ws, req) => {
+      const url = new URL(req.url || "/", "http://x");
+      if (url.searchParams.get("t") !== this.token) {
+        try { ws.close(4001, "bad token"); } catch (e) {}
+        return;
+      }
+      ws.isAlive = true;
+      ws.on("pong", () => { ws.isAlive = true; });
+      const v = url.searchParams.get("v");
+      const screenNum = parseInt(url.searchParams.get("screen"), 10);
+      if (screenNum >= 1 && screenNum <= TOTAL_SCREENS) {
+        const key = String(screenNum);
+        const firstClient = (this.clients[key] || []).length === 0;
+        if (v !== OVERLAY_PAGE_VERSION) {
+          try { ws.send(JSON.stringify({ type: "reload" })); } catch (e) {}
+        }
+        const wrapper = { __ws: ws };
+        this.clients[key].push(wrapper);
+        if (firstClient) {
+          if (this.playing[key]) this.playing[key] = false;
+          if (this.queues[key] && this.queues[key].length > 0) {
+            setTimeout(() => this._playNext(key), 600);
+          }
+        }
+        ws.on("close", () => {
+          this.clients[key] = (this.clients[key] || []).filter(
+            (c) => c !== wrapper,
+          );
+        });
+      } else {
+        const wrapper = { __ws: ws };
+        this.widgetClients.push(wrapper);
+        if (this.currentStats) {
+          try {
+            ws.send(JSON.stringify({ type: "stats", stats: this.currentStats }));
+          } catch (e) {}
+        }
+        ws.on("close", () => {
+          this.widgetClients = this.widgetClients.filter((c) => c !== wrapper);
+        });
+      }
+    });
+    this.server.on("upgrade", (req, socket, head) => {
+      let pathname = "";
+      try {
+        pathname = new URL(req.url || "/", "http://x").pathname;
+      } catch (e) {
+        return;
+      }
+      if (pathname !== "/overlay-ws") return;
+      this.wss.handleUpgrade(req, socket, head, (ws) =>
+        this.wss.emit("connection", ws, req),
+      );
+    });
+    setInterval(() => {
+      this.wss.clients.forEach((ws) => {
+        if (ws.isAlive === false) {
+          try { ws.terminate(); } catch (e) {}
+          return;
+        }
+        ws.isAlive = false;
+        try { ws.ping(); } catch (e) {}
+      });
+    }, 25000).unref();
   }
 
   stop() {
@@ -281,10 +358,15 @@ class LocalOverlayServer {
   }
 
   _writeToClients(clients, payload) {
-    const chunk = "data: " + JSON.stringify(payload) + "\n\n";
-    return clients.filter((res) => {
+    const data = JSON.stringify(payload);
+    const chunk = "data: " + data + "\n\n";
+    return clients.filter((c) => {
       try {
-        res.write(chunk);
+        if (c.__ws) {
+          c.__ws.send(data); // عميل WebSocket
+          return true;
+        }
+        c.write(chunk); // عميل SSE
         return true;
       } catch (e) {
         return false;
@@ -511,6 +593,25 @@ class LocalOverlayServer {
         .replace(/</g, "\\u003c")
         .replace(/>/g, "\\u003e");
       html = html.replace("__INITIAL_CONFIG__", () => injected);
+      // اتصال الويدجت بـ WebSocket جواه التوكن — من غيره OBS (اللي مش
+      // بيبعت Referer) كان بيرفض الاتصال والويدجت ميستقبلش أي حدث لايف.
+      const tokenJson = JSON.stringify(String(this.token || ""));
+      const pingJson = JSON.stringify('{"type":"ping"}');
+      const wsClient =
+        "(function(){var o={onmessage:null},w=null,s=false;" +
+        "function c(){if(s)return;" +
+        "try{w=new WebSocket('ws://127.0.0.1:'+location.port+'/overlay-ws?t='+" +
+        tokenJson +
+        ");}catch(e){setTimeout(c,2500);return;}" +
+        "w.onmessage=function(e){var m=null;try{m=JSON.parse(e.data);}catch(_){return;}if(o.onmessage&&m){o.onmessage({data:e.data});}};" +
+        "w.onclose=function(){if(!s)setTimeout(c,2000);};" +
+        "w.onerror=function(){try{w.close();}catch(_){}};}" +
+        "c();" +
+        "setInterval(function(){if(w&&w.readyState===1){try{w.send(" +
+        pingJson +
+        ");}catch(_){}}},20000);" +
+        "return o;})()";
+      html = html.split("new EventSource('/widgets/stream')").join(wsClient);
       // OBS browser source مش بيبعت Referer — فاتصال SSE بتاع الويدجت كان
       // بيرفضه _authed (Not found) والويدجت عمرها ما تستقبل حدث لايف.
       // حقن التوكن في رابط الاتصال بيخلّي الاتصال ينجح من أي مكان.
@@ -654,7 +755,46 @@ function mediaUrl(p) {
   return '/media/' + encodeURIComponent(p) + '?t=' + TOKEN;
 }
 
-const evtSource = new EventSource('/events/' + TOKEN + '/' + SCREEN_ID + '?v=' + PAGE_VERSION);
+// اتصال WebSocket مستمر مع السيرفر المحلي — إعادة اتصال تلقائية ونبضة،
+// الأحداث توصل لحظيًا من غير أي refresh.
+const evtSource = (function () {
+  var o = { onmessage: null };
+  var w = null;
+  var stopped = false;
+  function conn() {
+    if (stopped) return;
+    try {
+      w = new WebSocket(
+        'ws://127.0.0.1:' +
+          location.port +
+          '/overlay-ws?t=' +
+          encodeURIComponent(TOKEN) +
+          '&screen=' +
+          SCREEN_ID +
+          '&v=' +
+          PAGE_VERSION,
+      );
+    } catch (e) {
+      setTimeout(conn, 2500);
+      return;
+    }
+    w.onmessage = function (e) {
+      var m = null;
+      try { m = JSON.parse(e.data); } catch (_) { return; }
+      if (m && m.type === 'reload') { location.reload(); return; }
+      if (o.onmessage && m) o.onmessage({ data: e.data });
+    };
+    w.onclose = function () { if (!stopped) setTimeout(conn, 2000); };
+    w.onerror = function () { try { w.close(); } catch (_) {} };
+  }
+  conn();
+  setInterval(function () {
+    if (w && w.readyState === 1) {
+      try { w.send('{"type":"ping"}'); } catch (_) {}
+    }
+  }, 20000);
+  return o;
+})();
 evtSource.onmessage = (e) => {
   const data = JSON.parse(e.data);
   if (data.type === 'reload') { location.reload(); return; }
