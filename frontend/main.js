@@ -584,7 +584,42 @@ function startLicenseWatchdog() {
   }, 150000);
 }
 
-// التحديثات موقوفة بالكامل في هذا البناء — لا فحص ولا رسائل ولا تثبيت تلقائي.
+// التحديث التلقائي — فحص عند التشغيل وكل 6 ساعات، تنزيل صامت، والتثبيت
+// عند إغلاق البرنامج (أو فورًا لو المستخدم اختار). أي فشل بيتعمّى بأمان.
+function startAutoUpdate() {
+  try {
+    const { autoUpdater } = require("electron-updater");
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    const check = () => autoUpdater.checkForUpdates().catch(() => {});
+    check();
+    setInterval(check, 6 * 60 * 60 * 1000);
+    autoUpdater.on("update-downloaded", () => {
+      try {
+        dialog
+          .showMessageBox(mainWindow, {
+            type: "info",
+            title: "تحديث جديد",
+            message: "فيه نسخة جديدة من ELDALY STREAM اتنزلت.",
+            detail:
+              'هتتثبت تلقائيًا أول ما تقفل البرنامج — أو دوس "تحديث الآن" عشان تتقفل وتتثبت حالاً.',
+            buttons: ["تحديث الآن", "لما أقفل البرنامج"],
+            defaultId: 0,
+            cancelId: 1,
+            noLink: true,
+          })
+          .then(({ response }) => {
+            if (response === 0) {
+              try {
+                autoUpdater.quitAndInstall(false, true);
+              } catch (e) {}
+            }
+          })
+          .catch(() => {});
+      } catch (e) {}
+    });
+  } catch (e) {}
+}
 
 // نبضة كل 10 دقايق — تمنع سيرفر Render من النوم (free tier بينام بعد 15 دقيقة
 // سكون). النبضة الأولى فور التشغيل بتصرّي السيرفر فأول الاتصالات بتبقى أسرع.
@@ -615,6 +650,7 @@ app.whenReady().then(async () => {
   connectBackendWebSocket();
   startLicenseWatchdog();
   setupIPC();
+  startAutoUpdate();
 
   // أي تنزيل من التطبيق (زي ملف النسخة الاحتياطية) يفتح نافذة حفظ عادية
   // — المستخدم يختار المكان بنفسه بدل ما ينزل تلقائياً في Downloads
