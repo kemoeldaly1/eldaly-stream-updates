@@ -211,8 +211,15 @@ class LocalOverlayServer {
   // =========================================================================
   _enqueueOrPlay(screen, item) {
     if (!this.queues[screen]) this.queues[screen] = [];
-    // سقف للطابور — لو OBS مش متوصل طويلًا الطابور مش هينمو بلا حدود (تسريب ذاكرة)
     const MAX_QUEUE = 50;
+    // الأصوات بتتشغل فورًا — مش بتستنى ورا فيديو شغال ولا تشغيل عالق.
+    // الفيديو بس اللي بيتطابور عشان فيديو ميقطعش على فيديو تاني.
+    if (item && item.type === "audio") {
+      this._broadcast(screen, item);
+      this.onQueueUpdate(this.getQueueStatus());
+      return;
+    }
+    // سقف للطابور — لو OBS مش متوصل طويلًا الطابور مش هينمو بلا حدود (تسريب ذاكرة)
     if (this.queues[screen].length >= MAX_QUEUE) this.queues[screen].shift();
     this.queues[screen].push(item);
     if ((this.clients[screen] || []).length > 0) {

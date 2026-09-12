@@ -43,6 +43,26 @@ class OverlayHttpService {
         if (now - e.start > 60000) this._rate.delete(ip);
       }
     }, 60000).unref();
+    // نبضة كل 25 ثانية على اتصالات SSE — البروكسي بيقفل الاتصال الخامل
+    // فالأحداث بتضيع في فجوة إعادة الاتصال (الأوفرلاي "مش بيسمع على طول").
+    // الكومنت ": ka" مش حدث — الصفحات بتتجاهله والم proxies بتعده نشاط.
+    const ka = ": ka\n\n";
+    const alive = (res) => {
+      try {
+        res.write(ka);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    };
+    setInterval(() => {
+      for (const screens of this.screenClients.values()) {
+        for (const k of Object.keys(screens)) {
+          screens[k] = (screens[k] || []).filter(alive);
+        }
+      }
+      this.widgetClients = this.widgetClients.filter((c) => alive(c.res));
+    }, 25000).unref();
   }
 
   // ===== الأحداث الواردة من EventRunner/OverlayServer لحساب معين =====
@@ -192,10 +212,10 @@ class OverlayHttpService {
       res.writeHead(200, sseHeaders);
       this.widgetClients.push({ res, token });
       res.write(":ok\n\n");
+      // فحص واحد بس — صفحات الويدجت بتمرر نسخة الويدجت. الفحص التاني
+      // (بتاع صفحة الأوفرلاي) كان بيضمن إن أي صفحة تدخل حلقة reload
+      // لا نهائية لأنها مستحيل تطابق الثابتين مع بعض.
       if (req.query.v !== WIDGET_PAGE_VERSION) {
-        res.write("data: " + JSON.stringify({ type: "reload" }) + "\n\n");
-      }
-      if (req.query.v !== OVERLAY_PAGE_VERSION) {
         res.write("data: " + JSON.stringify({ type: "reload" }) + "\n\n");
       }
       req.on("close", () => {
@@ -236,6 +256,13 @@ class OverlayHttpService {
           .replace(/</g, "\\u003c")
           .replace(/>/g, "\\u003e");
         html = html.replace("__INITIAL_CONFIG__", () => injected);
+        // صفحات الويدجت بتتصل بـ /widgets/stream من غير رقم نسخة — من غير
+        // الحقن ده السيرفر بيبعت reload في كل اتصال والصفحة تدخل حلقة
+        // reload لا نهائية وعمرها ما تعرض حاجة. الحقن بيخلي أول إعادة
+        // تحميل بعد أي تحديث تثبّت النسخة الصحيحة وتبطل الحلقة لوحدها.
+        html = html
+          .split("/widgets/stream")
+          .join("/widgets/stream?v=" + WIDGET_PAGE_VERSION);
         res.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate" });
         return res.end(html);
       }
