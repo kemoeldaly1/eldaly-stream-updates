@@ -1,0 +1,30 @@
+# ==========================================================================
+# ELDALY STREAM — تشغيل الباك اند على Oracle Always Free
+# الملف ده بيتحط جوه فولدر eldaly-cloud-upload على السيرفر
+# (نفس حزمة الرفع: Dockerfile + backend/ + docker-compose.yml ده)
+# ==========================================================================
+services:
+  eldaly-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eldaly-backend
+    restart: unless-stopped
+    # السيرفر نفسه بيسمع على كل الواجهات جوه الحاوية (HOST=0.0.0.0 في Dockerfile)
+    # البورت مربوط على 3000 — Caddy بيوصل له من بره بـ HTTPS
+    environment:
+      NODE_ENV: production
+      FIREBASE_WEB_API_KEY: ${FIREBASE_WEB_API_KEY:?ضيف FIREBASE_WEB_API_KEY في ملف .env}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-eldaly-stream}
+      GITHUB_MEDIA_TOKEN: ${GITHUB_MEDIA_TOKEN:-}
+      GITHUB_MEDIA_REPO: ${GITHUB_MEDIA_REPO:-kemoeldaly1/eldaly-media}
+      BACKUP_SECRET: ${BACKUP_SECRET:-}
+      PUBLIC_API_KEY: ${PUBLIC_API_KEY:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+    ports:
+      - "3000:3000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

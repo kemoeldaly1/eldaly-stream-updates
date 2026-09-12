@@ -11,8 +11,11 @@ repomix-output.xml
 .vscode/
 
 # ======= ملفات حساسة / ثنائية لا تُنشر =======
+# بيانات التشغيل (كاش حسابات/إعدادات) — بس كود الهدايا الافتراضي لازم يترفع
 data/
-!backend/data/gifts.json
+!backend/data/
+backend/data/*
+!backend/data/gifts.js
 *.rar
 *.7z
 *.exe
@@ -24,3 +27,7 @@ license*.json
 *.pem
 *.key
 *.p12
+
+# ======= حزم التنظيم المحلية =======
+_archive/
+eldaly-cloud-upload/

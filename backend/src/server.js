@@ -8,21 +8,17 @@ const { promisify } = require("util");
 const express = require("express");
 const { WebSocketServer, WebSocket } = require("ws");
 
-const StoreService = require("./services/store");
-const LicenseService = require("./services/license");
-const TikTokService = require("./services/tiktok");
-const OverlayServer = require("./services/overlay-server");
-const OverlayHttpService = require("./services/overlay-http");
+const { AccountRegistry } = require("./services/accounts");
 const MediaStore = require("./services/media-store");
-const songreq = require("./services/soundcloud");
 const PatreonSync = require("./services/patreon-sync");
-const EventRunner = require("./services/event-runner");
 const defaultGifts = require("../data/gifts");
 const googleTtsApi = require("google-tts-api");
 const execFileAsync = promisify(execFile);
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "::"; // :: يقبل IPv4 + IPv6 (localhost بيتحل أحيانًا لـ ::1)
+// سقف إجمالي للاتصالات — ارتفع مع تعدد الحسابات (كل حساب ليه عملاؤه)
+const WS_MAX_CLIENTS = parseInt(process.env.WS_MAX_CLIENTS || "1500", 10);
 
 // مفتاح Firebase لازم يكون في البيئة — من غيره الترخيص كله واقف
 if (!process.env.FIREBASE_WEB_API_KEY) {
@@ -95,8 +91,8 @@ app.use((req, res, next) => {
 });
 
 // حماية من brute-force وإغراق السيرفر — بدون مكتبات خارجية
-// العد على IP المستخدم الحقيقي: خلف بروكسي Render بناخد آخر IP في
-// X-Forwarded-For (Render بيضيف الـ IP الحقيقي في آخر السلسلة، فمش قابل للتزوير)،
+// العد على IP المستخدم الحقيقي: خلف بروكسي (Render/ClawCloud) بناخد آخر IP في
+// X-Forwarded-For (بيضاف الـ IP الحقيقي في آخر السلسلة، فمش قابل للتزوير)،
 // ولو مفيش بروكسي نرجع لعنوان السوكيت مباشرة
 function clientIp(req) {
   const xff = req.headers["x-forwarded-for"];
@@ -159,7 +155,7 @@ const sessionRateLimiter = makeRateLimiter(
   QUARTER_HOUR_MS,
   "محاولات كتير — البرنامج هيعيد المحاولة لوحده بعد شوية",
 );
-// درع عام ضد إغراق السيرفر: أي مسار /api عدا /api/health (فحوصات Render والنبضة)
+// درع عام ضد إغراق السيرفر: أي مسار /api عدا /api/health (فحوصات الاستضافة والنبضة)
 // 600/ربع ساعة لكل IP — بستوعب البرامج القديمة اللي بتعمل polling سريع
 // (3 ثواني = 300/ربع ساعة) ويفضل قاتل حقيقي لأي محاولة إغراق
 const apiUmbrellaLimiter = makeRateLimiter(
@@ -179,19 +175,120 @@ server.headersTimeout = 60000;
 server.keepAliveTimeout = 65000;
 const wss = new WebSocketServer({ server, path: "/ws" });
 
-const store = new StoreService();
-const licenseService = new LicenseService(store);
-const tiktokService = new TikTokService();
-const overlayServer = new OverlayServer(store);
 const mediaStore = new MediaStore();
 const patreonSync = new PatreonSync();
 
-// ===== الأوفرلاي السحابي: OBS بيحمّل الصفحات من السيرفر مباشرة بتوكن الحساب =====
-let currentOverlayToken = null; // بتتحدّث عند كل login/register/restore
-const overlayHttp = new OverlayHttpService({
-  store,
+// ═══════════════════════════════════════════════════════════════════════════
+// النظام متعدد الحسابات: سياق كامل لكل حساب عميل (Store/License/TikTok/
+// EventRunner/Overlay/Songs/WS) — الحسابات مستقلة تمامًا فيشتغل أكتر من
+// عميل بإيميلات مختلفة في نفس اللحظة من غير ما يلمسوا بعض.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// إعدادات الأغاني الافتراضية — لكل حساب نسخته (بتتحفظ في store الحساب)
+const DEFAULT_SONG_SETTINGS = {
+  enabled: true,
+  playEnabled: true,
+  playCost: 0,
+  skipEnabled: true,
+  skipCost: 1,
+  allowSkipRequested: true,
+  allowExplicit: true,
+  maxQueue: 20,
+  maxQueuePerUser: 2,
+  overlayPermanent: true,
+  volume: 80,
+  fallbackUrl: "",
+  allowedFor: { all: true, subs: false, mods: true },
+  pointsPerMessage: 1,
+};
+function songSettings(ctx) {
+  return { ...DEFAULT_SONG_SETTINGS, ...(ctx.store.get("songs.settings") || {}) };
+}
+function saveSongSettings(ctx, patch) {
+  const merged = { ...songSettings(ctx), ...(patch || {}) };
+  ctx.store.set("songs.settings", merged);
+  return merged;
+}
+
+// أوامر طلبات الأغاني من شات التيك توك — بتشتغل على طابور صاحب البث نفسه
+function handleSongCommands(ctx, username, badges, content) {
+  const sr = songSettings(ctx);
+  if (!sr.enabled) return;
+  ctx.songs.earnPoints(username); // كسب نقاط الولاء من التفاعل
+  const text = String(content || "").trim();
+  const lower = text.toLowerCase();
+  const badgeSet = new Set(badges || []);
+  const isMod = badgeSet.has("moderator") || badgeSet.has("staff");
+  const isBroadcaster = badgeSet.has("broadcaster");
+  const isSub = badgeSet.has("subscriber");
+  const canUse =
+    isBroadcaster || sr.allowedFor?.all || (sr.allowedFor?.subs && isSub) || (sr.allowedFor?.mods && isMod);
+  const argOf = (...cmds) => {
+    for (const c of cmds) {
+      if (lower === c) return "";
+      if (lower.startsWith(c + " ")) return text.slice(c.length + 1).trim();
+    }
+    return null;
+  };
+  const songFeed = (user, msg) =>
+    ctx.broadcastRaw({ topic: "event", event: { type: "song", text: user + " — " + msg } });
+  const playArg = argOf("!play", "!song", "!request");
+  if (playArg !== null) {
+    if (!sr.playEnabled) return songFeed(username, "طلب الأغاني مقفول حالياً");
+    if (!canUse) return songFeed(username, "أمر طلب الأغاني مش متاح لحسابك");
+    if (!playArg) return songFeed(username, "اكتب اسم الأغنية أو لينك ساوند كلاود بعد الأمر");
+    ctx.songs
+      .addTrack(username, playArg)
+      .then((t) => songFeed(username, "تمت الإضافة: " + t.title + " - " + t.artist))
+      .catch((e) => songFeed(username, e.message));
+    return;
+  }
+  if (argOf("!skip") !== null) {
+    if (!sr.skipEnabled) return songFeed(username, "أمر التخطي مقفول");
+    if (!canUse) return songFeed(username, "أمر التخطي مش متاح لحسابك");
+    const r = ctx.songs.skip(username, false);
+    return songFeed(username, r.ok ? "تم تخطي" : r.error);
+  }
+  if (lower === "!revoke") {
+    const r = ctx.songs.revoke(username);
+    return songFeed(username, r.ok ? "تم إلغاء: " + r.removed.title : r.error);
+  }
+  if (lower === "!queue" || lower === "!songqueue") {
+    const st = ctx.songs.queueState();
+    const lines = [];
+    if (st.current) lines.push("الآن: " + st.current.title + " - " + st.current.artist);
+    st.queue.slice(0, 5).forEach((q, i) => lines.push(i + 1 + ". " + q.title + " - " + q.artist + " (" + q.requestedBy + ")"));
+    return songFeed(username, lines.length ? lines.join(" | ") : "الطابور فاضي — ابعت !play لينك أو اسم أغنية");
+  }
+  if (lower === "!points") {
+    return songFeed(username, "نقاطك: " + ctx.songs.getPoints(username));
+  }
+}
+
+const accounts = new AccountRegistry({
+  // أحداث الأوفرلاي/الويدجت → SSE لصفحات OBS بتوكن الحساب
+  onOverlayEvent: (ctx, type, payload) => overlayHttp.handleEvent(ctx, type, payload),
+  // مواضيع الأغاني → SSE كمان
+  onSongEvent: (ctx, obj) => overlayHttp.handleSongEvent(ctx, obj),
+  // شات التيك توك → أوامر الأغاني على طابور صاحب البث
+  onChat: (ctx, c) => handleSongCommands(ctx, c.user || c.uniqueId, c.badges || [], c.comment),
+  // إعدادات الأغاني من بيانات الحساب نفسه
+  getSongSettings: (ctx) => ({ songrequests: songSettings(ctx) }),
+  // الحساب اتقفل نهائيًا — نظّف عملاء SSE بتوعه ولو كان حساب المالك
+  // أوقف مزامنة باتريون
+  onAccountClosed: (ctx) => {
+    if (ctx.overlayToken) overlayHttp.dropToken(ctx.overlayToken);
+    if (patreonSync.isOwner && patreonSync.isOwner(ctx.email)) {
+      try { patreonSync.stop(); } catch (e) {}
+    }
+  },
+});
+
+// ===== الأوفرلاي السحابي: OBS بيحمّل الصفحات من السيرفر بتوكن الحساب =====
+// التوكن بيحدد الحساب — كل أحداث SSE بتروح لصفحات صاحبها بس
+const overlayHttp = new (require("./services/overlay-http"))({
+  resolveToken: (t) => accounts.getByOverlay(t),
   widgetsDir: path.join(__dirname, "widgets"),
-  getToken: () => currentOverlayToken,
 });
 overlayHttp.register(app);
 
@@ -216,14 +313,17 @@ app.post(
     try {
       if (!mediaRateGate(req, res)) return;
       const sess = req.headers["x-app-session"];
+      const ctx = accounts.getBySession(sess);
       if (
         !sess ||
-        !appSession.token ||
-        !safeEqual(sess, appSession.token) ||
-        (appSession.hwid && !safeEqual(req.headers["x-app-hwid"], appSession.hwid))
+        !ctx ||
+        !ctx.session ||
+        !safeEqual(sess, ctx.session.token) ||
+        (ctx.session.hwid && !safeEqual(req.headers["x-app-hwid"], ctx.session.hwid))
       ) {
         return res.status(401).json({ ok: false, error: "unauthorized" });
       }
+      ctx.touch();
       if (!mediaStore.enabled) {
         return res.status(503).json({ ok: false, error: "media storage not configured" });
       }
@@ -234,143 +334,8 @@ app.post(
       console.error("[MediaUpload]", err.message);
       res.status(500).json({ ok: false, error: "upload failed" });
     }
-  }
+  },
 );
-
-const eventRunner = new EventRunner(
-  store,
-  overlayServer,
-  tiktokService,
-  licenseService,
-);
-
-// مزامنة البيانات مع قاعدة البيانات السحابية باستخدام توكن المستخدم
-store.getToken = () => licenseService.getIdToken();
-
-// جلسة التطبيق: كل API (عدا المسارات العامة) محتاجة التوكن ده في هيدر
-// x-app-session — بيتولد بعد تسجيل الدخول وبيتبعت للفرونت في الرد.
-// الجلسة مربوطة كمان بجهاز (hwid) — التوكن المسروح من أي جهاز تاني مبيشتغلش.
-let appSession = { token: null, email: null, hwid: null, lastSeen: 0 };
-// حماية التشغيل من مكانين: آخر جهاز فعّال هو المسيطر بالحساب،
-// والجهاز اللي اتطرد بيتعلم هنا عشان يترفض فوراً (403 kicked) بدل ما
-// يرجع يعمل restore ويسرق الجلسة تاني (منع الـ ping-pong)
-let kickedSession = null; // { token, at }
-let connectOwner = null; // { hwid, email } — مين شايل كونكت التيك توك الحالي
-const KICK_WINDOW_MS = 10 * 60 * 1000; // المطروود يترفض لمدة 10 دقايق
-const ACTIVE_WINDOW_MS = 90 * 1000; // الجهاز النشيط في آخر 90 ثانية = مسيطر
-
-// ═══ فرض الحالة الرسمية للحساب على الجلسة الشغالة ═══
-// الحظر/حظر الجهاز/انتهاء الاشتراك مكانش بيتفعل غير عند login/restore —
-// يعني عميل معدّل شايل توكن صحيح كان بيكمل شغال بعد الحظر! دلوقتي السيرفر
-// بيجلّب الحالة كل 60 ثانية وبيفرضها على كل طلب (حظر = قفل فوري شامل)
-let sessionUserCache = { at: 0, email: null, data: null };
-let sessionUserRefreshing = false;
-async function refreshSessionUserDoc() {
-  if (sessionUserRefreshing || !appSession.email) return;
-  sessionUserRefreshing = true;
-  try {
-    const data = await licenseService.refreshSessionUser();
-    if (data && data.user) sessionUserCache = { at: Date.now(), email: appSession.email, data };
-  } catch (e) {} finally { sessionUserRefreshing = false; }
-}
-function enforceSessionUser(res) {
-  const data = sessionUserCache.email === appSession.email ? sessionUserCache.data : null;
-  if (!data) return true;
-  const kill = (reason) => {
-    try { tiktokService.disconnect(); } catch (e) {}
-    clearAppSession();
-    res.status(403).json({ ok: false, kicked: true, reason });
-    return false;
-  };
-  if (data.hwidBanned) return kill("الجهاز محظور من الإدارة");
-  const u = data.user;
-  if (u && (u.banned || u.deleted)) return kill("الحساب محظور من الإدارة");
-  return true;
-}
-
-function mintAppSession(email, hwid) {
-  // عزل نظام الأغاني: كل حساب ليه طابور وتاريخ منفصلين
-  if (typeof songreq !== "undefined") songreq.setAccount(email);
-  const clean = String(email).toLowerCase();
-  const device = String(hwid || "");
-  // نفس الحساب + نفس الجهاز = نفس الجلسة (عشان الـ watchdog كل 150 ثانية
-  // ميلفّش التوكن ويقطع الـ WebSocket شغال)
-  if (
-    appSession.token &&
-    appSession.email === clean &&
-    appSession.hwid === device
-  ) {
-    appSession.lastSeen = Date.now();
-    return appSession.token;
-  }
-  // الأول على الشجرة: الجهاز النشيط بيكمّل شغال ومش بيتطرد أبدًا —
-  // أي جهاز تاني بيترفض بدل ما يسرق الجلسة ويقفل البرنامج في وش العميل
-  if (activeSessionOnOtherDevice(clean, device)) return null;
-  // الجهاز الشغال قام بدري/سايب (مفيش lastSeen حديث)؟ الجهاز الجديد ياخد الجلسة
-  if (appSession.token && appSession.email === clean && appSession.hwid !== device) {
-    kickedSession = { token: appSession.token, at: Date.now() };
-    for (const client of wsClients) {
-      if (client._appSession === appSession.token) {
-        try {
-          client.close(4401, "opened elsewhere");
-        } catch (e) {}
-      }
-    }
-    if (connectOwner && connectOwner.hwid === appSession.hwid) {
-      try {
-        tiktokService.disconnect();
-      } catch (e) {}
-      connectOwner = null;
-      broadcastToWsClients("connection-status", { status: "disconnected" });
-    }
-  }
-  appSession = {
-    token: crypto.randomBytes(24).toString("hex"),
-    email: clean,
-    hwid: device,
-    lastSeen: Date.now(),
-  };
-  return appSession.token;
-}
-
-// فيه جهاز نشيط دلوقتي شايل الجلسة على نفس الحساب من جهاز مختلف؟
-// النشيط = بيبعت طلبات (lastSeen أحدث من ACTIVE_WINDOW_MS)
-function activeSessionOnOtherDevice(email, hwid) {
-  return !!(
-    appSession.token &&
-    appSession.email === String(email || "").toLowerCase() &&
-    appSession.hwid !== String(hwid || "") &&
-    Date.now() - (appSession.lastSeen || 0) < ACTIVE_WINDOW_MS
-  );
-}
-
-// العملية الحالية فيها Store/License/TikTok واحد فقط؛ السماح لحساب مختلف
-// باستبدال الجلسة هنا يخلط بيانات الحسابين. نرفضه بدل استبدال الحالة بصمت.
-function activeSessionOnOtherAccount(email) {
-  const clean = String(email || "").trim().toLowerCase();
-  return !!(
-    appSession.token &&
-    appSession.email &&
-    clean &&
-    appSession.email !== clean
-  );
-}
-
-function clearAppSession() {
-  const old = appSession.token;
-  appSession = { token: null, email: null, hwid: null, lastSeen: 0 };
-  connectOwner = null;
-  if (old) {
-    // اقفل أي WebSocket فاتح بالجلسة دي
-    for (const client of wsClients) {
-      if (client._appSession === old) {
-        try {
-          client.close(4401, "session ended");
-        } catch (e) {}
-      }
-    }
-  }
-}
 
 const PUBLIC_API_PATHS = [
   "/api/health",
@@ -392,22 +357,23 @@ function isPublicApiPath(p) {
     p.startsWith("/api/scoreboard")
   );
 }
+
 // ======== حماية مسارات الأغاني ========
 // مش عامة زي زمان — بتقبل واحدة من اتنين:
 //   1) جلسة التطبيق (x-app-session + hwid) زي باقي الـ API — لوحة التحكم
 //   2) توكن الأوفرلاي بتاع الحساب (x-overlay-token أو ?t=) — صفحات الويدجت في OBS
 // العداد (40/ربع ساعة) على طلبات التوكن فقط — لأن برنامج الديسكتوب بيستفتح
 // الحالة كل شوية لوحده فلو اتحسب هيضرب الحد ويخلي الطابور يختفي ويظهر.
-// جلسة التطبيق تعدّي من العداد (والدرع العام 300/ربع ساعة يحمي برضه).
+// جلسة التطبيق تعدّي من العداد (والدرع العام 600/ربع ساعة يحمي برضه).
 app.use("/api/songs", (req, res, next) => {
   const header = req.headers["x-app-session"];
   const device = req.headers["x-app-hwid"];
-  const sessionOk =
-    !!header &&
-    !!appSession.token &&
-    safeEqual(header, appSession.token) &&
-    (!appSession.hwid || safeEqual(device, appSession.hwid));
-  if (sessionOk) return next();
+  const ctx = accounts.getBySession(header);
+  if (ctx && ctx.sessionOk(header, device)) {
+    req.ctx = ctx;
+    ctx.touch();
+    return next();
+  }
   return songsLimiter(req, res, next);
 });
 const songsLimiter = makeRateLimiter(
@@ -416,192 +382,95 @@ const songsLimiter = makeRateLimiter(
   "محاولات كتير — استنى شوية وحاول تاني",
 );
 
-function overlayTokenOk(req) {
-  const token = String(req.headers["x-overlay-token"] || req.query.t || "");
-  return (
-    !!currentOverlayToken && !!token && safeEqual(token, currentOverlayToken)
-  );
-}
-
 app.use((req, res, next) => {
   if (!req.path.startsWith("/api") || isPublicApiPath(req.path)) return next();
   const header = req.headers["x-app-session"];
   const device = req.headers["x-app-hwid"];
+  const ctx = accounts.getBySession(header);
   // الجهاز المطروود (اتخذ مكانه جهاز تاني): رفض فوري بأمر kicked —
   // التطبيق عنده يفهم ويقفل كل حاجة بدل ما يحاول يعمل restore ويسرق الجلسة
-  if (
-    header &&
-    kickedSession &&
-    kickedSession.token === header &&
-    Date.now() - kickedSession.at < KICK_WINDOW_MS
-  ) {
+  if (ctx && header && ctx.isKicked(header)) {
     return res.status(403).json({
       ok: false,
       kicked: true,
       reason: "الحساب مفتوح على جهاز آخر — اقفل الجهاز التاني أو استنى دقيقة",
     });
   }
-  const sessionOk =
-    !!header &&
-    !!appSession.token &&
-    safeEqual(header, appSession.token) &&
-    (!appSession.hwid || safeEqual(device, appSession.hwid));
-  if (sessionOk) {
-    appSession.lastSeen = Date.now();
-    // فرض الحالة الرسمية: حظر الحساب/الجهاز أو انتهاء الاشتراك بيتفعل خلال ≤ دقيقة
-    if (Date.now() - sessionUserCache.at > 60000) refreshSessionUserDoc();
-    if (!enforceSessionUser(res)) return;
+  if (ctx && ctx.sessionOk(header, device)) {
+    req.ctx = ctx;
+    ctx.touch();
+    // فرض الحالة الرسمية: حظر الحساب/الجهاز بيتفعل خلال ≤ دقيقة
+    if (Date.now() - ctx.userCache.at > 60000) ctx.refreshUserDoc();
+    if (!ctx.enforceUser(res)) return;
     return next();
   }
   // مسارات الأغاني بس اللي بتقبل توكن الأوفرلاي كبديل للجلسة
-  if (req.path.startsWith("/api/songs/") && overlayTokenOk(req)) return next();
+  if (req.path.startsWith("/api/songs/")) {
+    const token = String(req.headers["x-overlay-token"] || req.query.t || "");
+    const octx = accounts.getByOverlay(token);
+    if (octx && octx.overlayToken && safeEqual(token, octx.overlayToken)) {
+      req.ctx = octx;
+      return next();
+    }
+  }
   return res.status(401).json({ ok: false, reason: "unauthorized" });
 });
 
-// WebSocket clients tracking
+// WebSocket clients tracking — عام للحماية والنبض؛ التوجيه لكل حساب في ctx
 const wsClients = new Set();
-// آخر وقت اتبعتت فيه إشارة "الأغنية خلصت" — لحماية التكرار (شوف معالج الضيوف)
-let lastTrackEndedAt = 0;
 
-// ===== نظام طلبات الأغاني — ساوند كلاود =====
-const DEFAULT_SONG_SETTINGS = {
-  enabled: true,
-  playEnabled: true,
-  playCost: 0,
-  skipEnabled: true,
-  skipCost: 1,
-  allowSkipRequested: true,
-  allowExplicit: true,
-  maxQueue: 20,
-  maxQueuePerUser: 2,
-  overlayPermanent: true,
-  volume: 80,
-  fallbackUrl: "",
-  allowedFor: { all: true, subs: false, mods: true },
-  pointsPerMessage: 1,
-};
-function songSettings() {
-  return { ...DEFAULT_SONG_SETTINGS, ...(store.get("songs.settings") || {}) };
-}
-function saveSongSettings(patch) {
-  const merged = { ...songSettings(), ...(patch || {}) };
-  store.set("songs.settings", merged);
-  return merged;
-}
-function songFeed(username, text) {
-  broadcastRaw({ topic: "event", event: { type: "song", text: username + " — " + text } });
-}
-// بث الأغاني للاتنين في نفس اللحظة:
-//   broadcastRaw → WS (صفحة تحكم الأغاني في OBS)
-//   overlayHttp.handleSongEvent → SSE (مشغل overlay-music السحابي)
-// كده الصوت/المقاس/الطابور بيتنفذوا لحظيًا على كل الصفحات من غير polling
-function broadcastSongs(obj) {
-  broadcastRaw(obj);
-  overlayHttp.handleSongEvent(obj);
-}
-songreq.init(broadcastSongs, () => ({ songrequests: songSettings() }));
-
-function handleSongCommands(username, badges, content) {
-  const sr = songSettings();
-  if (!sr.enabled) return;
-  songreq.earnPoints(username); // كسب نقاط الولاء من التفاعل
-  const text = String(content || "").trim();
-  const lower = text.toLowerCase();
-  const badgeSet = new Set(badges || []);
-  const isMod = badgeSet.has("moderator") || badgeSet.has("staff");
-  const isBroadcaster = badgeSet.has("broadcaster");
-  const isSub = badgeSet.has("subscriber");
-  const canUse =
-    isBroadcaster || sr.allowedFor?.all || (sr.allowedFor?.subs && isSub) || (sr.allowedFor?.mods && isMod);
-  const argOf = (...cmds) => {
-    for (const c of cmds) {
-      if (lower === c) return "";
-      if (lower.startsWith(c + " ")) return text.slice(c.length + 1).trim();
+function attachGuestClient(ws, req) {
+  // زائر ويدجت الأغاني (songs-page في OBS) — بياخد بث الأغاني فقط
+  // لو معاه توكن أوفرلاي مطابق لحساب، ومينفعش يبعت غير إشارة انتهاء أغنية
+  // وبرضه بتوكن صالح
+  ws._guest = true;
+  ws.isAlive = true;
+  ws.on("pong", () => {
+    ws.isAlive = true;
+  });
+  let overlayToken = "";
+  try {
+    overlayToken = new URL(req.url, "http://x").searchParams.get("overlay") || "";
+  } catch (e) {}
+  ws._overlayToken = overlayToken;
+  const ctx = accounts.getByOverlay(overlayToken);
+  if (ctx) ctx.wsClients.add(ws);
+  wsClients.add(ws);
+  // قفل سبام الرسائل: أكتر من 30 رسالة في 10 ثواني = اتصال خبيث، بيتقفل
+  let msgWin = Date.now();
+  let msgCount = 0;
+  ws.on("message", (raw) => {
+    const now = Date.now();
+    if (now - msgWin > 10000) { msgWin = now; msgCount = 0; }
+    msgCount++;
+    if (msgCount > 30) {
+      try { ws.close(1008, "message flood"); } catch (e) {}
+      return;
     }
-    return null;
-  };
-  const playArg = argOf("!play", "!song", "!request");
-  if (playArg !== null) {
-    if (!sr.playEnabled) return songFeed(username, "طلب الأغاني مقفول حالياً");
-    if (!canUse) return songFeed(username, "أمر طلب الأغاني مش متاح لحسابك");
-    if (!playArg) return songFeed(username, "اكتب اسم الأغنية أو لينك ساوند كلاود بعد الأمر");
-    songreq
-      .addTrack(username, playArg)
-      .then((t) => songFeed(username, "تمت الإضافة: " + t.title + " - " + t.artist))
-      .catch((e) => songFeed(username, e.message));
-    return;
-  }
-  if (argOf("!skip") !== null) {
-    if (!sr.skipEnabled) return songFeed(username, "أمر التخطي مقفول");
-    if (!canUse) return songFeed(username, "أمر التخطي مش متاح لحسابك");
-    const r = songreq.skip(username, false);
-    return songFeed(username, r.ok ? "تم تخطي الأغنية" : r.error);
-  }
-  if (lower === "!revoke") {
-    const r = songreq.revoke(username);
-    return songFeed(username, r.ok ? "تم إلغاء: " + r.removed.title : r.error);
-  }
-  if (lower === "!queue" || lower === "!songqueue") {
-    const st = songreq.queueState();
-    const lines = [];
-    if (st.current) lines.push("الآن: " + st.current.title + " - " + st.current.artist);
-    st.queue.slice(0, 5).forEach((q, i) => lines.push(i + 1 + ". " + q.title + " - " + q.artist + " (" + q.requestedBy + ")"));
-    return songFeed(username, lines.length ? lines.join(" | ") : "الطابور فاضي — ابعت !play لينك أو اسم أغنية");
-  }
-  if (lower === "!points") {
-    return songFeed(username, "نقاطك: " + songreq.getPoints(username));
-  }
-}
-tiktokService.on("chat", (c) =>
-  handleSongCommands(c.user || c.uniqueId, c.badges || [], c.comment)
-);
-
-
-
-// بث خام — رسائل {topic:...} لصفحات الأوفرلاي (الأغاني)
-// الضيوف (صفحات ويدجت الأغاني في OBS): مواضيع الأغاني فقط وبتوكن أوفرلاي
-// مطابق لتوكن الحساب — أي زائر من غير توكن مش بياخد أي حاجة
-const GUEST_SONG_TOPICS = new Set([
-  "songqueue",
-  "songstate",
-  "songhistory",
-  "sr-settings",
-  "sr-control",
-]);
-function broadcastRaw(obj) {
-  const m = JSON.stringify(obj);
-  for (const client of wsClients) {
-    if (client.readyState !== WebSocket.OPEN) continue;
-    if (client._guest) {
+    try {
+      const m = JSON.parse(raw);
       if (
-        GUEST_SONG_TOPICS.has(obj.topic) &&
-        client._overlayToken &&
-        currentOverlayToken &&
-        safeEqual(client._overlayToken, currentOverlayToken)
+        m.type === "trackEnded" &&
+        ctx &&
+        ws._overlayToken &&
+        ctx.overlayToken &&
+        safeEqual(ws._overlayToken, ctx.overlayToken)
       ) {
-        try { client.send(m); } catch (e) {}
+        // حماية من التكرار: لو أكتر من صفحة أوفرلاي مفتوحة (OBS + متصفح)
+        // كلهم هيبعتوا "خلصت" في نفس اللحظة — ناخد أول واحدة بس كل 5 ثواني
+        ctx.songEndedSignal();
       }
-      continue;
-    }
-    try { client.send(m); } catch (e) {}
-  }
-}
-
-function broadcastToWsClients(type, data) {
-  const msg = JSON.stringify({ type, data, timestamp: Date.now() });
-  for (const client of wsClients) {
-    if (client._guest) continue; // أحداث التطبيق للجلسات المسجلة بس — مش للضيوف
-    if (client.readyState === WebSocket.OPEN) {
-      try {
-        client.send(msg);
-      } catch (e) {}
-    }
-  }
+    } catch (e) {}
+  });
+  ws.on("close", () => {
+    wsClients.delete(ws);
+    if (ctx) ctx.wsClients.delete(ws);
+  });
 }
 
 wss.on("connection", (ws, req) => {
   // سقف إجمالي للاتصالات — إغراق WS بيستهلك ذاكرة السيرفر، فأي اتصال زائد بيرفض فوراً
-  if (wsClients.size >= 500) {
+  if (wsClients.size >= WS_MAX_CLIENTS) {
     try { ws.close(1013, "server busy"); } catch (e) {}
     return;
   }
@@ -613,75 +482,34 @@ wss.on("connection", (ws, req) => {
     sessionParam = params.get("session");
     hwidParam = params.get("hwid");
   } catch (e) {}
-  const hwidOk =
-    !appSession.hwid || (hwidParam && safeEqual(hwidParam, appSession.hwid));
-  const sessionOk =
-    appSession.token && safeEqual(sessionParam, appSession.token) && hwidOk;
+  const ctx = accounts.getBySession(sessionParam);
+  const sessionOk = !!(ctx && ctx.sessionOk(sessionParam, hwidParam));
   if (!sessionOk) {
-    // زائر ويدجت الأغاني (songs-page في OBS) — بياخد بث الأغاني فقط
-    // لو معاه توكن أوفرلاي مطابق للحساب، ومينفعش يبعت غير إشارة انتهاء أغنية
-    // وبرضه بتوكن صالح
-    ws._guest = true;
-    // مهم: الضيوف كمان لازم يتتابع ping/pong — من غير السطور دي فحص الحياة
-    // كان بيقطع اتصالهم كل 30-60 ثانية ويوقف تحديث صفحة الأغاني
-    ws.isAlive = true;
-    ws.on("pong", () => {
-      ws.isAlive = true;
-    });
-    try { ws._overlayToken = new URL(req.url, "http://x").searchParams.get("overlay") || ""; } catch(e) {}
-    wsClients.add(ws);
-    // قفل سبام الرسائل: أكتر من 30 رسالة في 10 ثواني = اتصال خبيث، بيتقفل
-    let msgWin = Date.now();
-    let msgCount = 0;
-    ws.on("message", (raw) => {
-      const now = Date.now();
-      if (now - msgWin > 10000) { msgWin = now; msgCount = 0; }
-      msgCount++;
-      if (msgCount > 30) {
-        try { ws.close(1008, "message flood"); } catch (e) {}
-        return;
-      }
-      try {
-        const m = JSON.parse(raw);
-        if (
-          m.type === "trackEnded" &&
-          ws._overlayToken &&
-          currentOverlayToken &&
-          safeEqual(ws._overlayToken, currentOverlayToken)
-        ) {
-          // حماية من التكرار: لو أكتر من صفحة أوفرلاي مفتوحة (OBS + متصفح)
-          // كلهم هيبعتوا "خلصت" في نفس اللحظة — ناخد أول واحدة بس كل 5 ثواني
-          // عشان مش نطفر أغنية زيادة في الطابور
-          if (now - lastTrackEndedAt > 5000) {
-            lastTrackEndedAt = now;
-            songreq.trackEnded();
-          }
-        }
-      } catch (e) {}
-    });
-    ws.on("close", () => wsClients.delete(ws));
-    return;
+    return attachGuestClient(ws, req);
   }
-  ws._appSession = appSession.token;
+  ctx.touch();
+  ws._appSession = ctx.session.token;
+  ws._ctx = ctx;
   ws.isAlive = true;
   ws.on("pong", () => {
     ws.isAlive = true;
   });
   wsClients.add(ws);
+  ctx.wsClients.add(ws);
   console.log(
-    `[WS] Client connected from ${req.socket.remoteAddress}. Total: ${wsClients.size}`,
+    `[WS] Client connected for ${ctx.email} from ${req.socket.remoteAddress}. Account clients: ${ctx.wsClients.size}`,
   );
 
   ws.send(
     JSON.stringify({
       type: "init",
       data: {
-        connected: tiktokService.isConnected(),
-        username: tiktokService.username,
-        stats: eventRunner.globalStats,
-        scoreboard: eventRunner.scoreboardState,
-        timer: eventRunner.getTimerState(),
-        tier: licenseService.currentTier || "free",
+        connected: ctx.tiktok ? ctx.tiktok.isConnected() : false,
+        username: ctx.tiktok ? ctx.tiktok.username : "",
+        stats: ctx.eventRunner ? ctx.eventRunner.globalStats : {},
+        scoreboard: ctx.eventRunner ? ctx.eventRunner.scoreboardState : { left: 0, right: 0 },
+        timer: ctx.eventRunner ? ctx.eventRunner.getTimerState() : {},
+        tier: ctx.license.currentTier || "free",
       },
     }),
   );
@@ -697,12 +525,10 @@ wss.on("connection", (ws, req) => {
 
   ws.on("close", () => {
     wsClients.delete(ws);
-    console.log(`[WS] Client disconnected. Remaining: ${wsClients.size}`);
+    ctx.wsClients.delete(ws);
+    console.log(`[WS] Client disconnected for ${ctx.email}. Remaining: ${ctx.wsClients.size}`);
   });
 });
-
-// Forward EventRunner events to WebSocket clients
-eventRunner.on("log", (msg) => broadcastToWsClients("log", msg));
 
 // heartbeat: اقفل أي socket ميت (عميل اختفى من غير close) — يمنع تراكم الاتصالات
 const WS_HEARTBEAT_MS = 30000;
@@ -713,6 +539,7 @@ const wsHeartbeat = setInterval(() => {
         client.terminate();
       } catch (e) {}
       wsClients.delete(client);
+      if (client._ctx) client._ctx.wsClients.delete(client);
       continue;
     }
     client.isAlive = false;
@@ -723,50 +550,14 @@ const wsHeartbeat = setInterval(() => {
 }, WS_HEARTBEAT_MS);
 wsHeartbeat.unref();
 
-const runnerEvents = [
-  "connection-status",
-  "tiktok:chat",
-  "tiktok:gift",
-  "tiktok:like",
-  "tiktok:follow",
-  "tiktok:join",
-  "tiktok:share",
-  "tiktok:subscribe",
-  "tiktok:streamEnd",
-  "tiktok:error",
-  "ext:scoreboard:state",
-  "ext:timer:state",
-  "play-local-tts",
-  "client:pressKeys",
-  "client:minecraft",
-  "stats:update",
-];
-
-for (const ev of runnerEvents) {
-  eventRunner.on(ev, (data) => broadcastToWsClients(ev, data));
-}
-
-// التيك توك قافل البث من عندها (streamEnd): فضّ ملكية الكونكت
-// وسجّل مدة وكوينز الجلسة في الإحصائيات الشهرية
-eventRunner.on("tiktok:streamEnd", () => {
-  connectOwner = null;
-  licenseService?.setLive(false, eventRunner.globalStats.totalCoins || 0);
-});
-
-// كل أحداث الأوفرلاي/الويدجت بتنشر في اتجاهين: تطبيق الديسكتوب (WebSocket)
-// + صفحات OBS السحابية مباشرة (SSE) — نفس الحدث يوصل للاتنين
-overlayServer.setForward((type, payload) => {
-  broadcastToWsClients(type, payload);
-  overlayHttp.handleEvent(type, payload);
-});
-
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    version: "1.3.11",
+    version: "1.4.0",
     uptime: process.uptime(),
-    tiktokConnected: tiktokService.isConnected(),
+    accounts: accounts.byEmail.size,
+    liveStreams: accounts.all().filter((c) => c.tiktok && c.tiktok.isConnected()).length,
     wsClients: wsClients.size,
   });
 });
@@ -861,22 +652,31 @@ async function loadLimitsFromDb() {
 }
 setInterval(loadLimitsFromDb, 300000).unref(); // تحديث كل 5 دقايق
 
-function getTierLimits() {
-  const tier = (licenseService && licenseService.currentTier) || "free";
+function getTierLimits(ctx) {
+  const tier = (ctx && ctx.license && ctx.license.currentTier) || "free";
   return { tier, ...(TIER_LIMITS[tier] || TIER_LIMITS.free) };
+}
+
+// تسجيل دخول كامل لحساب (بعد نجاح login/register): جلسة + بيانات + خدمات
+async function establishSession(ctx, hwid, overlayToken, idToken) {
+  await ctx.activate(idToken || ctx.license.lastIdToken);
+  const token = ctx.mintSession(hwid);
+  if (!token) return null;
+  accounts.indexSession(ctx);
+  accounts.setOverlayToken(ctx, overlayToken || ctx.overlayToken);
+  ctx.touch();
+  if (patreonSync.isOwner(ctx.email)) {
+    patreonSync.start(ctx.license, (msg) => ctx.eventRunner && ctx.eventRunner.log(msg));
+  }
+  return token;
 }
 
 app.post("/api/auth/register", authRateLimiter, async (req, res) => {
   const { email, password, hwid } = req.body || {};
-  if (activeSessionOnOtherAccount(email)) {
-    return res.status(409).json({
-      ok: false,
-      conflict: true,
-      reason: "حساب آخر مفتوح على نفس السيرفر — اقفل الجلسة الحالية أولاً",
-    });
-  }
-  // الجهاز الشغال الأول هو المسيطر — الجهاز التاني بيترفض ومش بيتسرق الجلسة
-  if (activeSessionOnOtherDevice(email, hwid)) {
+  const ctx = accounts.getOrCreate(email || "");
+  // الجهاز الشغال الأول هو المسيطر — جهاز تاني نفس الحساب بيترفض وهو نشيط
+  if (ctx.session && ctx.session.hwid !== String(hwid || "") &&
+      Date.now() - ctx.session.lastSeen < 90000) {
     return res.status(403).json({
       ok: false,
       conflict: true,
@@ -884,27 +684,30 @@ app.post("/api/auth/register", authRateLimiter, async (req, res) => {
         "الحساب مفتوح حالياً على جهاز آخر — اقفل الجهاز التاني أو استنى دقيقة وحاول تاني",
     });
   }
-  const result = await licenseService.register(email, password, hwid);
+  const result = await ctx.license.register(email, password, hwid);
   if (result.ok && result.email) {
-    await store.setAccount(result.email, licenseService.lastIdToken);
-    result.sessionToken = mintAppSession(result.email, hwid);
-    if (result.overlayToken) currentOverlayToken = result.overlayToken;
+    const token = await establishSession(ctx, hwid, result.overlayToken, ctx.license.lastIdToken);
+    if (!token) {
+      return res.status(403).json({
+        ok: false,
+        kicked: true,
+        conflict: true,
+        reason:
+          "الحساب مفتوح حالياً على جهاز آخر — اقفل الجهاز التاني أو استنى دقيقة وحاول تاني",
+      });
+    }
+    result.sessionToken = token;
   }
   res.json(result);
 });
 
 app.post("/api/auth/login", authRateLimiter, async (req, res) => {
   const { email, password, hwid } = req.body || {};
-  if (activeSessionOnOtherAccount(email)) {
-    return res.status(409).json({
-      ok: false,
-      conflict: true,
-      reason: "حساب آخر مفتوح على نفس السيرفر — اقفل الجلسة الحالية أولاً",
-    });
-  }
-  // الجهاز الشغال الأول هو المسيطر — الجهاز التاني بيترفض ومش بيتسرق الجلسة
+  const ctx = accounts.getOrCreate(email || "");
+  // الجهاز الشغال الأول هو المسيطر — جهاز تاني نفس الحساب بيترفض وهو نشيط
   // (البرنامج اللي شغال مش بيتقفل في وش العميل خالص)
-  if (activeSessionOnOtherDevice(email, hwid)) {
+  if (ctx.session && ctx.session.hwid !== String(hwid || "") &&
+      Date.now() - ctx.session.lastSeen < 90000) {
     return res.status(403).json({
       ok: false,
       conflict: true,
@@ -912,119 +715,144 @@ app.post("/api/auth/login", authRateLimiter, async (req, res) => {
         "الحساب مفتوح حالياً على جهاز آخر — اقفل الجهاز التاني أو استنى دقيقة وحاول تاني",
     });
   }
-  const result = await licenseService.login(email, password, hwid);
+  const result = await ctx.license.login(email, password, hwid);
   if (result.ok && result.email) {
-    await store.setAccount(result.email, licenseService.lastIdToken);
-    result.sessionToken = mintAppSession(result.email, hwid);
-    if (result.overlayToken) currentOverlayToken = result.overlayToken;
-    if (patreonSync.isOwner(result.email)) {
-      patreonSync.start(licenseService, (msg) => eventRunner.log(msg));
+    const token = await establishSession(ctx, hwid, result.overlayToken, ctx.license.lastIdToken);
+    if (!token) {
+      return res.status(403).json({
+        ok: false,
+        kicked: true,
+        conflict: true,
+        reason:
+          "الحساب مفتوح حالياً على جهاز آخر — اقفل الجهاز التاني أو استنى دقيقة وحاول تاني",
+      });
     }
+    result.sessionToken = token;
   }
   res.json(result);
 });
 
 app.post("/api/auth/reset-password", authRateLimiter, async (req, res) => {
   const { email } = req.body || {};
-  const result = await licenseService.sendPasswordReset(email);
+  // استطلاع بسيط بدون إنشاء سياق — خدمة مستقلة ما بتفتحش حساب
+  const probe = new (require("./services/license"))(probeStore);
+  const result = await probe.sendPasswordReset(email);
   res.json(result);
 });
 
 app.post("/api/auth/change-password", async (req, res) => {
   const { password } = req.body || {};
-  const result = await licenseService.changePassword(password);
+  const result = await req.ctx.license.changePassword(password);
   res.json(result);
 });
 
 app.post("/api/auth/restore-session", sessionRateLimiter, async (req, res) => {
   const { hwid } = req.body || {};
-  // الحساب شغال دلوقتي ونشيط على جهاز آخر؟ آخر جهاز هو المسيطر —
-  // الجهاز القديم ممنوع ياخد الجلسة تاني غير لما التاني يهدى (يتقفل)
-  if (
-    appSession.token &&
-    appSession.email &&
-    String(hwid || "") !== appSession.hwid &&
-    Date.now() - (appSession.lastSeen || 0) < ACTIVE_WINDOW_MS
-  ) {
-    return res.status(403).json({
-      ok: false,
-      kicked: true,
-      reason:
-        "الحساب شغال حالياً على جهاز آخر — اقفل الجهاز التاني أو استنى دقيقة وحاول تاني",
-    });
-  }
-  const result = await licenseService.restoreSession(hwid);
+  // الاستعادة من جهاز مش بتعرف الإيميل مقدَمًا — استطلاع بيقرأ الجلسة
+  // المشفرة الأول، وبعدها الحالة بتتنقل لسياق الحساب النهائي
+  const probe = new (require("./services/license"))(probeStore);
+  const result = await probe.restoreSession(hwid);
   if (result.loggedIn && result.email) {
-    await store.setAccount(result.email, licenseService.lastIdToken);
-    result.sessionToken = mintAppSession(result.email, hwid);
-    if (result.overlayToken) currentOverlayToken = result.overlayToken;
-    if (patreonSync.isOwner(result.email)) {
-      patreonSync.start(licenseService, (msg) => eventRunner.log(msg));
+    const ctx = accounts.getOrCreate(result.email);
+    // الحساب شغال دلوقتي ونشيط على جهاز آخر؟ آخر جهاز هو المسيطر
+    if (
+      ctx.session &&
+      String(hwid || "") !== ctx.session.hwid &&
+      Date.now() - ctx.session.lastSeen < 90000
+    ) {
+      return res.status(403).json({
+        ok: false,
+        kicked: true,
+        reason:
+          "الحساب شغال حالياً على جهاز آخر — اقفل الجهاز التاني أو استنى دقيقة وحاول تاني",
+      });
     }
+    ctx.license.adoptSession(probe);
+    const token = await establishSession(ctx, hwid, result.overlayToken, probe.lastIdToken);
+    if (!token) {
+      return res.status(403).json({
+        ok: false,
+        kicked: true,
+        conflict: true,
+        reason:
+          "الحساب شغال حالياً على جهاز آخر — اقفل الجهاز التاني أو استنى دقيقة وحاول تاني",
+      });
+    }
+    result.sessionToken = token;
   }
   res.json(result);
 });
 
+// متجر وهمي للاستطلاعات — الترخيص بيستخدم store في مسح مفاتيح قديمة بس
+const probeStore = {
+  data: {},
+  get() { return undefined; },
+  set() {},
+  delete() {},
+};
+
 // فحص سريع كل 30 ثانية من التطبيق: جلستي لسه صالحة ولا حصل استيلاء؟
 app.get("/api/auth/check-session", (req, res) => {
   const header = req.headers["x-app-session"];
-  if (
-    header &&
-    kickedSession &&
-    kickedSession.token === header &&
-    Date.now() - kickedSession.at < KICK_WINDOW_MS
-  ) {
+  const ctx = accounts.getBySession(header);
+  if (ctx && header && ctx.isKicked(header)) {
     return res.status(403).json({
       ok: false,
       kicked: true,
       reason: "الحساب مفتوح على جهاز آخر — اقفل الجهاز التاني أو استنى دقيقة",
     });
   }
-  if (!header || !appSession.token || !safeEqual(header, appSession.token)) {
+  if (!header || !ctx || !ctx.session || !safeEqual(header, ctx.session.token)) {
     return res.status(401).json({ ok: false });
   }
-  appSession.lastSeen = Date.now();
-  if (Date.now() - sessionUserCache.at > 60000) refreshSessionUserDoc();
-  if (!enforceSessionUser(res)) return;
+  ctx.session.lastSeen = Date.now();
+  ctx.touch();
+  if (Date.now() - ctx.userCache.at > 60000) ctx.refreshUserDoc();
+  if (!ctx.enforceUser(res)) return;
   res.json({ ok: true });
 });
 
 // الجهاز بيقفل البرنامج: بيسيب الجلسة عشان يقدر يفتح من جهاز تاني فوراً
 app.post("/api/auth/release-session", authRateLimiter, (req, res) => {
   const { hwid } = req.body || {};
+  const header = req.headers["x-app-session"];
+  const ctx = accounts.getBySession(header);
   if (
-    appSession.token &&
-    appSession.hwid &&
-    appSession.hwid === String(hwid || "")
+    ctx &&
+    ctx.session &&
+    ctx.session.hwid &&
+    ctx.session.hwid === String(hwid || "")
   ) {
-    for (const client of wsClients) {
-      if (client._appSession === appSession.token) {
-        try {
-          client.close(1000, "bye");
-        } catch (e) {}
-      }
-    }
-    appSession = { token: null, email: null, hwid: null, lastSeen: 0 };
+    accounts.unindexSession(ctx);
+    ctx.releaseSession();
   }
   res.json({ ok: true });
 });
 
 app.post("/api/auth/logout", async (req, res) => {
-  try {
-    if (tiktokService.isConnected()) tiktokService.disconnect();
-  } catch (err) {}
-  await licenseService.logout();
-  store.clearAccount();
-  patreonSync.stop();
-  clearAppSession();
+  const ctx = req.ctx || accounts.getBySession(req.headers["x-app-session"]);
+  if (ctx) {
+    await ctx.license.logout();
+    accounts.remove(ctx);
+  }
   res.json({ ok: true });
 });
 
 app.get("/api/auth/state", (req, res) => {
-  const limits = getTierLimits();
-  // الإيميل معلومة خاصة — بتظهر بس لصاحب الجلسة الصالح
+  // مسار عام — الجلسة بتتحل يدوي من الهيدر (مش عبر الميدل وير)
   const header = req.headers["x-app-session"];
-  const authed = !!appSession.token && safeEqual(header, appSession.token);
+  const device = req.headers["x-app-hwid"];
+  const cand = accounts.getBySession(header);
+  const authed = !!(
+    header &&
+    cand &&
+    cand.session &&
+    safeEqual(header, cand.session.token) &&
+    (!cand.session.hwid || safeEqual(device, cand.session.hwid))
+  );
+  const ctx = authed ? cand : null;
+  const limits = getTierLimits(ctx);
+  // الإيميل معلومة خاصة — بتظهر بس لصاحب الجلسة الصالح
   res.json({
     tier: limits.tier,
     label: limits.label,
@@ -1032,38 +860,43 @@ app.get("/api/auth/state", (req, res) => {
     actions: limits.actions,
     overlay: limits.overlay,
     premiumWidgets: limits.premiumWidgets,
-    accountEmail: authed ? licenseService.sessionEmail || null : null,
-    expiresAt: authed ? licenseService.sessionExpiresAt || null : null,
+    accountEmail: ctx ? ctx.license.sessionEmail || null : null,
+    expiresAt: ctx ? ctx.license.sessionExpiresAt || null : null,
   });
 });
 
 app.get("/api/auth/tier", (req, res) => {
-  res.json({ tier: licenseService.currentTier || "free" });
+  const header = req.headers["x-app-session"];
+  const cand = accounts.getBySession(header);
+  const authed = !!(header && cand && cand.session && safeEqual(header, cand.session.token));
+  res.json({ tier: (authed && cand.license.currentTier) || "free" });
 });
 
 app.get("/api/auth/payment-links", async (req, res) => {
-  const links = await licenseService.getPaymentLinks();
+  const ctx = req.ctx;
+  const links = await (ctx ? ctx.license : new (require("./services/license"))(probeStore)).getPaymentLinks();
   res.json(links);
 });
 
 app.post("/api/auth/set-live", async (req, res) => {
   const { isLive } = req.body || {};
-  await licenseService.setLive(!!isLive);
+  await req.ctx.license.setLive(!!isLive);
   res.json({ ok: true });
 });
 
 // ==========================================
-// TIKTOK ROUTES
+// TIKTOK ROUTES — كل حساب بيتصل ببثه هو
 // ==========================================
 app.post("/api/tiktok/connect", async (req, res) => {
   const { username } = req.body || {};
+  const ctx = req.ctx;
   const callerHwid = String(req.headers["x-app-hwid"] || "");
-  // الكونكت حصري: لو اللايف شغال من جهاز آخر — ممنوع جهاز تاني يعمل كونكت
-  // (سواء نفس اليوزر أو غيره) لحد ما الأول يفصل
+  // الكونكت حصري لجهاز الجلسة: لو البث شغال من جهاز تاني لنفس الحساب — ممنوع
   if (
-    tiktokService.isConnected() &&
-    connectOwner &&
-    connectOwner.hwid !== callerHwid
+    ctx.tiktok &&
+    ctx.tiktok.isConnected() &&
+    ctx.session &&
+    ctx.session.hwid !== callerHwid
   ) {
     return res.status(403).json({
       ok: false,
@@ -1080,15 +913,14 @@ app.post("/api/tiktok/connect", async (req, res) => {
   }
 
   try {
-    eventRunner.setupTikTokListeners();
-    const connectResult = await tiktokService.connect(username, {
+    ctx.eventRunner.setupTikTokListeners();
+    const connectResult = await ctx.tiktok.connect(username, {
       instantGifts: true,
     });
-    eventRunner.resetStats();
-    connectOwner = { hwid: callerHwid, email: licenseService.sessionEmail || "" };
-    broadcastToWsClients("connection-status", { status: "connected" });
-    licenseService?.setLive(true);
-    store.set("connection.username", username);
+    ctx.eventRunner.resetStats();
+    ctx.broadcastEvent("connection-status", { status: "connected" });
+    ctx.license?.setLive(true);
+    ctx.store.set("connection.username", username);
 
     res.json({ success: true, roomInfo: connectResult });
   } catch (err) {
@@ -1102,28 +934,29 @@ app.post("/api/tiktok/connect", async (req, res) => {
 });
 
 app.post("/api/tiktok/disconnect", (req, res) => {
-  tiktokService.disconnect();
-  licenseService?.setLive(false, eventRunner.globalStats.totalCoins || 0);
-  connectOwner = null;
-  broadcastToWsClients("connection-status", { status: "disconnected" });
+  const ctx = req.ctx;
+  if (ctx.tiktok) ctx.tiktok.disconnect();
+  ctx.license?.setLive(false, ctx.eventRunner ? ctx.eventRunner.globalStats.totalCoins || 0 : 0);
+  ctx.broadcastEvent("connection-status", { status: "disconnected" });
   res.json({ success: true });
 });
 
 app.get("/api/tiktok/status", (req, res) => {
+  const ctx = req.ctx;
   res.json({
-    connected: tiktokService.isConnected(),
-    username: tiktokService.username,
+    connected: !!(ctx.tiktok && ctx.tiktok.isConnected()),
+    username: ctx.tiktok ? ctx.tiktok.username : "",
   });
 });
 
 app.get("/api/tiktok/avatar/:user", async (req, res) => {
   const user = req.params.user;
-  const result = await eventRunner.resolveAvatar(user);
+  const result = await req.ctx.eventRunner.resolveAvatar(user);
   res.json(result);
 });
 
 app.get("/api/tiktok/gifts", (req, res) => {
-  const cachedPath = path.join(store.dataDir, "gifts_cache.json");
+  const cachedPath = path.join(req.ctx.store.dataDir, "gifts_cache.json");
   try {
     if (fs.existsSync(cachedPath)) {
       const parsed = JSON.parse(fs.readFileSync(cachedPath, "utf-8"));
@@ -1136,12 +969,13 @@ app.get("/api/tiktok/gifts", (req, res) => {
 });
 
 app.get("/api/tiktok/gifts-live", async (req, res) => {
+  const ctx = req.ctx;
   try {
-    const liveGifts = await tiktokService.getAvailableGifts();
+    const liveGifts = await ctx.tiktok.getAvailableGifts();
     if (liveGifts && liveGifts.length > 0) {
-      const cachedPath = path.join(store.dataDir, "gifts_cache.json");
+      const cachedPath = path.join(ctx.store.dataDir, "gifts_cache.json");
       fs.writeFileSync(cachedPath, JSON.stringify(liveGifts, null, 2));
-      broadcastToWsClients("gifts:updated", liveGifts);
+      ctx.broadcastEvent("gifts:updated", liveGifts);
       return res.json(liveGifts);
     }
   } catch (e) {}
@@ -1149,16 +983,16 @@ app.get("/api/tiktok/gifts-live", async (req, res) => {
 });
 
 // ==========================================
-// STORE & ACTIONS ROUTES
+// STORE & ACTIONS ROUTES — كل حساب في بياناته
 // ==========================================
 app.get("/api/store/:key", (req, res) => {
   const key = req.params.key;
   if (key === "__all__") {
     // التصدير: كل بيانات الحساب (من غير مفاتيح النظام auth/license — دي في data العامة أصلاً)
-    return res.json(store.get() ?? null);
+    return res.json(req.ctx.store.get() ?? null);
   }
   if (key.startsWith("license.")) return res.json(null);
-  res.json(store.get(key) ?? null);
+  res.json(req.ctx.store.get(key) ?? null);
 });
 
 // ═══ Backup مشفر — المفتاح يعيش في السيرفر فقط، الفرونت بيستلم blob مشفر جاهز ═══
@@ -1197,7 +1031,7 @@ const BK_CATEGORIES = [
   { id: "connection", label: "TikTok Username", match: (k) => k === "connection" },
 ];
 
-// العدّ بالعناصر الحقيقية جوه البيانات — مش بعدد المفاتيح:
+// العد بالعناصر الحقيقية جوه البيانات — مش بعدد المفاتيح:
 //   قايمة (أكشنز/إيفنتس/هوت كي) = عدد عناصرها (الفاضية = 0)
 //   إعدادات (كائن) = 1 لو فيها قيم فعلية و 0 لو فاضي
 //   علامات تقنية (true/false) و نصوص فاضية = 0
@@ -1245,7 +1079,7 @@ function bkCatCount(cat, all) {
 // التصدير: يستلم التصنيفات المختارة → يرمز البيانات → يرجع blob مشفر جاهز للتحميل
 app.post("/api/backup/export", (req, res) => {
   const cats = Array.isArray(req.body?.categories) ? req.body.categories : [];
-  const all = store.get() || {};
+  const all = req.ctx.store.get() || {};
   const data = {};
   let n = 0;
   for (const cat of BK_CATEGORIES) {
@@ -1269,7 +1103,7 @@ app.post("/api/backup/export", (req, res) => {
 // عدادات التصنيفات لنافذة التصدير — أرقام حقيقية من بيانات الحساب
 app.post("/api/backup/counts", (req, res) => {
   const cats = Array.isArray(req.body?.categories) ? req.body.categories : [];
-  const all = store.get() || {};
+  const all = req.ctx.store.get() || {};
   const counts = {};
   for (const cat of BK_CATEGORIES) {
     if (!cats.includes(cat.id)) continue;
@@ -1302,7 +1136,7 @@ app.post("/api/backup/import", (req, res) => {
     for (const k of Object.keys(data)) {
       if (k.startsWith("_") || !cat.match(k)) continue;
       try {
-        store.set(k, data[k] === undefined ? null : data[k]);
+        req.ctx.store.set(k, data[k] === undefined ? null : data[k]);
         imported++;
       } catch (e) { failed++; }
     }
@@ -1313,23 +1147,22 @@ app.post("/api/backup/import", (req, res) => {
 app.post("/api/store/:key", (req, res) => {
   const key = req.params.key;
   if (key.startsWith("license.")) return res.json({ ok: false });
-  store.set(key, req.body.value !== undefined ? req.body.value : req.body);
+  req.ctx.store.set(key, req.body.value !== undefined ? req.body.value : req.body);
   res.json({ ok: true });
 });
 
 app.delete("/api/store/:key", (req, res) => {
-  const key = req.params.key;
-  store.delete(key);
+  req.ctx.store.delete(req.params.key);
   res.json({ ok: true });
 });
 
 app.get("/api/actions", (req, res) => {
-  res.json(store.get("actions") || []);
+  res.json(req.ctx.store.get("actions") || []);
 });
 
 app.post("/api/actions", (req, res) => {
   const actions = req.body.actions || req.body;
-  const limits = getTierLimits();
+  const limits = getTierLimits(req.ctx);
   if (Array.isArray(actions) && actions.length > limits.actions) {
     return res.json({
       ok: false,
@@ -1338,32 +1171,34 @@ app.post("/api/actions", (req, res) => {
       tier: limits.tier,
     });
   }
-  store.set("actions", actions);
+  req.ctx.store.set("actions", actions);
   res.json({ ok: true });
 });
 
 app.post("/api/actions/execute", (req, res) => {
   const { actionId, context } = req.body || {};
-  const actions = store.get("actions") || [];
+  const ctx = req.ctx;
+  const actions = ctx.store.get("actions") || [];
   const action = actions.find((a) => a.id === actionId);
   if (action) {
-    eventRunner.executeAction(action, context || {});
-    eventRunner.log(`[Execute] ${action.name}`);
+    ctx.eventRunner.executeAction(action, context || {});
+    ctx.eventRunner.log(`[Execute] ${action.name}`);
   }
   res.json({ ok: true });
 });
 
 app.post("/api/actions/execute-delayed", (req, res) => {
   const { actionId, delaySeconds, context } = req.body || {};
-  const actions = store.get("actions") || [];
+  const ctx = req.ctx;
+  const actions = ctx.store.get("actions") || [];
   const action = actions.find((a) => a.id === actionId);
   if (action) {
     // سقف للتأخير — يمنع تكديس مؤقتات لانهائية
     const s = Math.min(Math.max(parseInt(delaySeconds, 10) || 5, 0), 600);
-    eventRunner.log(`[Delayed] ${action.name} in ${s}s...`);
+    ctx.eventRunner.log(`[Delayed] ${action.name} in ${s}s...`);
     setTimeout(() => {
-      eventRunner.executeAction(action, context || {});
-      eventRunner.log(`[Execute] ${action.name} (delayed)`);
+      ctx.eventRunner.executeAction(action, context || {});
+      ctx.eventRunner.log(`[Execute] ${action.name} (delayed)`);
     }, s * 1000);
   }
   res.json({ ok: true });
@@ -1371,7 +1206,7 @@ app.post("/api/actions/execute-delayed", (req, res) => {
 
 app.post("/api/actions/duplicate", (req, res) => {
   const { actionId } = req.body || {};
-  const actions = store.get("actions") || [];
+  const actions = req.ctx.store.get("actions") || [];
   const item = actions.find((a) => a.id === actionId);
   if (!item) return res.status(404).json({ error: "Action not found" });
 
@@ -1380,7 +1215,7 @@ app.post("/api/actions/duplicate", (req, res) => {
     "act_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
   clone.name = item.name + " (Copy)";
   actions.push(clone);
-  store.set("actions", actions);
+  req.ctx.store.set("actions", actions);
   res.json({ ok: true, actions });
 });
 
@@ -1388,27 +1223,28 @@ app.post("/api/actions/duplicate", (req, res) => {
 // EVENTS ROUTES
 // ==========================================
 app.get("/api/events", (req, res) => {
-  res.json(store.get("events") || []);
+  res.json(req.ctx.store.get("events") || []);
 });
 
 app.post("/api/events", (req, res) => {
   const events = req.body.events || req.body;
-  store.set("events", events);
+  req.ctx.store.set("events", events);
   res.json({ ok: true });
 });
 
 app.post("/api/events/test", (req, res) => {
   const { eventId } = req.body || {};
-  eventRunner.executeEventById(eventId);
+  req.ctx.eventRunner.executeEventById(eventId);
   res.json({ ok: true });
 });
 
 app.post("/api/events/test-delayed", (req, res) => {
   const { eventId, delaySeconds } = req.body || {};
+  const ctx = req.ctx;
   const s = Math.min(Math.max(parseInt(delaySeconds, 10) || 5, 0), 600);
-  eventRunner.log(`[Test Event] Will execute in ${s}s...`);
+  ctx.eventRunner.log(`[Test Event] Will execute in ${s}s...`);
   setTimeout(() => {
-    eventRunner.executeEventById(eventId);
+    ctx.eventRunner.executeEventById(eventId);
   }, s * 1000);
   res.json({ ok: true });
 });
@@ -1416,52 +1252,53 @@ app.post("/api/events/test-delayed", (req, res) => {
 // ==========================================
 // PROFILES ROUTES
 // ==========================================
-function ensureProfilesInit() {
-  let profiles = store.get("profiles");
+function ensureProfilesInit(ctx) {
+  let profiles = ctx.store.get("profiles");
   if (!profiles || !Array.isArray(profiles) || profiles.length === 0) {
     const defaultId = "prof_default";
-    store.set("profiles", [{ id: defaultId, name: "Default" }]);
-    store.set("activeProfileId", defaultId);
-    store.set("profileData." + defaultId, {
-      actions: store.get("actions") || [],
-      events: store.get("events") || [],
-      connection: store.get("connection") || {},
+    ctx.store.set("profiles", [{ id: defaultId, name: "Default" }]);
+    ctx.store.set("activeProfileId", defaultId);
+    ctx.store.set("profileData." + defaultId, {
+      actions: ctx.store.get("actions") || [],
+      events: ctx.store.get("events") || [],
+      connection: ctx.store.get("connection") || {},
     });
   }
-  if (!store.get("activeProfileId")) {
-    store.set("activeProfileId", store.get("profiles")[0].id);
+  if (!ctx.store.get("activeProfileId")) {
+    ctx.store.set("activeProfileId", ctx.store.get("profiles")[0].id);
   }
 }
 
-function saveActiveProfileData() {
-  const activeId = store.get("activeProfileId");
+function saveActiveProfileData(ctx) {
+  const activeId = ctx.store.get("activeProfileId");
   if (!activeId) return;
-  store.set("profileData." + activeId, {
-    actions: store.get("actions") || [],
-    events: store.get("events") || [],
-    connection: store.get("connection") || {},
+  ctx.store.set("profileData." + activeId, {
+    actions: ctx.store.get("actions") || [],
+    events: ctx.store.get("events") || [],
+    connection: ctx.store.get("connection") || {},
   });
 }
 
-function loadProfileData(profileId) {
-  const data = store.get("profileData." + profileId) || {};
-  store.set("actions", data.actions || []);
-  store.set("events", data.events || []);
-  store.set("connection", data.connection || {});
+function loadProfileData(ctx, profileId) {
+  const data = ctx.store.get("profileData." + profileId) || {};
+  ctx.store.set("actions", data.actions || []);
+  ctx.store.set("events", data.events || []);
+  ctx.store.set("connection", data.connection || {});
 }
 
 app.get("/api/profiles", (req, res) => {
-  ensureProfilesInit();
+  ensureProfilesInit(req.ctx);
   res.json({
-    profiles: store.get("profiles") || [],
-    activeId: store.get("activeProfileId"),
+    profiles: req.ctx.store.get("profiles") || [],
+    activeId: req.ctx.store.get("activeProfileId"),
   });
 });
 
 app.post("/api/profiles/create", (req, res) => {
   const { name } = req.body || {};
-  const limits = getTierLimits();
-  const profiles = store.get("profiles") || [];
+  const ctx = req.ctx;
+  const limits = getTierLimits(ctx);
+  const profiles = ctx.store.get("profiles") || [];
   if (profiles.length >= limits.profiles) {
     return res.json({
       ok: false,
@@ -1474,8 +1311,8 @@ app.post("/api/profiles/create", (req, res) => {
   const newId =
     "prof_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
   profiles.push({ id: newId, name: name || "New Profile" });
-  store.set("profiles", profiles);
-  store.set("profileData." + newId, {
+  ctx.store.set("profiles", profiles);
+  ctx.store.set("profileData." + newId, {
     actions: [],
     events: [],
     connection: {},
@@ -1486,52 +1323,55 @@ app.post("/api/profiles/create", (req, res) => {
 
 app.post("/api/profiles/rename", (req, res) => {
   const { id, name } = req.body || {};
-  const profiles = store.get("profiles") || [];
+  const profiles = req.ctx.store.get("profiles") || [];
   const found = profiles.find((p) => p.id === id);
   if (found) {
     found.name = name;
-    store.set("profiles", profiles);
+    req.ctx.store.set("profiles", profiles);
   }
   res.json({ ok: true, profiles });
 });
 
 app.delete("/api/profiles/:id", (req, res) => {
   const id = req.params.id;
-  let profiles = store.get("profiles") || [];
+  const ctx = req.ctx;
+  let profiles = ctx.store.get("profiles") || [];
   if (profiles.length <= 1) {
     return res.json({ error: "Cannot delete the last profile" });
   }
 
   profiles = profiles.filter((p) => p.id !== id);
-  store.set("profiles", profiles);
-  store.delete("profileData." + id);
+  ctx.store.set("profiles", profiles);
+  ctx.store.delete("profileData." + id);
 
-  if (store.get("activeProfileId") === id) {
+  if (ctx.store.get("activeProfileId") === id) {
     const firstId = profiles[0].id;
-    store.set("activeProfileId", firstId);
-    loadProfileData(firstId);
+    ctx.store.set("activeProfileId", firstId);
+    loadProfileData(ctx, firstId);
   }
 
-  res.json({ profiles, activeId: store.get("activeProfileId") });
+  res.json({ profiles, activeId: ctx.store.get("activeProfileId") });
 });
 
 app.post("/api/profiles/switch", (req, res) => {
   const { id } = req.body || {};
-  saveActiveProfileData();
-  store.set("activeProfileId", id);
-  loadProfileData(id);
+  const ctx = req.ctx;
+  saveActiveProfileData(ctx);
+  ctx.store.set("activeProfileId", id);
+  loadProfileData(ctx, id);
 
   res.json({
-    actions: store.get("actions") || [],
-    events: store.get("events") || [],
-    connection: store.get("connection") || {},
+    actions: ctx.store.get("actions") || [],
+    events: ctx.store.get("events") || [],
+    connection: ctx.store.get("connection") || {},
   });
 });
 
 app.post("/api/profiles/duplicate", (req, res) => {
   const { id, name } = req.body || {};
-  const limits = getTierLimits();
-  const profiles = store.get("profiles") || [];
+  const ctx = req.ctx;
+  const limits = getTierLimits(ctx);
+  const profiles = ctx.store.get("profiles") || [];
   if (profiles.length >= limits.profiles) {
     return res.json({
       ok: false,
@@ -1541,7 +1381,7 @@ app.post("/api/profiles/duplicate", (req, res) => {
     });
   }
 
-  const originalData = store.get("profileData." + id) || {
+  const originalData = ctx.store.get("profileData." + id) || {
     actions: [],
     events: [],
     connection: {},
@@ -1549,30 +1389,29 @@ app.post("/api/profiles/duplicate", (req, res) => {
   const newId =
     "prof_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
   profiles.push({ id: newId, name: name || "Copy" });
-  store.set("profiles", profiles);
-  store.set("profileData." + newId, JSON.parse(JSON.stringify(originalData)));
+  ctx.store.set("profiles", profiles);
+  ctx.store.set("profileData." + newId, JSON.parse(JSON.stringify(originalData)));
 
   res.json({ ok: true, profiles, newId });
 });
 
 app.post("/api/profiles/reset-actions", (req, res) => {
-  store.set("actions", []);
+  req.ctx.store.set("actions", []);
   res.json({ ok: true });
 });
 
 app.post("/api/profiles/reset-events", (req, res) => {
-  store.set("events", []);
+  req.ctx.store.set("events", []);
   res.json({ ok: true });
 });
 
 app.post("/api/profiles/reset-all", (req, res) => {
-  store.set("actions", []);
-  store.set("events", []);
-  store.set("connection", {});
+  req.ctx.store.set("actions", []);
+  req.ctx.store.set("events", []);
+  req.ctx.store.set("connection", {});
   res.json({ ok: true });
 });
 
-// ==========================================
 // ==========================================
 // SONGS (SoundCloud requests) — محمية بجلسة التطبيق أو توكن الأوفرلاي
 // ==========================================
@@ -1583,9 +1422,9 @@ app.post("/api/profiles/reset-all", (req, res) => {
 // (الواجهة بتعرض رسالة ترقية)، وحساب المالك له وصول دائم بأي تير
 const OWNER_EMAILS = ["kemo.eldaly44@gmail.com", "captenblank1@gmail.com"];
 function songTierCheck(req, res) {
-  const email = String(licenseService.sessionEmail || "").toLowerCase();
+  const email = String((req.ctx && req.ctx.license.sessionEmail) || "").toLowerCase();
   if (OWNER_EMAILS.includes(email)) return true;
-  const tier = licenseService.currentTier;
+  const tier = req.ctx ? req.ctx.license.currentTier : null;
   if (tier === "pro" || tier === "vip") return true;
   res.status(403).json({
     ok: false,
@@ -1597,58 +1436,72 @@ function songTierCheck(req, res) {
 }
 
 app.get("/api/songs/state", (req, res) => {
+  if (!req.ctx) return res.status(401).json({ ok: false });
   if (!songTierCheck(req, res)) return;
-  res.json({ ok: true, ...songreq.queueState(), history: songreq.getHistory(), settings: songSettings() });
+  res.json({ ok: true, ...req.ctx.songs.queueState(), history: req.ctx.songs.getHistory(), settings: songSettings(req.ctx) });
 });
 app.post("/api/songs/settings", (req, res) => {
+  if (!req.ctx) return res.status(401).json({ ok: false });
   if (!songTierCheck(req, res)) return;
-  const merged = saveSongSettings(req.body || {});
-  songreq.broadcastQueue(); // الويدجت ياخد الطابور والإعدادات الجديدة لحظيًا
-  broadcastSongs({ topic: "sr-settings", settings: merged }); // الصوت والمقاس يتحدثوا لحظياً (WS + SSE)
+  const merged = saveSongSettings(req.ctx, req.body || {});
+  req.ctx.songs.broadcastQueue(); // الويدجت ياخد الطابور والإعدادات الجديدة لحظيًا
+  broadcastSongs(req.ctx, { topic: "sr-settings", settings: merged }); // الصوت والمقاس يتحدثوا لحظياً
   res.json({ ok: true, settings: merged });
 });
 app.post("/api/songs/control", (req, res) => {
+  if (!req.ctx) return res.status(401).json({ ok: false });
   if (!songTierCheck(req, res)) return;
-  res.json(songreq.control((req.body || {}).action));
+  res.json(req.ctx.songs.control((req.body || {}).action));
 });
 app.post("/api/songs/skip", (req, res) => {
+  if (!req.ctx) return res.status(401).json({ ok: false });
   if (!songTierCheck(req, res)) return;
-  res.json(songreq.skip("Dashboard", true));
+  res.json(req.ctx.songs.skip("Dashboard", true));
 });
 app.post("/api/songs/remove", (req, res) => {
+  if (!req.ctx) return res.status(401).json({ ok: false });
   if (!songTierCheck(req, res)) return;
-  res.json(songreq.removeById(String((req.body || {}).id || "")));
+  res.json(req.ctx.songs.removeById(String((req.body || {}).id || "")));
 });
 app.post("/api/songs/clear", (req, res) => {
+  if (!req.ctx) return res.status(401).json({ ok: false });
   if (!songTierCheck(req, res)) return;
-  res.json(songreq.clearQueue());
+  res.json(req.ctx.songs.clearQueue());
 });
 app.post("/api/songs/test", async (req, res) => {
+  if (!req.ctx) return res.status(401).json({ ok: false });
   if (!songTierCheck(req, res)) return;
   try {
     const q = String((req.body || {}).query || '').trim();
     if (!q) return res.status(400).json({ ok: false, error: "اكتب اسم الأغنية" });
-    const track = await songreq.addTrack("Dashboard", q);
+    const track = await req.ctx.songs.addTrack("Dashboard", q);
     res.json({ ok: true, track });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
   }
 });
 app.get("/api/songs/search", async (req, res) => {
+  if (!req.ctx) return res.status(401).json({ ok: false });
   if (!songTierCheck(req, res)) return;
   try {
     const q = String(req.query.q || '').trim();
     if (!q) return res.json({ ok: true, results: [] });
-    res.json({ ok: true, results: await songreq.search(q) });
+    res.json({ ok: true, results: await req.ctx.songs.search(q) });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
   }
 });
+
+// بث الأغاني للاتنين في نفس اللحظة:
+//   ctx.broadcastRaw → WS (صفحة تحكم الأغاني في OBS)
+//   overlayHttp.handleSongEvent → SSE (مشغل overlay-music السحابي)
+function broadcastSongs(ctx, obj) {
+  ctx.broadcastRaw(obj);
+  overlayHttp.handleSongEvent(ctx, obj);
+}
+
 // WIDGETS & OVERLAYS ROUTES
 // ==========================================
-// لينكات صفحات الأغاني بتتقدم من OverlayHttpService فوق (‎/widget/:token/:name)
-// بنفس فحص التوكن — مفيش مسارات مكررة هنا
-
 function isPremiumWidget(widgetId) {
   return PREMIUM_WIDGETS.some((item) =>
     String(widgetId || "").startsWith(item),
@@ -1656,27 +1509,25 @@ function isPremiumWidget(widgetId) {
 }
 
 app.get("/api/widgets/:id/config", (req, res) => {
-  const widgetId = req.params.id;
-  res.json(store.get("widget_" + widgetId) || null);
+  res.json(req.ctx.store.get("widget_" + req.params.id) || null);
 });
 
 app.post("/api/widgets/:id/config", (req, res) => {
   const widgetId = req.params.id;
   const config = req.body.config || req.body;
-  const limits = getTierLimits();
+  const limits = getTierLimits(req.ctx);
 
   if (limits.premiumWidgets === false && isPremiumWidget(widgetId)) {
     return res.json({ ok: false, reason: "upgrade", tier: limits.tier });
   }
 
-  store.set("widget_" + widgetId, config);
-  overlayServer.setWidgetConfig(widgetId, config);
+  req.ctx.store.set("widget_" + widgetId, config);
+  req.ctx.overlayServer.setWidgetConfig(widgetId, config);
   res.json({ ok: true });
 });
 
 app.post("/api/widgets/:id/test", (req, res) => {
-  const widgetId = req.params.id;
-  overlayServer.testWidget(widgetId, req.body || {});
+  req.ctx.overlayServer.testWidget(req.params.id, req.body || {});
   res.json({ ok: true });
 });
 
@@ -1689,14 +1540,14 @@ app.get("/api/overlay/screens", (req, res) => {
   const out = {};
   for (let i = 1; i <= 10; i++) {
     out[String(i)] =
-      store.get("screenSettings_" + i) || { queueEnabled: false, queueMax: 5 };
+      req.ctx.store.get("screenSettings_" + i) || { queueEnabled: false, queueMax: 5 };
   }
   res.json(out);
 });
 
 app.get("/api/overlay/screens/:id", (req, res) => {
   res.json(
-    store.get("screenSettings_" + req.params.id) || {
+    req.ctx.store.get("screenSettings_" + req.params.id) || {
       queueEnabled: false,
       queueMax: 5,
     },
@@ -1704,12 +1555,13 @@ app.get("/api/overlay/screens/:id", (req, res) => {
 });
 
 app.post("/api/overlay/screens/:id", (req, res) => {
+  const key = "screenSettings_" + req.params.id;
   const current =
-    store.get("screenSettings_" + req.params.id) || {
+    req.ctx.store.get(key) || {
       queueEnabled: false,
       queueMax: 5,
     };
-  store.set("screenSettings_" + req.params.id, { ...current, ...req.body });
+  req.ctx.store.set(key, { ...current, ...req.body });
   res.json({ ok: true });
 });
 
@@ -1720,20 +1572,21 @@ app.get("/api/overlay/queue-status", (req, res) => {
 
 app.post("/api/overlay/test-tts", async (req, res) => {
   const { text, options } = req.body || {};
+  const ctx = req.ctx;
   try {
     const { EdgeTTS } = require("node-edge-tts");
     const edge = new EdgeTTS(options || {});
     const tempPath = path.join(
-      eventRunner.ttsTempDir,
+      ctx.eventRunner.ttsTempDir,
       `temp_test_tts_${Date.now()}.mp3`,
     );
     try {
       await edge.ttsPromise(text, tempPath);
       const audioBase64 = fs.readFileSync(tempPath, "base64");
       const ttsData = { audioBase64, config: options };
-      broadcastToWsClients("play-local-tts", ttsData);
-      overlayServer.queueTTS("1", { ...ttsData, maxQueue: 3 });
-      eventRunner.log("[TTS] ✔ Test voice generated");
+      ctx.broadcastEvent("play-local-tts", ttsData);
+      ctx.overlayServer.queueTTS("1", { ...ttsData, maxQueue: 3 });
+      ctx.eventRunner.log("[TTS] ✔ Test voice generated");
       res.json({ success: true });
     } finally {
       try {
@@ -1747,15 +1600,15 @@ app.post("/api/overlay/test-tts", async (req, res) => {
         slow: false,
         host: "https://translate.google.com",
       });
-      broadcastToWsClients("play-local-tts", {
+      ctx.broadcastEvent("play-local-tts", {
         url: googleUrl,
         config: options,
       });
-      overlayServer.queueTTS("1", { text, lang: "ar", maxQueue: 3 });
-      eventRunner.log("[TTS] ⚠ Edge voice failed — Google fallback used");
+      ctx.overlayServer.queueTTS("1", { text, lang: "ar", maxQueue: 3 });
+      ctx.eventRunner.log("[TTS] ⚠ Edge voice failed — Google fallback used");
       res.json({ success: true });
     } catch (e2) {
-      eventRunner.log("[TTS] ✘ Test failed: " + e2.message);
+      ctx.eventRunner.log("[TTS] ✘ Test failed: " + e2.message);
       res.json({ success: false, error: e2.message });
     }
   }
@@ -1766,77 +1619,78 @@ app.post("/api/overlay/test-tts", async (req, res) => {
 // ==========================================
 app.post("/api/ext/command", (req, res) => {
   const { command, arg1, arg2 } = req.body || {};
+  const ctx = req.ctx;
   if (command === "gift-spinner" && arg1 === "test") {
     const spinnerId = arg2?.spinnerId;
-    const cfg = store.get("widget_gift-spinners");
+    const cfg = ctx.store.get("widget_gift-spinners");
     if (cfg && cfg.spinners) {
       if (spinnerId) {
         const found = cfg.spinners.find((s) => s.id === spinnerId);
-        if (found) eventRunner.spinSpinner(found, found.id, "TestUser");
+        if (found) ctx.eventRunner.spinSpinner(found, found.id, "TestUser");
       } else {
         for (const s of cfg.spinners)
-          eventRunner.spinSpinner(s, s.id, "TestUser");
+          ctx.eventRunner.spinSpinner(s, s.id, "TestUser");
       }
     }
     return res.json({ ok: true });
   }
 
-  overlayServer.broadcastExtension("ext-" + command, { action: arg1, ...arg2 });
+  ctx.overlayServer.broadcastExtension("ext-" + command, { action: arg1, ...arg2 });
   res.json({ ok: true });
 });
 
 app.get("/api/ext/scoreboard", (req, res) => {
-  res.json(eventRunner.scoreboardState);
+  res.json(req.ctx.eventRunner.scoreboardState);
 });
 
 app.post("/api/ext/scoreboard/update", (req, res) => {
   const { side, amount } = req.body || {};
-  const state = eventRunner.updateScoreboard(side, amount);
+  const state = req.ctx.eventRunner.updateScoreboard(side, amount);
   res.json(state);
 });
 
 app.post("/api/ext/scoreboard/set", (req, res) => {
   const { left, right } = req.body || {};
-  const state = eventRunner.setScoreboard(left, right);
+  const state = req.ctx.eventRunner.setScoreboard(left, right);
   res.json(state);
 });
 
 app.post("/api/ext/scoreboard/reset", (req, res) => {
-  const state = eventRunner.resetScoreboard();
+  const state = req.ctx.eventRunner.resetScoreboard();
   res.json(state);
 });
 
 app.get("/api/ext/timer", (req, res) => {
-  res.json(eventRunner.getTimerState());
+  res.json(req.ctx.eventRunner.getTimerState());
 });
 
 app.post("/api/ext/timer/start", (req, res) => {
   const { minutes } = req.body || {};
-  eventRunner.startTimer(minutes);
-  res.json({ ok: true, state: eventRunner.getTimerState() });
+  req.ctx.eventRunner.startTimer(minutes);
+  res.json({ ok: true, state: req.ctx.eventRunner.getTimerState() });
 });
 
 app.post("/api/ext/timer/stop", (req, res) => {
-  eventRunner.stopTimer();
-  res.json({ ok: true, state: eventRunner.getTimerState() });
+  req.ctx.eventRunner.stopTimer();
+  res.json({ ok: true, state: req.ctx.eventRunner.getTimerState() });
 });
 
 app.post("/api/ext/timer/reset", (req, res) => {
   const { minutes } = req.body || {};
-  eventRunner.resetTimer(minutes);
-  res.json({ ok: true, state: eventRunner.getTimerState() });
+  req.ctx.eventRunner.resetTimer(minutes);
+  res.json({ ok: true, state: req.ctx.eventRunner.getTimerState() });
 });
 
 app.post("/api/ext/timer/add-time", (req, res) => {
   const { seconds } = req.body || {};
-  eventRunner.addTimerTime(seconds);
-  res.json({ ok: true, state: eventRunner.getTimerState() });
+  req.ctx.eventRunner.addTimerTime(seconds);
+  res.json({ ok: true, state: req.ctx.eventRunner.getTimerState() });
 });
 
 app.post("/api/ext/timer/remove-time", (req, res) => {
   const { seconds } = req.body || {};
-  eventRunner.removeTimerTime(seconds);
-  res.json({ ok: true, state: eventRunner.getTimerState() });
+  req.ctx.eventRunner.removeTimerTime(seconds);
+  res.json({ ok: true, state: req.ctx.eventRunner.getTimerState() });
 });
 
 // ==========================================
@@ -1898,24 +1752,26 @@ app.get("/api/system/sounds", async (req, res) => {
 // ==========================================
 // START SERVERS
 // ==========================================
-function startLicenseWatchdog() {
-  setInterval(async () => {
-    if (!licenseService.hasSession()) return;
+// حفظ توكنات الحسابات النشطة دافية + إسقاط الجلسات اللي باظت توكنها
+// (بديل watchdog الترخيص القديم — لكل حساب على حدة)
+setInterval(async () => {
+  for (const ctx of accounts.all()) {
+    if (!ctx.session || !ctx.license.sessionEmail) continue;
     try {
-      const restoreResult = await licenseService.restoreSession();
-      if (!restoreResult.loggedIn) {
-        licenseService.currentTier = null;
-        if (tiktokService.isConnected()) tiktokService.disconnect();
+      const token = await ctx.license.getIdToken();
+      if (!token) {
+        // الريفريش فشل نهائيًا — الجلسة باظت: سيب الحساب يتعامل معاه من غير قطع بث مفاجئ
+        ctx.license.currentTier = null;
       }
     } catch (e) {}
-  }, 150000);
-}
+  }
+}, 150000).unref();
 
 // حفظ أي تغييرات معلّقة في قاعدة البيانات قبل الإقفال
 async function flushAndExit(signal) {
   try {
     await Promise.race([
-      store.flushCloud(),
+      accounts.flushAll(),
       new Promise((r) => setTimeout(r, 4000)),
     ]);
   } catch (e) {}
@@ -1926,7 +1782,8 @@ process.on("SIGTERM", () => flushAndExit("SIGTERM"));
 
 // مسارات خارجية للتوافق: webhook لتشغيل الأحداث + أزرار سكوربورد خارجية
 // دي نقط محمية بمفتاح سري في البيئة (PUBLIC_API_KEY) — من غيره بتترفض.
-// من غير المفتاح كان أي حد على النت يقدر يعبث بالسكوربورد أو يشغّل الويبهوك.
+// تحديد الحساب: ?t=<overlayToken>، وبداله بنشتغل على أحدث حساب نشط
+// (المفتاح سري بتاع المالك فده الاستخدام الطبيعي له).
 const PUBLIC_API_KEY = process.env.PUBLIC_API_KEY || "";
 function publicKeyGuard(req, res) {
   if (!PUBLIC_API_KEY) {
@@ -1940,28 +1797,39 @@ function publicKeyGuard(req, res) {
   }
   return true;
 }
+function externalTargetCtx(req) {
+  const token = String(req.query.t || "");
+  const byToken = accounts.getByOverlay(token);
+  if (byToken && byToken.overlayToken && safeEqual(token, byToken.overlayToken)) return byToken;
+  return accounts.mostRecentActive();
+}
 
 app.all("/api/webhook/:id", externalActionRateLimiter, (req, res) => {
   if (!publicKeyGuard(req, res)) return;
-  if (overlayServer._onWebhook) overlayServer._onWebhook(req.params.id);
+  const ctx = externalTargetCtx(req);
+  if (ctx && ctx.overlayServer && ctx.overlayServer._onWebhook) ctx.overlayServer._onWebhook(req.params.id);
   res.json({ ok: true, message: "Webhook triggered successfully" });
 });
 
 app.all("/api/scoreboard/:cmd", externalActionRateLimiter, (req, res) => {
   if (!publicKeyGuard(req, res)) return;
+  const ctx = externalTargetCtx(req);
+  if (!ctx || !ctx.eventRunner) {
+    return res.status(404).json({ error: "No active account" });
+  }
   const cmd = req.params.cmd;
   const url = new URL(req.url, "http://" + (req.headers.host || "127.0.0.1"));
   const value = parseInt(url.searchParams.get("value")) || 1;
   let state;
-  if (cmd === "left/up") state = eventRunner.updateScoreboard("left", value);
+  if (cmd === "left/up") state = ctx.eventRunner.updateScoreboard("left", value);
   else if (cmd === "left/down")
-    state = eventRunner.updateScoreboard("left", -value);
-  else if (cmd === "right/up") state = eventRunner.updateScoreboard("right", value);
+    state = ctx.eventRunner.updateScoreboard("left", -value);
+  else if (cmd === "right/up") state = ctx.eventRunner.updateScoreboard("right", value);
   else if (cmd === "right/down")
-    state = eventRunner.updateScoreboard("right", -value);
-  else if (cmd === "reset") state = eventRunner.resetScoreboard();
+    state = ctx.eventRunner.updateScoreboard("right", -value);
+  else if (cmd === "reset") state = ctx.eventRunner.resetScoreboard();
   else if (cmd === "set") {
-    state = eventRunner.setScoreboard(
+    state = ctx.eventRunner.setScoreboard(
       url.searchParams.get("left"),
       url.searchParams.get("right"),
     );
@@ -1972,7 +1840,10 @@ app.all("/api/scoreboard/:cmd", externalActionRateLimiter, (req, res) => {
 });
 
 app.get("/api/scoreboard", (req, res) => {
-  res.json(eventRunner.scoreboardState || { left: 0, right: 0 });
+  const ctx = accounts.mostRecentActive();
+  res.json(
+    (ctx && ctx.eventRunner && ctx.eventRunner.scoreboardState) || { left: 0, right: 0 },
+  );
 });
 
 // REST & WebSocket على نفس البورت — الافتراضي localhost فقط
@@ -1991,9 +1862,7 @@ app.use((err, req, res, next) => {
 server.listen(PORT, HOST, () => {
   console.log(`=======================================================`);
   console.log(`🚀 ELDALY STREAM Backend API running on ${HOST}:${PORT}`);
-  console.log(
-    `📺 Overlays are served by the desktop app (local, token-protected)`,
-  );
+  console.log(`👥 Multi-account: each customer gets an isolated session`);
   console.log(`⚡ WebSocket Stream available at ws://${HOST}:${PORT}/ws`);
   console.log(`=======================================================`);
   loadLimitsFromDb(); // حدود التيرات من الداتابيز
@@ -2003,5 +1872,7 @@ server.listen(PORT, HOST, () => {
         `   لو محتاج أزرار خارجية: ضيف PUBLIC_API_KEY في .env واستخدم ?key=... في الرابط.`,
     );
   }
-  startLicenseWatchdog();
 });
+
+// للاختبارات — تشغيل السيرفر داخل الاختبار والتحكم في الريجسترى مباشرة
+module.exports = { app, accounts };

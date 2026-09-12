@@ -1,0 +1,20 @@
+# سياق البناء = جذر المستودع — أي حاجة الباك اند مش محتاجها بتتستبعد هنا
+.git
+node_modules
+**/node_modules
+
+# ملفات كبيرة ملهاش علاقة بصورة الباك اند
+frontend
+eldaly-website
+*.zip
+repomix-output.xml
+eldalystream-fixed.html
+
+# ناتج بناء محلي قديم — الاتجاه بيتبني جوه الحاوية
+backend/deploy
+backend/temp_tts
+
+# أسرار وسجلات وبيانات تشغيل محلية — ممنوع تدخل الصورة
+backend/.env
+backend/*.log
+backend/data/account-*.json

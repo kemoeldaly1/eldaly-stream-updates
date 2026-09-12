@@ -16,12 +16,15 @@ class OverlayServer {
     this._onScoreboardUpdate = null;
     this._onWebhook = null;
     this._forward = null;
-    if (this.store && this.store.data) {
-      const data = this.store.data;
-      for (const key in data) {
-        if (key.startsWith("widget_")) {
-          this.widgetConfigs[key.replace("widget_", "")] = data[key];
-        }
+    // إعدادات الويدجت من بيانات الحساب (accountData) لو متاحة — و إلا من
+    // الملف العام (توافق مع الاختبارات والموكات القديمة)
+    const data =
+      (typeof store.get === "function" ? store.get() : null) ||
+      (store && store.data) ||
+      {};
+    for (const key in data) {
+      if (key.startsWith("widget_")) {
+        this.widgetConfigs[key.replace("widget_", "")] = data[key];
       }
     }
   }

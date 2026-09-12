@@ -1,13 +1,17 @@
 // ==========================================================================
-// OverlayHttp — تقديم صفحات الأوفرلاي والويدجت من السحابة (Render)
-// بدل جهاز المستخدم: OBS بيحمّل الصفحة من الدومين مباشرة بتوكن خاص لكل
-// حساب، والأحداث بتوصله عبر SSE من نفس السيرفر — من غير أي تمرير محلي.
+// OverlayHttp — تقديم صفحات الأوفرلاي والويدجت من السحابة
+// OBS بيحمّل الصفحة من الدومين مباشرة بتوكن خاص لكل حساب، والأحداث
+// بتوصله عبر SSE من نفس السيرفر — من غير أي تمرير محلي.
 // المسارات متطابقة مع مسارات السيرفر المحلي فنفس الصفحات بتشتغل:
 //   /overlay/<token>/<screen>      صفحة الأوفرلاي
 //   /events/<token>/<screen>       SSE أحداث الشاشة
 //   /widget/<token>/<name>         صفحة ويدجت (كونفج محقون)
 //   /widgets/stream                SSE الويدجت
 //   /done/<token>/<screen>         إشارة انتهاء ميديا (no-op سحابيًا)
+//
+// متعدد الحسابات: التوكن هو اللي بيحدد الحساب — resolveToken بيرجّع سياق
+// الحساب (store وغيره)، وكل عملاء SSE مفهرسين بالتوكن فأحداث كل بث
+// بتوصل لصفحات OBS بتاعة صاحبها بس.
 // ==========================================================================
 
 const fs = require("fs");
@@ -27,13 +31,12 @@ function safeEqual(a, b) {
 
 class OverlayHttpService {
   constructor(opts = {}) {
-    this.store = opts.store;
-    this.getToken = opts.getToken || (() => null); // () => currentOverlayToken
+    // resolveToken(token) → سياق الحساب (فيه store و overlayToken) أو null
+    this.resolveToken = opts.resolveToken || (() => null);
     this.widgetsDir = opts.widgetsDir || path.join(process.cwd(), "src", "widgets");
-    this.screenClients = {};
-    this.widgetClients = [];
+    this.screenClients = new Map(); // token -> { screenKey -> [res] }
+    this.widgetClients = []; // [{ res, token }]
     this._rate = new Map(); // ip -> {start, count} — حماية تخمين التوكن
-    for (let i = 1; i <= TOTAL_SCREENS; i++) this.screenClients[String(i)] = [];
     setInterval(() => {
       const now = Date.now();
       for (const [ip, e] of this._rate) {
@@ -42,9 +45,56 @@ class OverlayHttpService {
     }, 60000).unref();
   }
 
-  authed(token) {
-    const t = this.getToken();
-    return !!t && safeEqual(token, t);
+  // ===== الأحداث الواردة من EventRunner/OverlayServer لحساب معين =====
+  // ctx = سياق الحساب (بيتح реш من الـ registry) — لازم يكون معاه overlayToken
+  handleEvent(ctx, type, payload) {
+    if (!payload || typeof payload !== "object" || !ctx) return;
+    const token = ctx.overlayToken;
+    if (!token) return;
+    const data = payload.data || payload;
+    try {
+      switch (type) {
+        case "ov:media":
+        case "ov:alert":
+        case "ov:tts":
+        case "ov:ttsq": {
+          const screens = this.screenClients.get(token);
+          if (!screens) break;
+          const screen = String(payload.screen || "1");
+          this.write(screens[screen] || [], data.item || data);
+          break;
+        }
+        case "ov:stats":
+          this.write(this.widgetClientsOf(token), { type: "stats", stats: payload.stats });
+          break;
+        case "ov:event":
+          this.write(this.widgetClientsOf(token), { type: payload.event, data: payload.data });
+          break;
+        case "ov:ext":
+          this.write(this.widgetClientsOf(token), { type: payload.event, data: payload.data });
+          break;
+        case "ov:wtest":
+          this.write(this.widgetClientsOf(token), Object.assign({ type: "test" }, payload));
+          break;
+        case "ov:wcfg":
+          this.write(this.widgetClientsOf(token), { type: "config", id: payload.id, config: payload.config });
+          break;
+      }
+    } catch (e) {}
+  }
+
+  // مواضيع الأغاني (songqueue/sr-settings/sr-control) — بث لحظي لعملاء
+  // الحساب بس. كل عميل هنا عدّى فحص توكن الأوفرلاي وقت فتح الاتصال في
+  // /widgets/stream فبث إعدادات الحساب (الصوت/المقاس) ليه آمن.
+  handleSongEvent(ctx, obj) {
+    if (!ctx) return;
+    try {
+      this.write(this.widgetClientsOf(ctx.overlayToken), obj);
+    } catch (e) {}
+  }
+
+  widgetClientsOf(token) {
+    return this.widgetClients.filter((c) => c.token === token).map((c) => c.res);
   }
 
   // حد 90 طلب/دقيقة لكل IP على مسارات التوكن — يخلي تخمين التوكن مستحيل عمليًا
@@ -64,46 +114,10 @@ class OverlayHttpService {
     return true;
   }
 
-  // ===== الأحداث الواردة من EventRunner/OverlayServer =====
-  handleEvent(type, payload) {
-    if (!payload || typeof payload !== "object") return;
-    const data = payload.data || payload;
-    try {
-      switch (type) {
-        case "ov:media":
-        case "ov:alert":
-        case "ov:tts":
-        case "ov:ttsq": {
-          const screen = String(payload.screen || "1");
-          this.write(this.screenClients[screen] || [], data.item || data);
-          break;
-        }
-        case "ov:stats":
-          this.write(this.widgetClients, { type: "stats", stats: payload.stats });
-          break;
-        case "ov:event":
-          this.write(this.widgetClients, { type: payload.event, data: payload.data });
-          break;
-        case "ov:ext":
-          this.write(this.widgetClients, { type: payload.event, data: payload.data });
-          break;
-        case "ov:wtest":
-          this.write(this.widgetClients, Object.assign({ type: "test" }, payload));
-          break;
-        case "ov:wcfg":
-          this.write(this.widgetClients, { type: "config", id: payload.id, config: payload.config });
-          break;
-      }
-    } catch (e) {}
-  }
-
-  // مواضيع الأغاني (songqueue/sr-settings/sr-control) — بث لحظي لعملاء SSE.
-  // كل عميل هنا عدّى فحص توكن الأوفرلاي وقت فتح الاتصال في /widgets/stream
-  // فبث إعدادات الحساب (الصوت/المقاس) ليه آمن — ده صاحب الحساب نفسه.
-  handleSongEvent(obj) {
-    try {
-      this.write(this.widgetClients, obj);
-    } catch (e) {}
+  // إزالة كل عملاء SSE بتوع توكن معين (الحساب قفل)
+  dropToken(token) {
+    this.screenClients.delete(token);
+    this.widgetClients = this.widgetClients.filter((c) => c.token !== token);
   }
 
   write(clients, payload) {
@@ -130,43 +144,53 @@ class OverlayHttpService {
     // صفحة الأوفرلاي
     app.get("/overlay/:token/:screen", (req, res) => {
       if (!this._rateGate(req, res)) return;
-      if (!this.authed(req.params.token)) return res.status(404).end("Not found");
+      const token = String(req.params.token || "");
+      if (!this.resolveToken(token)) return res.status(404).end("Not found");
       const screen = parseInt(req.params.screen, 10);
       if (!screen || screen < 1 || screen > TOTAL_SCREENS) return res.status(404).end("Invalid screen");
       res.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-cache" });
-      res.end(this._overlayHTML(String(screen)));
+      res.end(this._overlayHTML(token, String(screen)));
     });
 
     // SSE أحداث شاشة
     app.get("/events/:token/:screen", (req, res) => {
       if (!this._rateGate(req, res)) return;
-      if (!this.authed(req.params.token)) return res.status(404).end("Not found");
-      const key = String(parseInt(req.params.screen, 10) || "1");
-      if (parseInt(req.params.screen, 10) < 1 || parseInt(req.params.screen, 10) > TOTAL_SCREENS) {
+      const token = String(req.params.token || "");
+      if (!this.resolveToken(token)) return res.status(404).end("Not found");
+      const screenNum = parseInt(req.params.screen, 10);
+      if (screenNum < 1 || screenNum > TOTAL_SCREENS) {
         return res.status(404).end("Invalid screen");
       }
+      const key = String(screenNum || "1");
       res.writeHead(200, sseHeaders);
-      if (!this.screenClients[key]) this.screenClients[key] = [];
-      this.screenClients[key].push(res);
+      let screens = this.screenClients.get(token);
+      if (!screens) {
+        screens = {};
+        this.screenClients.set(token, screens);
+      }
+      if (!screens[key]) screens[key] = [];
+      screens[key].push(res);
       res.write(":ok\n\n");
       if (req.query.v !== OVERLAY_PAGE_VERSION) {
         res.write("data: " + JSON.stringify({ type: "reload" }) + "\n\n");
       }
       req.on("close", () => {
-        this.screenClients[key] = (this.screenClients[key] || []).filter((c) => c !== res);
+        const cur = this.screenClients.get(token);
+        if (!cur) return;
+        cur[key] = (cur[key] || []).filter((c) => c !== res);
+        if (Object.keys(cur).length === 0) this.screenClients.delete(token);
       });
     });
 
     // SSE الويدجت — التوكن في query أو جاي من referer صفحة الويدجت (زي المحلي)
     app.get("/widgets/stream", (req, res) => {
       if (!this._rateGate(req, res)) return;
-      const ok =
-        this.authed(req.query.t) ||
-        this.authed(req.query.token) ||
-        this._refererAuthed(req.headers.referer);
-      if (!ok) return res.status(404).end("Not found");
+      const token =
+        String(req.query.t || req.query.token || "") ||
+        this._refererToken(req.headers.referer);
+      if (!this.resolveToken(token)) return res.status(404).end("Not found");
       res.writeHead(200, sseHeaders);
-      this.widgetClients.push(res);
+      this.widgetClients.push({ res, token });
       res.write(":ok\n\n");
       if (req.query.v !== WIDGET_PAGE_VERSION) {
         res.write("data: " + JSON.stringify({ type: "reload" }) + "\n\n");
@@ -175,7 +199,7 @@ class OverlayHttpService {
         res.write("data: " + JSON.stringify({ type: "reload" }) + "\n\n");
       }
       req.on("close", () => {
-        this.widgetClients = this.widgetClients.filter((c) => c !== res);
+        this.widgetClients = this.widgetClients.filter((c) => c.res !== res);
       });
     });
 
@@ -188,10 +212,11 @@ class OverlayHttpService {
     // الميديا المحلية مش متاحة سحابيًا — رد سريع عشان الصفحة تكمّل
     app.get("/media/*", (req, res) => res.status(404).end("Not found"));
 
-    // صفحة ويدجت مع حقن الكونفج
+    // صفحة ويدجت مع حقن الكونفج — الكونفج من بيانات صاحب التوكن
     const serveWidget = async (req, res, token, rel, urlObj) => {
       if (!this._rateGate(req, res)) return;
-      if (!this.authed(token)) return res.status(404).end("Not found");
+      const ctx = this.resolveToken(String(token || ""));
+      if (!ctx) return res.status(404).end("Not found");
       const ext = path.extname(rel).toLowerCase();
       const root = path.resolve(this.widgetsDir);
       if (!ext || ext === ".html") {
@@ -204,7 +229,7 @@ class OverlayHttpService {
         if (html == null) return res.status(404).end("Widget not found");
         const widgetId = urlObj.searchParams.get("id") || name;
         let config = {};
-        try { config = this.store.get("widget_" + widgetId) || {}; } catch (e) { config = {}; }
+        try { config = ctx.store.get("widget_" + widgetId) || {}; } catch (e) { config = {}; }
         const injected = JSON.stringify(config)
           .replace(/\\/g, "\\\\")
           .replace(/'/g, "\\'")
@@ -232,24 +257,17 @@ class OverlayHttpService {
       serveWidget(req, res, req.params.token, req.params.name, new URL(req.url, "http://x"));
     });
 
-    // الجذر — تحويل لشاشة 1
-    app.get("/overlay", (req, res) => {
-      const t = this.getToken();
-      if (!t) return res.status(404).end();
-      res.writeHead(302, { Location: "/overlay/" + t + "/1" });
-      res.end();
-    });
+    // الجذر — مفيش توكن عام بعد تعدد الحسابات؛ الصفحة بتتفتح بتوكنها مباشرة
+    app.get("/overlay", (req, res) => res.status(404).end());
   }
 
-  _refererAuthed(referer) {
-    const ref = String(referer || "");
-    const m = ref.match(/\/(overlay|widget|widgets)\/([0-9a-f]{8,64})\//);
-    if (!m) return false;
-    return this.authed(m[2]);
+  _refererToken(referer) {
+    const m = String(referer || "").match(/\/(overlay|widget|widgets)\/([0-9a-f]{8,64})\//);
+    return m ? m[2] : "";
   }
 
   // ===== صفحة الأوفرلاي — نفس صفحة السيرفر المحلي حرفيًا (المسارات relative) =====
-  _overlayHTML(screen) {
+  _overlayHTML(token, screen) {
     return `<!doctype html>
 <html>
 <head>
@@ -285,7 +303,7 @@ class OverlayHttpService {
 <script>
 const SCREEN_ID = '${screen}';
 const PAGE_VERSION = '${OVERLAY_PAGE_VERSION}';
-const TOKEN = '${this.getToken() || ""}';
+const TOKEN = '${token}';
 const stage = document.getElementById('stage');
 let currentTimeout = null;
 let ttsQueue = [];
@@ -296,7 +314,7 @@ function notifyDone() {
 }
 function mediaUrl(p) {
   if (!p) return '';
-  if (/^https?:\/\//i.test(p) || p.startsWith('data:')) return p;
+  if (/^https?:\\/\\//i.test(p) || p.startsWith('data:')) return p;
   if (p.startsWith('/')) return p;
   return '/media/' + encodeURIComponent(p) + '?t=' + TOKEN;
 }

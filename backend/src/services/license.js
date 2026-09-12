@@ -327,6 +327,21 @@ class LicenseService {
     return !!this._session;
   }
 
+  // تبني جلسة محمّلة من نسخة استطلاع (probe) — restore-session بيقرأ الجلسة
+  // من جهاز قبل ما نعرف الإيميل، فبنقل الحالة لسياق الحساب النهائي
+  adoptSession(other) {
+    if (!other || !other._session) return;
+    this._session = other._session;
+    this._idToken = other._idToken;
+    this._idTokenAt = other._idTokenAt;
+    this.lastIdToken = other.lastIdToken;
+    this.currentTier = other.currentTier;
+    this.sessionEmail = other.sessionEmail;
+    this.sessionExpiresAt = other.sessionExpiresAt;
+    this.hwid = other.hwid;
+    this.currentUserDoc = other.currentUserDoc;
+  }
+
   async _saveSession(email, refreshToken, idToken) {
     this._session = { email, refreshToken, hwid: this.hwid || "" };
     if (!process.env.SESSION_SECRET) {

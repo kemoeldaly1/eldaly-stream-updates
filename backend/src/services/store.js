@@ -29,6 +29,10 @@ class StoreService {
     this._cloudSaving = false;
     this._cloudLoaded = false;
     this._cloudRetryDelay = 15000;
+    // آخر تعديلات معلّقة لكل حساب — لو السيرفر بدّل الحساب قبل ما الـ debounce
+    // يكتب على الكلاود (1.2 ثانية)، التعديلات دي بتتحفظ هنا وترجع تتزامن
+    // أول ما صاحبها يسجل دخول تاني بدل ما تتصرف أو تتكتب على مستند حساب تاني
+    this._pendingStash = {};
     this._ensureDir();
     this._load();
   }
@@ -72,6 +76,18 @@ class StoreService {
     const clean = String(email).trim().toLowerCase();
     if (clean === this.currentEmail && this.accountData) {
       return Promise.resolve();
+    }
+
+    // في تعديلات معلّقة للحساب القديم لسه متكتبتش على الكلاود؟
+    // خزّنها جانبًا — أول ما الحساب ده يرجع يسجل دخول بتتزامن تلقائيًا
+    // (من غير دي: تبديل الحساب في نص الـ debounce كان بيضيّع آخر تعديلات)
+    if (this.currentEmail && this.accountData) {
+      const pendingKeys = Object.keys(this._cloudDirty);
+      if (pendingKeys.length) {
+        const vals = {};
+        for (const key of pendingKeys) vals[key] = this.accountData[key];
+        this._stashPending(this.currentEmail, vals);
+      }
     }
 
     this.currentEmail = clean;
@@ -152,11 +168,42 @@ class StoreService {
         }
         this._scheduleCloudFlush();
       }
+      this._applyPendingStash();
       this._cloudLoaded = true;
     } catch (e) {
       // أوفلاين أو الكلاود مش متاح — نكمل بالكاش المحلي
+      this._applyPendingStash();
       this._cloudLoaded = true;
     }
+  }
+
+  // حوّل قيم مفاتيح معلّقة للـ stash الجانبي لحساب معين — نسخة منفصلة
+  // عن بيانات الحساب عشان تبديل/إفراغ الحساب مياثرش عليها
+  _stashPending(email, keyValues) {
+    if (!email || !keyValues) return;
+    const stash = this._pendingStash[email] || {};
+    for (const key of Object.keys(keyValues)) {
+      try {
+        stash[key] = JSON.parse(JSON.stringify(keyValues[key]));
+      } catch (e) {
+        stash[key] = null;
+      }
+    }
+    this._pendingStash[email] = stash;
+  }
+
+  // رجّع أي تعديلات محفوظة جانبًا للحساب الحالي فوق البيانات المحمّلة،
+  // وعلّمها متسخة عشان تتكتب على الكلاود — دي أحدث من نسخة الكلاود بالتعريف
+  _applyPendingStash() {
+    const stash = this._pendingStash[this.currentEmail];
+    if (!stash || !this.accountData) return;
+    delete this._pendingStash[this.currentEmail];
+    for (const key of Object.keys(stash)) {
+      this.accountData[key] = stash[key];
+      this._cloudDirty[key] = true;
+    }
+    this._saveAccount();
+    this._scheduleCloudFlush();
   }
 
   _scheduleCloudFlush() {
@@ -179,6 +226,15 @@ class StoreService {
     const dirtyKeys = Object.keys(this._cloudDirty);
     if (dirtyKeys.length === 0) return;
 
+    // لقطة متزامنة قبل أي await: الحساب والقيم لحظة الاستدعاء —
+    // لو الحساب اتبدّل في نص العملية (جلب التوكن مثلًا) البيانات دي
+    // لازم تروح لمستند صاحبها مش لمستند الحساب الجديد
+    const flushEmail = this.currentEmail;
+    const payload = {};
+    for (const key of dirtyKeys) {
+      payload[key] = this.accountData[key] === undefined ? null : this.accountData[key];
+    }
+
     let token = null;
     if (typeof this.getToken === "function") {
       try {
@@ -192,16 +248,18 @@ class StoreService {
       this._scheduleCloudFlush();
       return;
     }
-
-    const payload = {};
-    for (const key of dirtyKeys) {
-      payload[key] = this.accountData[key] === undefined ? null : this.accountData[key];
+    // الحساب اتبدّل أثناء جلب التوكن؟ يبقى التوكن بتاع حساب تاني ومينفعش
+    // نكتب بيه — حوّل اللقطة للـ stash؛ بتتزامن أول ما صاحبها يرجع يدخل
+    if (flushEmail !== this.currentEmail) {
+      this._stashPending(flushEmail, payload);
+      for (const key of dirtyKeys) delete this._cloudDirty[key];
+      return;
     }
 
     this._cloudSaving = true;
     try {
       try {
-        await this.cloud.saveAppDataKeys(this.currentEmail, token, payload);
+        await this.cloud.saveAppDataKeys(flushEmail, token, payload);
       } catch (e) {
         // لو فشل بسبب التوكن (401/403) — نعمل refresh ونحاول مرة تانية قبل نستسلم
         const status = e && e.status;
@@ -213,7 +271,13 @@ class StoreService {
             } catch (e2) {}
           }
           if (fresh && fresh !== token) {
-            await this.cloud.saveAppDataKeys(this.currentEmail, fresh, payload);
+            if (flushEmail !== this.currentEmail) {
+              // التوكن الجديد كمان لحساب تاني — نفس معالجة التبديل فوق
+              this._stashPending(flushEmail, payload);
+              for (const key of dirtyKeys) delete this._cloudDirty[key];
+              return;
+            }
+            await this.cloud.saveAppDataKeys(flushEmail, fresh, payload);
           } else {
             throw e;
           }
@@ -221,7 +285,17 @@ class StoreService {
           throw e;
         }
       }
-      for (const key of dirtyKeys) delete this._cloudDirty[key];
+      for (const key of dirtyKeys) {
+        // امسح علامة الوسخ بس لو القيمة الحالية هي نفس اللي اتحفظت —
+        // لو اتعدّلت تاني أثناء الحفظ تفضل معلّمة عشان تتحفظ بالأحدث
+        if (
+          this.currentEmail === flushEmail &&
+          this.accountData &&
+          this.accountData[key] === payload[key]
+        ) {
+          delete this._cloudDirty[key];
+        }
+      }
     } catch (e) {
       console.error("[Store] cloud flush error:", e.message);
       // البيانات لسه معلّقة — نعيد الجدولة بفاصل أطول عشان ما تضيعش
@@ -242,8 +316,16 @@ class StoreService {
   }
 
   clearAccount() {
-    // احفظ أي تغييرات معلّقة قبل تبديل الحساب
-    this.flushCloud().catch(() => {});
+    // خزّن أي تعديلات معلّقة جانبًا قبل الإفراغ — التوكن بقى مش متاح
+    // للحفظ المباشر بعد الخروج، فالـ stash يضمن وصولها أول رجوع للحساب
+    if (this.currentEmail && this.accountData) {
+      const pendingKeys = Object.keys(this._cloudDirty);
+      if (pendingKeys.length) {
+        const vals = {};
+        for (const key of pendingKeys) vals[key] = this.accountData[key];
+        this._stashPending(this.currentEmail, vals);
+      }
+    }
     this.currentEmail = null;
     this.accountData = null;
     this.accountFile = null;
