@@ -20,7 +20,7 @@ const crypto = require("crypto");
 const { WebSocketServer } = require("ws");
 
 const OVERLAY_PAGE_VERSION = "9"; // رفع الإصدار يجبر صفحات OBS تعمل reload وتشغل الكود المصلح
-const WIDGET_PAGE_VERSION = "2"; // نفس الفكرة لصفحات الويدجت (overlay-music) — SSE بيبعت reload لو الإصدار مختلف
+const WIDGET_PAGE_VERSION = "6"; // نفس الفكرة لصفحات الويدجت (overlay-music) — SSE بيبعت reload لو الإصدار مختلف
 const TOTAL_SCREENS = 10;
 
 function safeEqual(a, b) {
@@ -366,6 +366,28 @@ class OverlayHttpService {
           ");}catch(_){}}},20000);" +
           "return o;})()";
         html = html.split("new EventSource('/widgets/stream')").join(wsClient);
+        // overlay-music بيتصل بنسخة تانية من السطر (توكن + نسخة جاهزين) —
+        // نفس التحويل لكن التوكن بيتاخد من متغير TOKEN بتاع الصفحة نفسها
+        // والنسخة حرفية من السيرفر (const الصفحة ممكن تكون قديمة)
+        const wsClientTokenized =
+          "(function(){var o={onmessage:null},w=null,s=false;" +
+          "function c(){if(s)return;" +
+          "try{w=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/overlay-ws?t='+encodeURIComponent(TOKEN)+'&v=" +
+          WIDGET_PAGE_VERSION +
+          "');}catch(e){setTimeout(c,2500);return;}" +
+          "w.onmessage=function(e){var m=null;try{m=JSON.parse(e.data);}catch(_){return;}if(m&&m.type==='reload'){location.reload();return;}if(o.onmessage&&m){o.onmessage({data:e.data});}};" +
+          "w.onclose=function(){if(!s)setTimeout(c,2000);};" +
+          "w.onerror=function(){try{w.close();}catch(_){}};}" +
+          "c();" +
+          "setInterval(function(){if(w&&w.readyState===1){try{w.send(" +
+          pingJson +
+          ");}catch(_){}}},20000);" +
+          "return o;})()";
+        html = html
+          .split(
+            "new EventSource('/widgets/stream?t='+encodeURIComponent(TOKEN)+'&v='+WIDGET_PAGE_VERSION)",
+          )
+          .join(wsClientTokenized);
         res.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate" });
         return res.end(html);
       }

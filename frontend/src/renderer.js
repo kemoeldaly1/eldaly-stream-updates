@@ -1283,6 +1283,13 @@ async function loadHotkeys() {
   }
   renderHotkeys();
   await api.system.registerCustomHotkeys(hotkeysData);
+  // اختصارات Score Counter — بتتسجل برضه عند بدء البرنامج وبعد اللوجين
+  // وتغيير البروفايل. من غير السطرين دول الاختصارات كانت بتتسجل مرة واحدة
+  // عند الإقلاع (قبل جاهزية الجلسة) فبتفشل وتفضل ميتة طول الجلسة.
+  try {
+    const sbHk = await api.store.get("ext_scoreboard_hotkeys");
+    if (sbHk) await api.ext.scoreboard.registerHotkeys(sbHk);
+  } catch (e) {}
 }
 function renderHotkeys() {
   const v80 = document.getElementById("hotkeys-tbody");
@@ -4215,12 +4222,24 @@ loadWidgetConfigs();
         reset: document.getElementById("sb-hk-reset").value
       };
       await api.store.set("ext_scoreboard_hotkeys", vO17);
+      try {
+        localStorage.setItem("ext_scoreboard_hotkeys", JSON.stringify(vO17));
+      } catch (e) {}
       await api.ext.scoreboard.registerHotkeys(vO17);
       addFeedItem("system", "Extension", "Scoreboard settings saved", "🏆");
       vF22();
     };
   }
   async function f27() {
+    // تسجيل فوري من الكاش المحلي — الاختصارات تشتغل من لحظة فتح البرنامج
+    // حتى لو جلسة السيرفر لسه متزامنش (store.get وقتها بيرجع فاضي)
+    try {
+      const cached = JSON.parse(
+        localStorage.getItem("ext_scoreboard_hotkeys") || "null",
+      );
+      if (cached && cached.leftUp)
+        await api.ext.scoreboard.registerHotkeys(cached);
+    } catch (e) {}
     const getConfigResult14 = await api.widget.getConfig("scoreboard");
     if (getConfigResult14) {
       await api.widget.setConfig("scoreboard", getConfigResult14);

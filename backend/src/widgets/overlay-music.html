@@ -44,8 +44,12 @@ body{width:100vw;height:100vh}
 .pro-banner .pb-lock{font-size:30px;margin-bottom:8px}
 .pro-banner .pb-title{font-size:15px;font-weight:800;letter-spacing:2px;color:var(--gold);margin-bottom:5px}
 .pro-banner .pb-sub{font-size:11px;font-weight:700;color:#b7a98a}
+/* revive button — shown when the browser/OBS blocks autoplay */
+.revive{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:5;background:var(--gold);color:#141414;font:800 12.5px 'Inter',Tahoma,sans-serif;padding:9px 16px;border-radius:22px;cursor:pointer;display:none;box-shadow:0 6px 18px rgba(0,0,0,.5);white-space:nowrap}
+.revive:active{transform:translateX(-50%) scale(.96)}
 </style>
 <script src="https://w.soundcloud.com/player/api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
 </head>
 <body>
 <div id="wrap">
@@ -66,6 +70,8 @@ body{width:100vw;height:100vh}
       </div>
     </div>
 
+    <div class="revive" id="reviveBtn">▶ اضغط لتشغيل الأغنية</div>
+
     <!-- الطابور — العنوان بيتضاف ديناميكياً لما فيه طابور -->
     <div id="upnext"></div>
   </div>
@@ -82,6 +88,15 @@ const stateHeaders={'x-overlay-token':TOKEN};
 let cfg={songrequests:{overlayPermanent:true}};
 let scWidget=null; let currentVol=80;
 let lastKey=null;
+let playingOk=false; let curKey=null;
+D('reviveBtn').addEventListener('click',()=>{
+  try{
+    const a=window.__songAudio;
+    if(a){ a.play(); }
+    else if(scWidget){ scWidget.seekTo(0); scWidget.play(); }
+  }catch(e){}
+  D('reviveBtn').style.display='none';
+});
 
 function visibility(cur){
   // مفيش مشغل ظاهر — الكارت كله بيكمن لما مفيش أغنية ومفيش عرض دائم
@@ -101,7 +116,45 @@ function renderNow(cur){
   D('npArtist').textContent=cur.artist;
   D('npReq').textContent='🎵 by '+(cur.requestedBy||'');
 
-  // الصوت بيجي من المشغل المخفي — بنغير الـ src بس والصوت بيشتغل عادي
+  // الصوت بيجي من مشغل مباشر (<audio>) برابط MP3 من السيرفر — نفس آلية
+  // أصوات الأكشنز: بيشتغل تلقائيًا في OBS من غير أي ضغطة. المشغل المخفي
+  // (iframe ساوند كلاود) بقى خطة بديلة لو الرابط المباشر مش متاح.
+  playingOk=false;
+  if(cur.streamUrl){
+    D('sc-player').style.display='none';
+    let a=window.__songAudio;
+    if(!a){
+      a=window.__songAudio=new Audio();
+      a.onplaying=()=>{ playingOk=true; D('reviveBtn').style.display='none'; };
+      a.onended=()=>{ try{ if(ws&&ws.readyState===1) ws.send(JSON.stringify({type:'trackEnded'})); }catch(e){} };
+      a.onerror=()=>{ D('reviveBtn').style.display='block'; };
+    }
+    a.volume=Math.min(1,Math.max(0,(currentVol||80)/100));
+    const key=cur.streamUrl;
+    // المفارقة الصحيحة هي curKey مش a.src — لأن HLS بياخد blob: URL داخلي
+    // فـ a.src عمره ما يساوي رابط الأغنية والشرط القديم كان بيعيد تشغيل
+    // الأغنية من الأول مع كل تحديث حالة (polling كل 30 ثانية / أي طلب جديد)
+    if(curKey!==key){
+      curKey=key;
+      // هدم أي مشغل HLS قديم قبل تغيير المصدر
+      if(window.__hls){ try{ window.__hls.destroy(); }catch(e){} window.__hls=null; }
+      if(/\.m3u8($|\?)/i.test(key) && window.Hls && window.Hls.isSupported()){
+        // ساوند كلاود بيقدم HLS — hls.js بيحوله لصوت على عنصر الـ audio
+        a.src='';
+        const hls=new Hls({ autoStartLoad:true });
+        window.__hls=hls;
+        hls.loadSource(key);
+        hls.attachMedia(a);
+        hls.on(Hls.Events.MANIFEST_PARSED,()=>{ try{ a.play(); }catch(e){} });
+        hls.on(Hls.Events.ERROR,(_,d)=>{ if(d&&d.fatal) D('reviveBtn').style.display='block'; });
+      } else {
+        a.src=key;
+        try{ a.play(); }catch(e){}
+      }
+      // لو التشغيل التلقائي اتحجب: زر الاسترجاع بيظهر بعد 7 ثواني (وقت واحد بس)
+      setTimeout(()=>{ const s=window.__songAudio; if(s&&s.paused) D('reviveBtn').style.display='block'; },7000);
+    }
+  } else {
   const embed='https://w.soundcloud.com/player/?url='+encodeURIComponent(cur.permalink)
     +'&auto_play=true'
     +'&hide_related=true'
@@ -109,9 +162,17 @@ function renderNow(cur){
     +'&show_user=true'
     +'&visual=false';
   const frame=D('sc-player');
+  playingOk=false;
   if(frame.src!==embed){
     frame.src=embed;
     frame.onload=bindWidget;
+    // لو الـ autoplay اتحجب (متصفح/OBS) الـ PLAY مش هيطلع — بنورّي زر
+    // استرجاع بعد 7 ثواني، ضغطة واحدة بتشغل الأغنية وباقي الأغاني تلقائي
+    curKey=cur.permalink||cur.title;
+    setTimeout(()=>{
+      if(!playingOk&&D('sc-player').src===embed) D('reviveBtn').style.display='block';
+    },7000);
+  }
   }
 }
 
@@ -164,7 +225,12 @@ function bindWidget(){
     scWidget=SC.Widget(D('sc-player'));
     const applyVol=()=>{ try{ scWidget.setVolume(currentVol); }catch(e){} };
     scWidget.bind(SC.Widget.Events.READY,applyVol);
-    scWidget.bind(SC.Widget.Events.PLAY,applyVol);
+    scWidget.bind(SC.Widget.Events.PLAY,()=>{
+      applyVol();
+      // المشغل بدأ فعلًا — نكمن زر الاسترجاع
+      playingOk=true;
+      D('reviveBtn').style.display='none';
+    });
     setTimeout(applyVol,1500);
     setTimeout(applyVol,4000);
     scWidget.bind(SC.Widget.Events.FINISH,()=>{
@@ -189,7 +255,7 @@ sse.onmessage=(e)=>{
         // الصوت — يتطبق على المشغل في نفس اللحظة
         if(m.settings.volume!==undefined){
           currentVol=m.settings.volume;
-          try{ if(scWidget) scWidget.setVolume(currentVol); }catch(e){}
+          try{ if(scWidget) scWidget.setVolume(currentVol); }catch(e){} try{ const sa=window.__songAudio; if(sa) sa.volume=Math.min(1,Math.max(0,(currentVol||80)/100)); }catch(e){}
         }
         // المقاس — يتطبق فورًا على الكارت
         if(m.settings.overlayScale!==undefined) applyScale();
@@ -233,7 +299,7 @@ setInterval(async()=>{
     if(s.settings){
       if(s.settings.volume!==undefined&&s.settings.volume!==currentVol){
         currentVol=s.settings.volume;
-        try{ if(scWidget) scWidget.setVolume(currentVol); }catch(e){}
+        try{ if(scWidget) scWidget.setVolume(currentVol); }catch(e){} try{ const sa=window.__songAudio; if(sa) sa.volume=Math.min(1,Math.max(0,(currentVol||80)/100)); }catch(e){}
       }
       if(s.settings.overlayScale!==undefined&&s.settings.overlayScale!==cfg.songrequests?.overlayScale){
         cfg.songrequests={...cfg.songrequests,overlayScale:s.settings.overlayScale};
@@ -241,7 +307,7 @@ setInterval(async()=>{
       }
     }
     // طبق الصوت على أي مشغل جديد
-    try{ if(scWidget) scWidget.setVolume(currentVol); }catch(e){}
+    try{ if(scWidget) scWidget.setVolume(currentVol); }catch(e){} try{ const sa=window.__songAudio; if(sa) sa.volume=Math.min(1,Math.max(0,(currentVol||80)/100)); }catch(e){}
   }catch(e){}
 },30000);
 </script>

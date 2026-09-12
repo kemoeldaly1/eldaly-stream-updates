@@ -172,6 +172,59 @@ function createSongSystem(accountKey) {
     return track;
   }
 
+  // ---------------------------------------------------------------- التشغيل المباشر
+  // رابط MP3 مباشر للأغنية — مشغّل الأوفرلاي بيشغّله بعنصر <audio> عادي
+  // (نفس آلية أصوات الأكشنز اللي بتشتغل في OBS من غير أي ضغطة) بدل iframe
+  // ساوند كلاود اللي الـ autoplay بتاعه بيتحجب كتير.
+  const streamUrlCache = new Map(); // trackId -> url
+  async function getStreamUrl(trackId) {
+    const cached = streamUrlCache.get(String(trackId));
+    if (cached) return cached;
+    const cid = await ensureClientId();
+    const res = await fetch(
+      `https://api-v2.soundcloud.com/tracks/${encodeURIComponent(String(trackId))}?client_id=${cid}`,
+      { headers: UA, signal: AbortSignal.timeout(15000) },
+    );
+    if (!res.ok) throw new Error("track fetch failed");
+    const data = await res.json();
+    const transcodings = (data.media && data.media.transcodings) || [];
+    // المفضل progressive MP3 (تشغيل مباشر بعنصر audio) — ومعظم الأغاني
+    // الجديدة بتتقدم HLS بس، وده بيتشغل في الويدجت عبر hls.js
+    const progressive = transcodings.find(
+      (t) =>
+        t.format &&
+        t.format.protocol === "progressive" &&
+        /mpeg|mp3/i.test(t.format.mime || ""),
+    );
+    let target = progressive && progressive.url;
+    if (!target) {
+      const hls = transcodings.find((t) => t.format && t.format.protocol === "hls");
+      if (!hls || !hls.url) throw new Error("no playable stream");
+      target = hls.url;
+    }
+    const r2 = await fetch(
+      target + (target.includes("?") ? "&" : "?") + "client_id=" + cid,
+      { headers: UA, signal: AbortSignal.timeout(15000) },
+    );
+    if (!r2.ok) throw new Error("stream url failed");
+    const j2 = await r2.json();
+    if (!j2.url) throw new Error("no stream url");
+    streamUrlCache.set(String(trackId), j2.url);
+    return j2.url;
+  }
+
+  // إرفاق رابط التشغيل المباشر على الأغنية قبل عرضها — فشله مش بيمنع
+  // الطابور، الويدجت بيرجع لمشغل ساوند كلاود لو الرابط مش متاح
+  async function attachStreamUrl(track) {
+    if (!track || track.streamUrl) return track;
+    try {
+      track.streamUrl = await getStreamUrl(track.id);
+    } catch (e) {
+      track.streamUrl = null;
+    }
+    return track;
+  }
+
   // ---------------------------------------------------------------- النقاط
   function getPoints(user) {
     return st.points.get(String(user).toLowerCase()) || 0;
@@ -214,6 +267,28 @@ function createSongSystem(accountKey) {
     };
   }
 
+  // =========================================================================
+  // حارس الأغنية الحالية — لو مشغّل الأوفرلاي وقع أو الـ autoplay اتحجب،
+  // إشارة trackEnded عمرها ما توصل والطابور يفضل عالق على نفس الأغنية
+  // للأبد (كل الأغاني الجديدة بتظهر في UP NEXT ومش بتتشغل خالص).
+  // المؤقت ده بيجبر التقدم للأغنية اللي بعدها بعد المدة المتوقعة + مهلة.
+  // =========================================================================
+  let currentWatchdog = null;
+  function setCurrent(track) {
+    st.current = track;
+    if (currentWatchdog) {
+      clearTimeout(currentWatchdog);
+      currentWatchdog = null;
+    }
+    if (!track) return;
+    const dur = Number(track.durationMs) || 0;
+    // المدة المتوقعة + 90 ثانية سماح — أو سقف 10 دقايق لو المدة مجهولة
+    const cap = dur > 0 ? dur + 90000 : 10 * 60 * 1000;
+    currentWatchdog = setTimeout(() => {
+      try { trackEnded(); } catch (e) {}
+    }, cap);
+  }
+
   function broadcastQueue() {
     broadcast({ topic: "songqueue", ...queueState() });
   }
@@ -250,7 +325,8 @@ function createSongSystem(accountKey) {
     });
     if (!st.current) {
       const first = st.queue.shift();
-      st.current = { track: first, startedAt: Date.now() };
+      await attachStreamUrl(first);
+      setCurrent({ track: first, startedAt: Date.now() });
     }
     broadcastQueue();
     return track;
@@ -259,7 +335,8 @@ function createSongSystem(accountKey) {
   async function playNext() {
     const next = st.queue.shift() || null;
     if (next) {
-      st.current = { track: next, startedAt: Date.now() };
+      await attachStreamUrl(next);
+      setCurrent({ track: next, startedAt: Date.now() });
     } else {
       const fb = getConfig().songrequests?.fallbackUrl;
       if (fb) {
@@ -267,15 +344,15 @@ function createSongSystem(accountKey) {
           if (!fallbackCache || fallbackCache.url !== fb) {
             fallbackCache = { url: fb, track: await resolve(fb) };
           }
-          st.current = {
+          setCurrent({
             track: { ...fallbackCache.track, id: fallbackCache.track.id + "#fb", requestedBy: "Auto" },
             startedAt: Date.now(),
-          };
+          });
         } catch {
-          st.current = null;
+          setCurrent(null);
         }
       } else {
-        st.current = null;
+        setCurrent(null);
       }
     }
     broadcastQueue();
@@ -359,6 +436,7 @@ function createSongSystem(accountKey) {
     },
     search,
     resolve,
+    getStreamUrl,
     addTrack,
     trackEnded,
     control,
