@@ -32,7 +32,14 @@
     "!src/asset-key.js",
     "!scripts/**",
     "!dist/**",
-    "!*.md"
+    "!*.md",
+    "!rebuild_sr_en.js",
+    "!rebuild_sr_renderer.js",
+    "!repair_apifetch.js",
+    "!test_overlay_e2e.js",
+    "!test_simple.js",
+    "!nav_check.ps1",
+    "!src/data"
   ],
   "win": {
     "target": [

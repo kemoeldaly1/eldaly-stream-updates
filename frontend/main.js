@@ -59,6 +59,7 @@ const OVERLAY_BASE = process.env.OVERLAY_BASE || "https://overlay.eldalystream.c
 const configFilePath = path.join(app.getPath("userData"), "server_config.json");
 let overlayToken = null; // التوكن السداسي بتاع الحساب — بيحمي روابط الأوفرلاي
 let appSessionToken = null; // جلسة الـ API مع الباك إند
+let updaterRef = null; // مرجع electron-updater — لزر "تحديث الآن" من الواجهة
 // قفل الاستيلاء: لو الحساب اتفتح من جهاز/مكان تاني — الجهاز ده يتقفل بالكامل
 let kickedLock = false;
 
@@ -604,33 +605,20 @@ function startLicenseWatchdog() {
 function startAutoUpdate() {
   try {
     const { autoUpdater } = require("electron-updater");
+    updaterRef = autoUpdater;
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
     const check = () => autoUpdater.checkForUpdates().catch(() => {});
     check();
     setInterval(check, 6 * 60 * 60 * 1000);
-    autoUpdater.on("update-downloaded", () => {
+    autoUpdater.on("update-downloaded", (event) => {
       try {
-        dialog
-          .showMessageBox(mainWindow, {
-            type: "info",
-            title: "تحديث جديد",
-            message: "فيه نسخة جديدة من ELDALY STREAM اتنزلت.",
-            detail:
-              'هتتثبت تلقائيًا أول ما تقفل البرنامج — أو دوس "تحديث الآن" عشان تتقفل وتتثبت حالاً.',
-            buttons: ["تحديث الآن", "لما أقفل البرنامج"],
-            defaultId: 0,
-            cancelId: 1,
-            noLink: true,
-          })
-          .then(({ response }) => {
-            if (response === 0) {
-              try {
-                autoUpdater.quitAndInstall(false, true);
-              } catch (e) {}
-            }
-          })
-          .catch(() => {});
+        // رسالة التحديث بستايل البرنامج — توست جوه الواجهة مش دايلوج نظام
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("update:ready", {
+            version: (event && event.version) || "",
+          });
+        }
       } catch (e) {}
     });
   } catch (e) {}
@@ -880,6 +868,14 @@ function setupIPC() {
   );
   ipcMain.handle("screen:getAllSettings", () => apiFetch("/api/overlay/screens"));
   ipcMain.handle("screen:getQueueStatus", () => localOverlay.getQueueStatus());
+
+  // التحديث — زر "تحديث الآن" من توست الواجهة المخصص
+  ipcMain.handle("update:installNow", () => {
+    try {
+      if (updaterRef) updaterRef.quitAndInstall(false, true);
+    } catch (e) {}
+    return true;
+  });
 
   // Extensions
   ipcMain.handle("ext:command", (event, command, arg1, arg2) =>

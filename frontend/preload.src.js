@@ -142,6 +142,13 @@ const api = {
       ipcRenderer.on("screen:queueUpdate", (_, data) => callback(data)),
   },
 
+  // التحديث التلقائي — توست بستايل البرنامج بدل دايلوج النظام
+  updates: {
+    onReady: (callback) =>
+      ipcRenderer.on("update:ready", (_, info) => callback(info || {})),
+    installNow: () => ipcRenderer.invoke("update:installNow"),
+  },
+
   // Widget Configuration
   widget: {
     setConfig: (widgetId, config) =>

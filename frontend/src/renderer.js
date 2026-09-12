@@ -5957,3 +5957,61 @@ setInterval(checkSubscriptionBanner, 1800000);
   setInterval(() => srRefresh(), 15000);
 })();
 
+
+// ==========================================================================
+// توست التحديث — بستايل البرنامج (أسود/دهبي) بدل دايلوج النظام.
+// بيظهر تحت في النص لما النسخة الجديدة تتنزل: "تحديث الآن" يثبّت ويقفل،
+// أو "بعدين" بيتثبت لوحده أول ما البرنامج يقفل (autoInstallOnAppQuit).
+// ==========================================================================
+(function () {
+  if (!window.api || !api.updates || !api.updates.onReady) return;
+  let shown = false;
+  api.updates.onReady((info) => {
+    if (shown) return;
+    shown = true;
+    const ver = (info && info.version) || "";
+    const style = document.createElement("style");
+    style.textContent = `
+      #upd-toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(140%);
+        transition:transform .45s cubic-bezier(.2,.9,.3,1.2);z-index:99999;
+        background:rgba(16,14,10,.96);border:2px solid #d4af37;border-radius:16px;
+        padding:14px 18px;display:flex;align-items:center;gap:14px;
+        box-shadow:0 14px 44px rgba(0,0,0,.6);font-family:'Inter',Tahoma,sans-serif;
+        min-width:340px;max-width:92vw}
+      #upd-toast.show{transform:translateX(-50%) translateY(0)}
+      #upd-toast .u-icon{font-size:26px}
+      #upd-toast .u-body{flex:1;min-width:0}
+      #upd-toast .u-title{font-size:13.5px;font-weight:800;color:#d4af37;letter-spacing:.5px}
+      #upd-toast .u-sub{font-size:11.5px;color:#b7a98a;margin-top:3px;font-weight:600}
+      #upd-toast .u-btns{display:flex;flex-direction:column;gap:6px}
+      #upd-toast button{cursor:pointer;border:0;border-radius:9px;padding:7px 14px;
+        font:800 12px 'Inter',Tahoma,sans-serif;white-space:nowrap}
+      #upd-toast .u-now{background:#d4af37;color:#141414}
+      #upd-toast .u-later{background:transparent;color:#b7a98a;border:1px solid rgba(212,175,55,.35)!important}
+      #upd-toast .u-later:hover{color:#ece9e1}
+    `;
+    document.head.appendChild(style);
+    const t = document.createElement("div");
+    t.id = "upd-toast";
+    t.innerHTML =
+      '<div class="u-icon">🚀</div>' +
+      '<div class="u-body">' +
+      '<div class="u-title">ELDALY STREAM — تحديث جديد جاهز' + (ver ? " (v" + ver + ")" : "") + "</div>" +
+      '<div class="u-sub">هيتثبت تلقائيًا أول ما تقفل البرنامج</div>' +
+      "</div>" +
+      '<div class="u-btns">' +
+      '<button class="u-now">⚡ تحديث الآن</button>' +
+      '<button class="u-later">بعدين</button>' +
+      "</div>";
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add("show"));
+    t.querySelector(".u-now").addEventListener("click", () => {
+      t.querySelector(".u-now").textContent = "⏳ جاري التثبيت...";
+      try { api.updates.installNow(); } catch (e) {}
+    });
+    t.querySelector(".u-later").addEventListener("click", () => {
+      t.classList.remove("show");
+      setTimeout(() => t.remove(), 500);
+    });
+  });
+})();
