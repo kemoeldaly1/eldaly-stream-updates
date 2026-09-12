@@ -45,4 +45,5 @@ jobs:
             "frontend/dist/ELDALY-STREAM-Setup-$version.exe" `
             "frontend/dist/ELDALY-STREAM-Setup-$version.exe.blockmap" `
             "frontend/dist/latest.yml" `
+            "frontend/dist/ELDALY-STREAM-Setup-Latest.exe" `
             --clobber
