@@ -412,7 +412,14 @@ function handleMedia(data) {
       playPromise.catch(err => {
         console.warn('Video autoplay with sound blocked — retrying muted:', err);
         el.muted = true;
-        el.play().then(() => {}).catch(err2 => { console.error('Video error:', err2); finishMedia(el); });
+        el.play().then(() => {
+          const hint = document.createElement('div');
+          hint.style.cssText = 'position:absolute; top:10px; right:10px; background:rgba(255,165,0,0.9); color:#fff; padding:10px; border-radius:5px; font-family:sans-serif; font-size:14px; z-index:9999; cursor:pointer;';
+          hint.textContent = '🔇 Click anywhere to enable sound';
+          document.body.appendChild(hint);
+          const unmute = () => { try { el.muted = false; el.volume = volume; } catch (e) {} hint.remove(); document.removeEventListener('click', unmute); };
+          document.addEventListener('click', unmute);
+        }).catch(err2 => { console.error('Video error:', err2); finishMedia(el); });
       });
     }
   } else if (data.kind === 'audio') {
@@ -426,14 +433,42 @@ function handleMedia(data) {
     const playPromise = el.play();
     if (playPromise !== undefined) {
       playPromise.catch(err => {
-        console.warn('Audio playback prevented by browser policy — will retry on first click.', err);
-        const warning = document.createElement('div');
-        warning.style.cssText = 'position:absolute; top:10px; right:10px; background:rgba(255,0,0,0.8); color:#fff; padding:10px; border-radius:5px; font-family:sans-serif; font-size:14px; z-index:9999;';
-        warning.textContent = '🔊 Please click anywhere on this page to enable audio';
-        document.body.appendChild(warning);
-        setTimeout(() => warning.remove(), 5000);
-        const retry = () => { document.removeEventListener('click', retry); el.play().catch(() => {}); };
-        document.addEventListener('click', retry);
+        // بنفرّق بين حالتين: الملف نفسه فشل تحميله، وحظر التشغيل التلقائي —
+        // الرسالة الغلط بتخلي المستخدم يضغط في المشكلة الغلط.
+        if (el.error) {
+          console.warn('Audio failed to load (media error code ' + el.error.code + ')');
+          const warning = document.createElement('div');
+          warning.style.cssText = 'position:absolute; top:10px; right:10px; background:rgba(217,122,116,0.95); color:#fff; padding:10px 14px; border-radius:5px; font-family:sans-serif; font-size:14px; z-index:9999; direction:rtl;';
+          warning.textContent = '⚠ فشل تحميل الصوت — افتح الأكشن واختر الصوت تاني واعمل Save';
+          document.body.appendChild(warning);
+          setTimeout(() => warning.remove(), 6000);
+          return;
+        }
+        console.warn('Audio autoplay blocked by policy — one click unlocks the page.');
+        window.__pendingAudio = el;
+        if (!document.getElementById('audio-unlock-hint')) {
+          const hint = document.createElement('div');
+          hint.id = 'audio-unlock-hint';
+          hint.style.cssText = 'position:absolute; top:10px; right:10px; background:rgba(20,184,166,0.95); color:#fff; padding:10px 14px; border-radius:5px; font-family:sans-serif; font-size:14px; z-index:9999; direction:rtl;';
+          hint.textContent = '🔊 اضغط في أي مكان على الصفحة مرة واحدة لتفعيل الصوت';
+          document.body.appendChild(hint);
+          setTimeout(() => { const h = document.getElementById('audio-unlock-hint'); if (h) h.remove(); }, 10000);
+        }
+        const unlock = () => {
+          document.removeEventListener('click', unlock);
+          document.removeEventListener('touchstart', unlock);
+          const h = document.getElementById('audio-unlock-hint');
+          if (h) h.remove();
+          const pending = window.__pendingAudio;
+          window.__pendingAudio = null;
+          if (pending && pending.isConnected) {
+            pending.muted = false;
+            pending.volume = volume;
+            pending.play().catch(() => {});
+          }
+        };
+        document.addEventListener('click', unlock);
+        document.addEventListener('touchstart', unlock);
       });
     }
   } else if (data.kind === 'picture') {
