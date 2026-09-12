@@ -256,13 +256,18 @@ class OverlayHttpService {
           .replace(/</g, "\\u003c")
           .replace(/>/g, "\\u003e");
         html = html.replace("__INITIAL_CONFIG__", () => injected);
-        // صفحات الويدجت بتتصل بـ /widgets/stream من غير رقم نسخة — من غير
-        // الحقن ده السيرفر بيبعت reload في كل اتصال والصفحة تدخل حلقة
-        // reload لا نهائية وعمرها ما تعرض حاجة. الحقن بيخلي أول إعادة
-        // تحميل بعد أي تحديث تثبّت النسخة الصحيحة وتبطل الحلقة لوحدها.
+        // صفحات الويدجت بتتصل بـ /widgets/stream من غير توكن ولا نسخة —
+        // OBS مش بيبعت Referer فـ _authed كانت بترفض الاتصال (Not found)
+        // والويدجت عمرها ما تستقبل حدث، وفحص النسخة كان يبعتهم في حلقة
+        // reload لا نهائية. الحقن بيحل الاتنين: توكن + نسخة في الرابط.
         html = html
           .split("/widgets/stream")
-          .join("/widgets/stream?v=" + WIDGET_PAGE_VERSION);
+          .join(
+            "/widgets/stream?t=" +
+              encodeURIComponent(String(token || "")) +
+              "&v=" +
+              WIDGET_PAGE_VERSION,
+          );
         res.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate" });
         return res.end(html);
       }

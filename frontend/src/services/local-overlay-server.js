@@ -511,6 +511,12 @@ class LocalOverlayServer {
         .replace(/</g, "\\u003c")
         .replace(/>/g, "\\u003e");
       html = html.replace("__INITIAL_CONFIG__", () => injected);
+      // OBS browser source مش بيبعت Referer — فاتصال SSE بتاع الويدجت كان
+      // بيرفضه _authed (Not found) والويدجت عمرها ما تستقبل حدث لايف.
+      // حقن التوكن في رابط الاتصال بيخلّي الاتصال ينجح من أي مكان.
+      html = html
+        .split("/widgets/stream")
+        .join("/widgets/stream?t=" + encodeURIComponent(this.token || ""));
       res.writeHead(200, {
         "Content-Type": "text/html",
         "Cache-Control": "no-cache, no-store, must-revalidate",
