@@ -229,9 +229,19 @@ function saveSongSettings(ctx, patch) {
 // أوامر طلبات الأغاني من شات التيك توك — بتشتغل على طابور صاحب البث نفسه
 function handleSongCommands(ctx, username, badges, content) {
   const sr = songSettings(ctx);
-  if (!sr.enabled) return;
-  ctx.songs.earnPoints(username); // كسب نقاط الولاء من التفاعل
   const text = String(content || "").trim();
+  // تشخيص أوامر الأغاني — كل أمر يبدأ بـ ! يتسجل مع سبب الرفض لو اترفض
+  if (text.startsWith("!")) {
+    console.log(
+      `[SongCmd] ${username}: "${text}" | enabled=${sr.enabled} playEnabled=${sr.playEnabled} ` +
+      `allowedFor=${JSON.stringify(sr.allowedFor)} badges=${JSON.stringify(badges || [])}`,
+    );
+  }
+  if (!sr.enabled) {
+    if (text.startsWith("!")) console.log(`[SongCmd] REJECTED: songs disabled`);
+    return;
+  }
+  ctx.songs.earnPoints(username); // كسب نقاط الولاء من التفاعل
   const lower = text.toLowerCase();
   const badgeSet = new Set(badges || []);
   const isMod = badgeSet.has("moderator") || badgeSet.has("staff");
@@ -251,13 +261,13 @@ function handleSongCommands(ctx, username, badges, content) {
   // "!sr" هو الأمر الأشهر عند المشاهدين (نفس تيكفينيتي) — ضفناه مع الباقي
   const playArg = argOf("!sr", "!play", "!song", "!request");
   if (playArg !== null) {
-    if (!sr.playEnabled) return songFeed(username, "طلب الأغاني مقفول حالياً");
-    if (!canUse) return songFeed(username, "أمر طلب الأغاني مش متاح لحسابك");
+    if (!sr.playEnabled) { console.log(`[SongCmd] REJECTED: play disabled`); return songFeed(username, "طلب الأغاني مقفول حالياً"); }
+    if (!canUse) { console.log(`[SongCmd] REJECTED: ${username} not allowed`); return songFeed(username, "أمر طلب الأغاني مش متاح لحسابك"); }
     if (!playArg) return songFeed(username, "اكتب اسم الأغنية أو لينك ساوند كلاود بعد الأمر");
     ctx.songs
       .addTrack(username, playArg)
-      .then((t) => songFeed(username, "تمت الإضافة: " + t.title + " - " + t.artist))
-      .catch((e) => songFeed(username, e.message));
+      .then((t) => { console.log(`[SongCmd] ADDED: ${t.title} for ${username}`); songFeed(username, "تمت الإضافة: " + t.title + " - " + t.artist); })
+      .catch((e) => { console.log(`[SongCmd] ADD FAILED: ${e.message}`); songFeed(username, e.message); });
     return;
   }
   if (argOf("!skip") !== null) {
@@ -573,7 +583,7 @@ wsHeartbeat.unref();
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    version: "1.4.0",
+    version: "2.3.7b",
     uptime: process.uptime(),
     accounts: accounts.byEmail.size,
     liveStreams: accounts.all().filter((c) => c.tiktok && c.tiktok.isConnected()).length,
@@ -935,6 +945,7 @@ app.post("/api/tiktok/connect", async (req, res) => {
 
   try {
     ctx.eventRunner.setupTikTokListeners();
+    ctx.bindChatHook(); // مستمع أوامر الأغاني — setupTikTokListeners بيمسحه
     const connectResult = await ctx.tiktok.connect(username, {
       instantGifts: true,
     });
