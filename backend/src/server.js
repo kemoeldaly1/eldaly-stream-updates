@@ -583,7 +583,7 @@ wsHeartbeat.unref();
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    version: "2.3.8b",
+    version: "2.3.8c",
     uptime: process.uptime(),
     accounts: accounts.byEmail.size,
     liveStreams: accounts.all().filter((c) => c.tiktok && c.tiktok.isConnected()).length,

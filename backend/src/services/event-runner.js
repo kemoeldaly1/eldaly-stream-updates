@@ -701,16 +701,38 @@ class EventRunner extends EventEmitter {
 
         if (opts.webhook_enabled && action.webhook_url) {
           const formattedUrl = this.formatText(action.webhook_url, context);
-          fetch(formattedUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+          // Custom JSON Body من المستخدم (بـ placeholders) — ولو فاضي البودي الافتراضي
+          // من غيره الخدمات الخارجية (ديسكورد/ستريمر بوت/...) كانت بترفض الطلب
+          const rawBody = String(action.webhook_body || "").trim();
+          let body;
+          let contentType = "application/json";
+          if (rawBody) {
+            const formatted = this.formatText(rawBody, context);
+            try {
+              body = JSON.stringify(JSON.parse(formatted));
+            } catch (e) {
+              body = formatted;
+              contentType = "text/plain";
+            }
+          } else {
+            body = JSON.stringify({
               user: context.user || "",
               action: action.name,
               data: context,
-            }),
-          }).catch((err) => logFn("[Webhook Error] " + err.message));
-          logFn(`[Action: ${action.name}] Webhook → ${formattedUrl}`);
+            });
+          }
+          fetch(formattedUrl, {
+            method: "POST",
+            headers: { "Content-Type": contentType },
+            body,
+            signal: AbortSignal.timeout(10000),
+          })
+            .then((r) =>
+              logFn(
+                `[Action: ${action.name}] Webhook → ${formattedUrl} (HTTP ${r.status})`,
+              ),
+            )
+            .catch((err) => logFn("[Webhook Error] " + err.message));
         }
 
         if (opts.minecraft_enabled && action.mc_cmd) {
