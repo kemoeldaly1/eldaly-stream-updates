@@ -132,6 +132,8 @@ const api = {
       ipcRenderer.on("stop-local-tts", () => callback()),
     onLocalWebhookResult: (callback) =>
       ipcRenderer.on("local-webhook-result", (_, data) => callback(data)),
+    onLocalKeysResult: (callback) =>
+      ipcRenderer.on("local-keys-result", (_, data) => callback(data)),
   },
 
   // Screen Management

@@ -14,6 +14,27 @@ class KeyboardService {
     );
     this.keySenderPath = fs.existsSync(unpacked) ? unpacked : plain;
     this.lastError = "";
+    // لوج تشخيصي — مشاكل الضغطات بتبقى صامتة (دفاع ويندوز/مسار/مفتاح مش معروف)
+    try {
+      const { app } = require("electron");
+      const logDir = path.join(app.getPath("userData"), "logs");
+      fs.mkdirSync(logDir, { recursive: true });
+      this._logFile = path.join(logDir, "keyboard.log");
+    } catch (e) {
+      this._logFile = null;
+    }
+    this._log(
+      "init: sender=" +
+        this.keySenderPath +
+        " exists=" +
+        fs.existsSync(this.keySenderPath),
+    );
+  }
+  _log(msg) {
+    try {
+      if (this._logFile)
+        fs.appendFileSync(this._logFile, new Date().toISOString() + " " + msg + "\n");
+    } catch (e) {}
   }
   isAvailable() {
     return fs.existsSync(this.keySenderPath);
@@ -33,8 +54,12 @@ class KeyboardService {
         }
       }
       if (vA.length === 0) {
+        this._log("sendKeys: مفيش مفاتيح معروفة في \"" + v + "\" — تم تجاهلها");
         return true;
       }
+      this._log(
+        "sendKeys: \"" + v + "\" -> tokens=" + JSON.stringify(vA) + " hold=" + p2 + "ms",
+      );
       let vLN02 = 0;
       const vF = () => {
         if (vLN02 >= vA.length) {
@@ -46,11 +71,13 @@ class KeyboardService {
           execFile(this.keySenderPath, [v5, p2.toString()], p3 => {
             if (p3) {
               this.lastError = String(p3.message || p3);
+              this._log("spawn ERROR: " + this.lastError);
               console.error("[Keyboard] KeySender Error:", p3);
             }
           });
         } else {
           this.lastError = "KeySender.exe not found at " + this.keySenderPath;
+          this._log("sender missing: " + this.keySenderPath);
           console.error("[Keyboard] KeySender.exe not found at", this.keySenderPath);
         }
         vLN02++;

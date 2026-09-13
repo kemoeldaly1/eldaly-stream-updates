@@ -790,6 +790,19 @@ if (typeof api.overlay?.onLocalWebhookResult === "function") {
     );
   });
 }
+// نتيجة ضغطات الكيبورد — توضح للعميل إن الضغطة اتبعتت فعلًا
+if (typeof api.overlay?.onLocalKeysResult === "function") {
+  api.overlay.onLocalKeysResult(r => {
+    addFeedItem(
+      "system",
+      "Keys",
+      (r && r.actionName ? r.actionName + " — " : "") +
+        "⌨️ " + (r && r.keys ? r.keys : "?") +
+        (r && r.ok ? " — اتبرمجت للإرسال للنافذة النشطة" : " — فشل: " + (r && r.error ? r.error : "؟")),
+      r && r.ok ? "⌨️" : "⚠️"
+    );
+  });
+}
 function processLocalTTSQueue() {
   if (localTtsSpeaking || localTtsQueue.length === 0) {
     return;

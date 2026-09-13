@@ -422,7 +422,13 @@ function connectBackendWebSocket() {
         // Handle local execution requests
         if (msg.type === "client:pressKeys" && msg.data) {
           const { keys, delay, actionName } = msg.data;
-          keyboardService.sendKeys(keys, delay);
+          const sent = keyboardService.sendKeys(keys, delay);
+          mainWindow?.webContents.send("local-keys-result", {
+            ok: sent,
+            keys,
+            actionName,
+            error: sent ? "" : "خدمة الكيبورد رجعت فشل",
+          });
           console.log(
             `[Local Keyboard] KeySender executed for ${actionName}: ${keys}`,
           );
