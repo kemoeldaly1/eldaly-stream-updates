@@ -138,6 +138,7 @@ class AccountContext {
     const device = String(hwid || "");
     if (this.session && this.session.hwid === device) {
       this.session.lastSeen = now;
+      this._persistSessionIndex(this.session.token, device);
       return this.session.token;
     }
     if (this.session && this.session.hwid !== device) {
@@ -150,6 +151,8 @@ class AccountContext {
       hwid: device,
       lastSeen: now,
     };
+    // فهرس الكلاود: بيخلي الجلسة تعدي إعادة تشغيل السيرفر
+    this._persistSessionIndex(this.session.token, device);
     return this.session.token;
   }
 
@@ -157,6 +160,7 @@ class AccountContext {
   _takeover() {
     const old = this.session ? this.session.token : null;
     this.kicked = old ? { token: old, at: Date.now() } : null;
+    if (old) this._deleteSessionIndex(old);
     if (old) {
       for (const client of this.wsClients) {
         if (client._appSession === old) {
@@ -183,6 +187,7 @@ class AccountContext {
   // البرنامج بيقفل بشكل نظيف — بيسيب الجهاز فاضي عشان يفتح من أي مكان
   releaseSession() {
     const old = this.session ? this.session.token : null;
+    if (old) this._deleteSessionIndex(old);
     if (old) {
       for (const client of this.wsClients) {
         if (client._appSession === old) {
@@ -193,6 +198,30 @@ class AccountContext {
     }
     this.session = null;
     this.kicked = null;
+  }
+
+  // فهرس الجلسة على الكلاود (fire-and-forget) — عشان restart السيرفر
+  // ميمسحش الجلسة من وش العميل. أي فشل بيتساهل فيه — الأصل في الذاكرة شغال.
+  _persistSessionIndex(token, hwid) {
+    const t = String(token || "");
+    if (!t || !this.store || !this.store.cloud) return;
+    (async () => {
+      try {
+        const idToken = await this.license.getIdToken();
+        await this.store.cloud.writeSessionIndex(t, this.email, String(hwid || ""), idToken);
+      } catch (e) {}
+    })();
+  }
+
+  _deleteSessionIndex(token) {
+    const t = String(token || "");
+    if (!t || !this.store || !this.store.cloud) return;
+    (async () => {
+      try {
+        const idToken = await this.license.getIdToken();
+        await this.store.cloud.deleteSessionIndex(t, idToken);
+      } catch (e) {}
+    })();
   }
 
   sessionOk(token, hwid) {

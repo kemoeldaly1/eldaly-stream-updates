@@ -107,7 +107,17 @@ function visibility(cur){
 }
 
 function renderNow(cur){
-  if(!cur){D('npBody').classList.add('hidden');visibility(null);return;}
+  if(!cur){
+    D('npBody').classList.add('hidden');
+    // إيقاف فعلي للصوت — من غير ده الأغنية القديمة كانت بتكمل تعمل بعد
+    // التخطي/التفريغ لأن إخفاء الكارت مش بيوقف عنصر الـ audio
+    try{ const a=window.__songAudio; if(a){ a.pause(); a.removeAttribute('src'); a.load(); } }catch(e){}
+    try{ if(window.__hls){ window.__hls.destroy(); window.__hls=null; } }catch(e){}
+    try{ D('sc-player').src='about:blank'; }catch(e){}
+    curKey=null;
+    visibility(null);
+    return;
+  }
   D('npBody').classList.remove('hidden');
   visibility({current:cur});
 

@@ -113,6 +113,65 @@ class CloudStore {
     return DB_ROOT + "/sessions/" + encodeURIComponent(id);
   }
 
+  // =========================================================================
+  // فهرس جلسات التطبيق — نفس مجموعة sessions بمستندات idx-<token>.
+  // بيخلي جلسات التطبيق تعدي إعادة تشغيل السيرفر: بعد restart السيرفر
+  // بيلاقي التوكن هنا وبيبني الجلسة من جديد بنفس التوكن فالعميل مكمل شغال.
+  // القراءة من غير توكن (زي الـ blobs) — الـ ID نفسه توكن CSPRNG 24 بايت
+  // مش قابل للتخمين. الكتابة/المسح بتوكن مستخدم صالح.
+  // =========================================================================
+  _sessionIndexUrl(token) {
+    return DB_ROOT + "/sessions/" + encodeURIComponent("idx-" + token);
+  }
+
+  async readSessionIndex(token) {
+    try {
+      const response = await fetch(this._sessionIndexUrl(String(token || "")));
+      if (response.status === 404) return null;
+      if (!response.ok) return null;
+      const body = await response.json();
+      const f = body && body.fields;
+      if (!f || !f.email) return null;
+      return {
+        email: (f.email && f.email.stringValue) || "",
+        hwid: (f.hwid && f.hwid.stringValue) || "",
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async writeSessionIndex(token, email, hwid, idToken) {
+    const response = await fetch(this._sessionIndexUrl(token), {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + idToken,
+      },
+      body: JSON.stringify({
+        fields: {
+          email: { stringValue: email },
+          hwid: { stringValue: hwid || "" },
+          updatedAt: { timestampValue: new Date().toISOString() },
+        },
+      }),
+    });
+    if (!response.ok) throw new Error("session index write failed: " + response.status);
+    return true;
+  }
+
+  async deleteSessionIndex(token, idToken) {
+    try {
+      const response = await fetch(this._sessionIndexUrl(token), {
+        method: "DELETE",
+        headers: { Authorization: "Bearer " + idToken },
+      });
+      return response.ok || response.status === 404;
+    } catch (e) {
+      return false;
+    }
+  }
+
   async getSessionBlob(id) {
     const response = await fetch(this._sessionUrl(id));
     if (response.status === 404) return null;

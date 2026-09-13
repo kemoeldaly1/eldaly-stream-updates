@@ -411,11 +411,64 @@ const songsLimiter = makeRateLimiter(
   "محاولات كتير — استنى شوية وحاول تاني",
 );
 
-app.use((req, res, next) => {
+// إحياء الجلسة بعد إعادة تشغيل السيرفر: التوكن مش في الذاكرة، لكن فهرسه
+// محفوظ على الكلاود (sessions/idx-<token> — accounts._persistSessionIndex).
+// بنبني الجلسة كاملة بنفس التوكن فالعميل المفتوح يكمل من غير لوجين تاني.
+// فشل أي خطوة = رجوع طبيعي لـ 401 والعميل بيعمل restore بنفسه (المسار القديم).
+const _resurrectFail = new Map(); // توكنات مالهاش فهرس — منع ضرب الكلاود بلا داعي
+const _resurrectBusy = new Set();
+async function resurrectSession(token, hwid) {
+  const t = String(token || "");
+  const device = String(hwid || "");
+  if (!t || t.length < 20 || !device) return null;
+  if (_resurrectBusy.has(t)) return null;
+  const failedAt = _resurrectFail.get(t);
+  if (failedAt && Date.now() - failedAt < 60000) return null;
+  _resurrectBusy.add(t);
+  try {
+    const cloudStore = new (require("./services/cloud-store"))();
+    const rec = await cloudStore.readSessionIndex(t);
+    if (!rec || !rec.email) {
+      _resurrectFail.set(t, Date.now());
+      if (_resurrectFail.size > 5000) _resurrectFail.clear();
+      return null;
+    }
+    // الجلسة مربوطة بجهازها — الهيدر لازم يطابق المخزن
+    if (rec.hwid && device !== rec.hwid) return null;
+    const ctx = accounts.getOrCreate(rec.email);
+    if (ctx.session) return ctx.session.token === t ? ctx : null;
+    const probe = new (require("./services/license"))(probeStore);
+    const result = await probe.restoreSession(rec.hwid || device);
+    if (!result.loggedIn || !result.email) return null;
+    ctx.license.adoptSession(probe);
+    const newToken = await establishSession(
+      ctx,
+      rec.hwid || device,
+      result.overlayToken,
+      probe.lastIdToken,
+    );
+    if (!newToken) return null;
+    // نمسك نفس توكن العميل القديم — ده اللي يخلي الإحياء شفاف تمامًا
+    accounts.unindexSession(ctx);
+    ctx.session.token = t;
+    accounts.indexSession(ctx);
+    console.log(`[Session] resurrected for ${rec.email} after restart`);
+    return ctx;
+  } catch (e) {
+    return null;
+  } finally {
+    _resurrectBusy.delete(t);
+  }
+}
+
+app.use(async (req, res, next) => {
   if (!req.path.startsWith("/api") || isPublicApiPath(req.path)) return next();
   const header = req.headers["x-app-session"];
   const device = req.headers["x-app-hwid"];
-  const ctx = accounts.getBySession(header);
+  let ctx = accounts.getBySession(header);
+  if (!ctx && header) {
+    ctx = await resurrectSession(header, device).catch(() => null);
+  }
   // الجهاز المطروود (اتخذ مكانه جهاز تاني): رفض فوري بأمر kicked —
   // التطبيق عنده يفهم ويقفل كل حاجة بدل ما يحاول يعمل restore ويسرق الجلسة
   if (ctx && header && ctx.isKicked(header)) {
@@ -497,7 +550,7 @@ function attachGuestClient(ws, req) {
   });
 }
 
-wss.on("connection", (ws, req) => {
+wss.on("connection", async (ws, req) => {
   // سقف إجمالي للاتصالات — إغراق WS بيستهلك ذاكرة السيرفر، فأي اتصال زائد بيرفض فوراً
   if (wsClients.size >= WS_MAX_CLIENTS) {
     try { ws.close(1013, "server busy"); } catch (e) {}
@@ -511,7 +564,11 @@ wss.on("connection", (ws, req) => {
     sessionParam = params.get("session");
     hwidParam = params.get("hwid");
   } catch (e) {}
-  const ctx = accounts.getBySession(sessionParam);
+  let ctx = accounts.getBySession(sessionParam);
+  if (!ctx && sessionParam) {
+    // بعد restart السيرفر: جرب إحياء الجلسة من فهرس الكلاود بنفس التوكن
+    ctx = await resurrectSession(sessionParam, hwidParam).catch(() => null);
+  }
   const sessionOk = !!(ctx && ctx.sessionOk(sessionParam, hwidParam));
   if (!sessionOk) {
     return attachGuestClient(ws, req);
@@ -583,7 +640,7 @@ wsHeartbeat.unref();
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    version: "2.3.8c",
+    version: "2.3.9b",
     uptime: process.uptime(),
     accounts: accounts.byEmail.size,
     liveStreams: accounts.all().filter((c) => c.tiktok && c.tiktok.isConnected()).length,
