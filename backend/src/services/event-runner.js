@@ -699,7 +699,7 @@ class EventRunner extends EventEmitter {
           }
         }
 
-        if (opts.webhook_enabled && action.webhook_url) {
+        if ((opts.webhook_enabled || action.webhook_enabled) && action.webhook_url) {
           const formattedUrl = this.formatText(action.webhook_url, context);
           // Custom JSON Body من المستخدم (بـ placeholders) — ولو فاضي البودي الافتراضي
           // من غيره الخدمات الخارجية (ديسكورد/ستريمر بوت/...) كانت بترفض الطلب
