@@ -248,7 +248,8 @@ function handleSongCommands(ctx, username, badges, content) {
   };
   const songFeed = (user, msg) =>
     ctx.broadcastRaw({ topic: "event", event: { type: "song", text: user + " — " + msg } });
-  const playArg = argOf("!play", "!song", "!request");
+  // "!sr" هو الأمر الأشهر عند المشاهدين (نفس تيكفينيتي) — ضفناه مع الباقي
+  const playArg = argOf("!sr", "!play", "!song", "!request");
   if (playArg !== null) {
     if (!sr.playEnabled) return songFeed(username, "طلب الأغاني مقفول حالياً");
     if (!canUse) return songFeed(username, "أمر طلب الأغاني مش متاح لحسابك");

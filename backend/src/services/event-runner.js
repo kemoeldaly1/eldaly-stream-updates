@@ -375,14 +375,28 @@ class EventRunner extends EventEmitter {
       }
     }
 
-    if (ttsCfg.filterMentions && comment.includes("@")) isBlocked = true;
+    // المنشن (@handle): علامة @ نفسها بتلخبط قارئ Edge فبتتقرا صامتة أو
+    // حروف مقطعة — والسلوك القديم كان يحظر الرسالة كلها من أصله!
+    //   • فلتر المنشن مفعّل  → نشيل المنشن بس ونقرأ باقي الجملة
+    //   • فلتر المنشن مقفول → نستبدل @handle بكلمة "منشن" تتقرا طبيعي
+    //   • رسالة كانت منشن بس من غير كلام → متتقراش (مفيش فايدة)
+    let hasMeaningful = true;
+    if (comment.includes("@")) {
+      if (ttsCfg.filterMentions) {
+        comment = comment.replace(/@[\w.\-]+/g, " ").replace(/\s+/g, " ").trim();
+        if (!comment) hasMeaningful = false;
+      } else {
+        comment = comment.replace(/@[\w.\-]+/g, " منشن ").replace(/\s+/g, " ").trim();
+        if (!comment.replace(/منشن/g, "").trim()) hasMeaningful = false;
+      }
+    }
     if (ttsCfg.filterCmds && comment.startsWith("!")) isBlocked = true;
     if (ttsCfg.filterLetter && /(.)\1{4,}/.test(comment)) isBlocked = true;
 
     const maxLen = ttsCfg.maxLen || 150;
     let cleanText =
       comment.length > maxLen ? comment.substring(0, maxLen) : comment;
-    if (isBlocked || !cleanText.trim()) return;
+    if (isBlocked || !cleanText.trim() || !hasMeaningful) return;
 
     const now = Date.now();
     const lastTts = this._ttsCooldowns[user] || 0;
