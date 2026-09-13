@@ -1,7 +1,7 @@
 {
   "name": "eldaly-stream",
-  "version": "2.3.13",
-  "description": "ELDALY STREAM — TikTok LIVE Interactive Desktop Client",
+  "version": "2.3.15",
+  "description": "ELDALY STREAM ??? TikTok LIVE Interactive Desktop Client",
   "main": "boot.js",
   "author": "ELDALY STREAM",
   "license": "UNLICENSED",
