@@ -23,6 +23,8 @@ class EventRunner extends EventEmitter {
     this.globalMultiplierTimer = null;
     this._avatarCache = new Map();
     this._ttsCooldowns = {};
+    this._ttsMuteUntil = 0;
+    this._ttsPending = 0;
 
     this._bindOverlay();
     this.setupTikTokListeners();
@@ -111,6 +113,7 @@ class EventRunner extends EventEmitter {
     ts.removeAllListeners();
 
     ts.on("disconnected", () => {
+      this.stopTTS();
       this.emit("connection-status", { status: "disconnected" });
       if (this._liveHeartbeat) {
         clearInterval(this._liveHeartbeat);
@@ -375,6 +378,12 @@ class EventRunner extends EventEmitter {
 
     if (!allowed) return;
 
+    // أول ثواني بعد الكونكت بتجيب دفعة شات قديم من تيك توك — ما نقراهاش
+    if (Date.now() < (this._ttsMuteUntil || 0)) return;
+    // سقف التزامن: وقت الزحمة نرمي الزيادة بدل ما الصوت يتراكم
+    if ((this._ttsPending || 0) >= 2) return;
+    this._ttsPending++;
+
     let isBlocked = false;
     if (ttsCfg.blacklist && ttsCfg.blacklist.trim() !== "") {
       const blacklist = ttsCfg.blacklist
@@ -471,10 +480,22 @@ class EventRunner extends EventEmitter {
       this.overlayServer.queueTTS("1", fallbackPayload);
       this.emit("play-local-tts", fallbackPayload);
     } finally {
+      this._ttsPending = Math.max(0, (this._ttsPending || 1) - 1);
       try {
         if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
       } catch (e) {}
     }
+  }
+
+  // أول ثواني بعد الكونكت: دفعة الشات القديم من تيك توك ما تتقراش
+  onTikTokConnected() {
+    this._ttsMuteUntil = Date.now() + 8000;
+  }
+
+  // فصل: امسك أي TTS جاي (حتى اللي في نص تخليق) + بلّغ العملاء توقف فوري
+  stopTTS() {
+    this._ttsMuteUntil = Date.now() + 10 * 60 * 1000;
+    this.emit("stop-local-tts", {});
   }
 
   // أيقونة تجريبية = لوجو البرنامج (لو الملف موجود) — وإلا دايرة بحرف T

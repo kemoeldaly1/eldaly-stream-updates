@@ -128,6 +128,8 @@ const api = {
       ipcRenderer.invoke("overlay:testTTS", text, options),
     onPlayLocalTTS: (callback) =>
       ipcRenderer.on("play-local-tts", (_, data) => callback(data)),
+    onStopLocalTTS: (callback) =>
+      ipcRenderer.on("stop-local-tts", () => callback()),
   },
 
   // Screen Management

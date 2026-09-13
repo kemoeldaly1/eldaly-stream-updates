@@ -101,6 +101,7 @@ class AccountContext {
       "ext:scoreboard:state",
       "ext:timer:state",
       "play-local-tts",
+      "stop-local-tts",
       "client:pressKeys",
       "client:minecraft",
       "stats:update",
@@ -117,10 +118,18 @@ class AccountContext {
       this.broadcastEvent(type, payload);
       try { this.hooks.onOverlayEvent && this.hooks.onOverlayEvent(this, type, payload); } catch (e) {}
     });
-    // أوامر طلبات الأغاني من شات التيك توك بتاع الحساب ده
-    this.tiktok.on("chat", (c) => {
-      try { this.hooks.onChat && this.hooks.onChat(this, c); } catch (e) {}
-    });
+    this.bindChatHook();
+  }
+
+  // مستمع أوامر الأغاني (@chat) — EventRunner.setupTikTokListeners بتعمل
+  // removeAllListeners على خدمة تيك توك قبل كل اتصال، فالمستمع ده لازم
+  // يتسجل تاني بعد كل connect وإلا أوامر !sr تموت من أول اتصال.
+  bindChatHook() {
+    try {
+      this.tiktok.on("chat", (c) => {
+        try { this.hooks.onChat && this.hooks.onChat(this, c); } catch (e) {}
+      });
+    } catch (e) {}
   }
 
   // ====== جلسة الجهاز (جهاز واحد نشط لكل حساب) ======

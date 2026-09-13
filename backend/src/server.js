@@ -583,7 +583,7 @@ wsHeartbeat.unref();
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    version: "2.3.7c",
+    version: "2.3.8",
     uptime: process.uptime(),
     accounts: accounts.byEmail.size,
     liveStreams: accounts.all().filter((c) => c.tiktok && c.tiktok.isConnected()).length,
@@ -950,6 +950,7 @@ app.post("/api/tiktok/connect", async (req, res) => {
       instantGifts: true,
     });
     ctx.eventRunner.resetStats();
+    ctx.eventRunner.onTikTokConnected();
     ctx.broadcastEvent("connection-status", { status: "connected" });
     ctx.license?.setLive(true);
     ctx.store.set("connection.username", username);
@@ -968,6 +969,7 @@ app.post("/api/tiktok/connect", async (req, res) => {
 app.post("/api/tiktok/disconnect", (req, res) => {
   const ctx = req.ctx;
   if (ctx.tiktok) ctx.tiktok.disconnect();
+  if (ctx.eventRunner) ctx.eventRunner.stopTTS();
   ctx.license?.setLive(false, ctx.eventRunner ? ctx.eventRunner.globalStats.totalCoins || 0 : 0);
   ctx.broadcastEvent("connection-status", { status: "disconnected" });
   res.json({ success: true });

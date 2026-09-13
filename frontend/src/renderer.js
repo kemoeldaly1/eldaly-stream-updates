@@ -614,6 +614,10 @@ function setConnected(p21, p22) {
   }
 }
 function setDisconnected() {
+  // أي فصل (يدوي أو نهاية البث) يوقف الـ TTS والطابور فوراً
+  try {
+    stopLocalTTS();
+  } catch (err) {}
   if (isConnected) {
     try {
       new Audio("sounds/disconnect.wav").play();
@@ -746,10 +750,34 @@ document.addEventListener("keydown", event => {
 });
 const localTtsQueue = [];
 let localTtsSpeaking = false;
+let localTtsCurrent = null;
+// إيقاف فوري لكل حاجة صوتية — عند الفصل أو بإشارة من السيرفر
+function stopLocalTTS() {
+  localTtsQueue.length = 0;
+  try {
+    if (localTtsCurrent) {
+      localTtsCurrent.onended = null;
+      localTtsCurrent.onerror = null;
+      localTtsCurrent.pause();
+      localTtsCurrent.removeAttribute("src");
+    }
+  } catch (err) {}
+  localTtsCurrent = null;
+  localTtsSpeaking = false;
+}
 api.overlay.onPlayLocalTTS(p33 => {
+  // سقف الطابور: لو زحمة كومنتات نرمي الأقدم ونقرا الأحدث بس — مفيش تراكم
+  while (localTtsQueue.length >= 2) {
+    localTtsQueue.shift();
+  }
   localTtsQueue.push(p33);
   processLocalTTSQueue();
 });
+if (typeof api.overlay?.onStopLocalTTS === "function") {
+  api.overlay.onStopLocalTTS(() => {
+    stopLocalTTS();
+  });
+}
 function processLocalTTSQueue() {
   if (localTtsSpeaking || localTtsQueue.length === 0) {
     return;
@@ -758,6 +786,7 @@ function processLocalTTSQueue() {
   const v45 = localTtsQueue.shift();
   if (v45.audioBase64 || v45.url) {
     const audio = new Audio(v45.audioBase64 ? "data:audio/mp3;base64," + v45.audioBase64 : v45.url);
+    localTtsCurrent = audio;
     let vLN1 = 1;
     if (v45.config && v45.config.volume !== undefined) {
       vLN1 = v45.config.volume;
@@ -5892,45 +5921,7 @@ async function checkSubscriptionBanner() {
 }
 checkSubscriptionBanner();
 setInterval(checkSubscriptionBanner, 1800000);
-(function initLocalTTSPlayback() {
-  if (typeof api.overlay?.onPlayLocalTTS !== "function") {
-    return;
-  }
-  let v573 = null;
-  const vF29 = p362 => {
-    if (typeof p362 === "number") {
-      return Math.max(0, Math.min(1, p362));
-    }
-    if (typeof p362 === "string") {
-      const vParseFloat7 = parseFloat(p362.replace("%", ""));
-      if (!isNaN(vParseFloat7)) {
-        return Math.max(0, Math.min(1, 1 + vParseFloat7 / 100));
-      }
-    }
-    return 1;
-  };
-  api.overlay.onPlayLocalTTS(p363 => {
-    try {
-      if (v573) {
-        try {
-          v573.pause();
-        } catch (err) {}
-      }
-      let v574 = null;
-      if (p363.audioBase64) {
-        v574 = "data:audio/mp3;base64," + p363.audioBase64;
-      } else if (p363.url) {
-        v574 = p363.url;
-      }
-      if (!v574) {
-        return;
-      }
-      v573 = new Audio(v574);
-      v573.volume = vF29(p363.config && p363.config.volume);
-      v573.play().catch(() => {});
-    } catch (err) {}
-  });
-})();
+// (مشغل TTS محلي تاني اتمسح من هنا — كان بيلعب نفس الاصوات فوق بعض مع الطابور)
 })();
 // ═══════════════ Song Requests — ELDALY STREAM ═══════════════
 (function () {
