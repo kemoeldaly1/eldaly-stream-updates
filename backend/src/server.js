@@ -416,16 +416,23 @@ const songsLimiter = makeRateLimiter(
 // بنبني الجلسة كاملة بنفس التوكن فالعميل المفتوح يكمل من غير لوجين تاني.
 // فشل أي خطوة = رجوع طبيعي لـ 401 والعميل بيعمل restore بنفسه (المسار القديم).
 const _resurrectFail = new Map(); // توكنات مالهاش فهرس — منع ضرب الكلاود بلا داعي
-const _resurrectBusy = new Set();
+const _resurrectBusy = new Map(); // token -> الوعد الجاري — المتصلون التانيين يستنوه
 async function resurrectSession(token, hwid) {
   const t = String(token || "");
   const device = String(hwid || "");
   if (!t || t.length < 20 || !device) return null;
-  if (_resurrectBusy.has(t)) return null;
+  // لو فيه إحياء شغال لنفس التوكن استناه — الـ WS وطلب الـ API بيجوا
+  // مع بعض بعد الريستارت، ورفض التاني كان بيرجعه 401 بلا داعي
+  if (_resurrectBusy.has(t)) {
+    try {
+      return await _resurrectBusy.get(t);
+    } catch (e) {
+      return null;
+    }
+  }
   const failedAt = _resurrectFail.get(t);
   if (failedAt && Date.now() - failedAt < 60000) return null;
-  _resurrectBusy.add(t);
-  try {
+  const job = (async () => {
     const cloudStore = new (require("./services/cloud-store"))();
     const rec = await cloudStore.readSessionIndex(t);
     if (!rec || !rec.email) {
@@ -454,6 +461,10 @@ async function resurrectSession(token, hwid) {
     accounts.indexSession(ctx);
     console.log(`[Session] resurrected for ${rec.email} after restart`);
     return ctx;
+  })();
+  _resurrectBusy.set(t, job);
+  try {
+    return await job;
   } catch (e) {
     return null;
   } finally {
@@ -640,7 +651,7 @@ wsHeartbeat.unref();
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    version: "2.3.10b",
+    version: "2.3.10c",
     uptime: process.uptime(),
     accounts: accounts.byEmail.size,
     liveStreams: accounts.all().filter((c) => c.tiktok && c.tiktok.isConnected()).length,
