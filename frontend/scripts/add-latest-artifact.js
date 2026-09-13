@@ -11,10 +11,13 @@ const path = require("path");
 module.exports = async function afterAllArtifactBuild() {
   // مش معتمدين على الـ parameter — ندور على الملف في dist مباشرة
   const dist = path.join(__dirname, "..", "dist");
+  // نختار أحدث إنستالر (mtime الأحدث) — dist ممكن يكون فيه بقايا نسخ قديمة
+  // فأول match كان ممكن يكون لنسخة قديمة ويتنشر بالغلط باسم Latest
   const installer = fs
     .readdirSync(dist)
     .map((f) => path.join(dist, f))
-    .find((f) => /ELDALY-STREAM-Setup-[\d.]+\.exe$/i.test(path.basename(f)));
+    .filter((f) => /ELDALY-STREAM-Setup-[\d.]+\.exe$/i.test(path.basename(f)))
+    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0];
   if (!installer || !fs.existsSync(installer)) {
     console.warn("[latest-artifact] installer not found — skip");
     return [];
