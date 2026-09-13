@@ -19,6 +19,8 @@ backend/data/*
 *.rar
 *.7z
 *.exe
+# مساعد الضغطات — لازم يتشيب مع النسخة وإلا الضغطات تموت في نسخة العملاء
+!frontend/src/services/KeySender.exe
 *.jsc
 fbtoken.txt
 .firebase/
