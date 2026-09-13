@@ -5,7 +5,15 @@ const fs = require("fs");
 const path = require("path");
 class KeyboardService {
   constructor() {
-    this.keySenderPath = path.join(__dirname, "KeySender.exe");
+    // في النسخة المبنية KeySender.exe متفك بره الـ asar (asarUnpack) —
+    // ويندوز مش بينفذ برامج من جوه الأرشيف، فلازم نسخة app.asar.unpacked
+    const plain = path.join(__dirname, "KeySender.exe");
+    const unpacked = path.join(
+      __dirname.replace("app.asar", "app.asar.unpacked"),
+      "KeySender.exe",
+    );
+    this.keySenderPath = fs.existsSync(unpacked) ? unpacked : plain;
+    this.lastError = "";
   }
   isAvailable() {
     return fs.existsSync(this.keySenderPath);
@@ -37,10 +45,12 @@ class KeyboardService {
         if (fs.existsSync(this.keySenderPath)) {
           execFile(this.keySenderPath, [v5, p2.toString()], p3 => {
             if (p3) {
+              this.lastError = String(p3.message || p3);
               console.error("[Keyboard] KeySender Error:", p3);
             }
           });
         } else {
+          this.lastError = "KeySender.exe not found at " + this.keySenderPath;
           console.error("[Keyboard] KeySender.exe not found at", this.keySenderPath);
         }
         vLN02++;
