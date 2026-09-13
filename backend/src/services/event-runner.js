@@ -26,6 +26,20 @@ class EventRunner extends EventEmitter {
 
     this._bindOverlay();
     this.setupTikTokListeners();
+
+    // إدارة الذاكرة للاستضافة المجانية (512MB): ضغط GC دوري لو اتعرض
+    // (start script بيشغل node بـ --expose-gc) + ساعة ذاكرة للتشخيص
+    if (!global.__memTimer) {
+      global.__memTimer = setInterval(() => {
+        try {
+          const mu = process.memoryUsage();
+          console.log(
+            `[Mem] rss=${Math.round(mu.rss / 1048576)}MB heap=${Math.round(mu.heapUsed / 1048576)}MB accounts=${global.__accountsCount || "?"}`,
+          );
+          if (typeof global.gc === "function") global.gc();
+        } catch (e) {}
+      }, 180000).unref();
+    }
   }
 
   // ===== NEW: log method =====
@@ -183,7 +197,7 @@ class EventRunner extends EventEmitter {
       this.overlayServer.broadcastEvent("chat", data);
       this.emit("tiktok:chat", data);
       this.executeEventTriggers("comment", data);
-      this.processTtsForComment(data);
+      try { this.processTtsForComment(data); } catch (e) { console.warn("[TTS] skipped:", e.message); }
     });
 
     ts.on("gift", (data) => {
@@ -339,7 +353,7 @@ class EventRunner extends EventEmitter {
     if (!ttsCfg || !ttsCfg.enabled) return;
 
     const user = chatData.user || chatData.uniqueId || chatData.nickname;
-    const comment = chatData.comment || "";
+    let comment = String(chatData.comment ?? "");
     const likerCount = this.globalStats._likers[user]?.count || 0;
     const gifterCount = this.globalStats._gifters[user]?.count || 0;
 
@@ -1326,6 +1340,9 @@ class EventRunner extends EventEmitter {
           name: authorName,
           username: cleanUser,
         };
+        // سقف للكاش — كل مشاهد جديد بيدخل وبعض الأفاتار صور كبيرة؛ من غير
+        // السقف ده الكاش بيكبر طول البث ووصل يملا ذاكرة رندر المجانية
+        if (this._avatarCache.size >= 150) this._avatarCache.clear();
         this._avatarCache.set(cleanUser.toLowerCase(), {
           at: Date.now(),
           data: result,
