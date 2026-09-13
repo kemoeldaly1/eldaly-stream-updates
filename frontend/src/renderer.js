@@ -1319,9 +1319,11 @@ function renderHotkeys() {
   v80.innerHTML = hotkeysData.map(item => {
     let v81 = item.targetId;
     if (item.targetType === "action") {
-      const v82 = actionsData.find(item => item.id === item.targetId);
-      if (v82) {
-        v81 = v82.name;
+      // كان فيه ظل متغيرات: find(item => item.id === item.targetId) بيقارن
+      // الـ id بنفسه فعمرك ما يلاقي الأكشن ويعرض act_xxx بدل الاسم
+      const act = actionsData.find((a) => a.id === item.targetId);
+      if (act) {
+        v81 = act.name;
       }
     } else if (item.targetType === "extension") {
       if (item.targetId === "gift-spinner") {
