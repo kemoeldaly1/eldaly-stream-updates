@@ -680,6 +680,8 @@ async function establishSession(ctx, hwid, overlayToken, idToken) {
   await ctx.activate(idToken || ctx.license.lastIdToken);
   const token = ctx.mintSession(hwid);
   if (!token) return null;
+  // عداد فتحات البرنامج الشهري — للوحة الأدمن (fire-and-forget)
+  try { ctx.license.bumpConnects(); } catch (e) {}
   accounts.indexSession(ctx);
   accounts.setOverlayToken(ctx, overlayToken || ctx.overlayToken);
   ctx.touch();

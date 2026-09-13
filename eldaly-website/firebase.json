@@ -13,6 +13,12 @@
       {
         "source": "**/*.@(html|css|js)",
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      },
+      {
+        "source": "/kemo-admin-2026{,/**}",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, max-age=0, must-revalidate" }
+        ]
       }
     ]
   }

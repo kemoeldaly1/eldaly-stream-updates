@@ -963,7 +963,9 @@ function renderActions(p40 = "") {
       vA2.push("Hook");
     }
     const v55 = vA2.map(item => "<span class=\"badge badge-purple\">" + item + "</span>").join(" ") || "<span class=\"badge badge-purple\">—</span>";
-    const v56 = item.keys || item.tts_text || (item.audio_path ? (/^https?:/i.test(item.audio_path) ? "☁ cloud" : item.audio_path.split(/[\/]/).pop()) : "—");
+    // عمود KEYS / VALUE — أوامر بس: ضغطات كيبورد / أوامر ماين كرافت / ويب هوك
+    // (مسارات الصوت والفيديو مش ليها مكان هنا — ليها أعمدة البادجات)
+    const v56 = item.keys || item.mc_cmd || item.webhook_url || "—";
     return "<tr data-id=\"" + item.id + "\">\n      <td class=\"drag-handle\">⋮⋮</td>\n      <td style=\"color:var(--text-primary);font-weight:600\">" + escapeHtml(item.name) + "</td>\n      <td>" + v55 + "</td>\n      <td>" + escapeHtml(v56.substring(0, 30)) + "</td>\n      <td>" + (item.cooldown || 0) + "s</td>\n      <td><div class=\"table-actions\">\n        <button class=\"btn btn-ghost btn-sm\" onclick=\"editAction('" + item.id + "')\">Edit</button>\n        <button class=\"btn btn-ghost btn-sm\" onclick=\"duplicateAction('" + item.id + "')\" title=\"Duplicate\">Copy</button>\n        <button class=\"btn btn-danger btn-sm\" onclick=\"deleteAction('" + item.id + "')\">Delete</button>\n        <button class=\"btn btn-ghost btn-sm\" onclick=\"api.actions.execute('" + item.id + "')\" title=\"Play now\">▶</button>\n        <button class=\"btn btn-ghost btn-sm btn-delayed\" onclick=\"executeDelayed('" + item.id + "')\" title=\"Play in 5s\">▶<span class=\"delay-label\">+5</span></button>\n      </div></td></tr>";
   }).join("");
   const v57 = document.querySelectorAll(".action-select");
@@ -1463,21 +1465,13 @@ function renderEvents(p104 = "") {
         v114 = "<span class=\"badge badge-" + v112 + "\">" + v115.emoji + " " + escapeHtml(v110.gift) + " (" + (v110.giftCoins || v115.coins) + "c)</span>";
       }
     }
-    const v116 = (item.actions_all || []).map(item => {
-      const v117 = actionsData.find(item => item.id === item);
-      if (v117) {
-        return v117.name;
-      } else {
-        return item;
-      }
+    const v116 = (item.actions_all || []).map((aid) => {
+      const act = actionsData.find((a) => a.id === aid);
+      return act ? act.name : aid;
     });
-    const v118 = (item.actions_random || []).map(item => {
-      const v119 = actionsData.find(item => item.id === item);
-      if (v119) {
-        return v119.name;
-      } else {
-        return item;
-      }
+    const v118 = (item.actions_random || []).map((aid) => {
+      const act = actionsData.find((a) => a.id === aid);
+      return act ? act.name : aid;
     });
     let vLS2 = "";
     if (v116.length > 0) {

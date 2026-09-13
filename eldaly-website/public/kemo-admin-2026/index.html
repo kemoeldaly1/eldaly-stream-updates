@@ -73,6 +73,41 @@
 
   /* ===== الإحصائيات ===== */
   .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 14px 28px 4px; }
+
+  /* ===== تبويبات الأدمن — كل قسم في صفحته ===== */
+  .adm-tabs { display: flex; gap: 8px; padding: 14px 28px 0; flex-wrap: wrap; }
+  .adm-tab {
+    background: var(--panel-2); border: 1px solid var(--line-2); color: var(--txt-2);
+    padding: 10px 22px; border-radius: 12px 12px 0 0; cursor: pointer;
+    font: 700 13px 'Cairo', sans-serif; transition: .15s;
+  }
+  .adm-tab:hover { color: var(--txt); }
+  .adm-tab.on {
+    background: linear-gradient(180deg, rgba(212,175,55,.16), rgba(212,175,55,.04));
+    border-color: var(--gold); border-bottom-color: transparent; color: var(--gold);
+  }
+  .adm-page { padding: 6px 28px 10px; animation: fadeTab .18s ease; }
+  @keyframes fadeTab { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .hidden { display: none !important; }
+
+  /* ===== صفحة الإحصائيات — عرض كامل + كارت لكل عميل ===== */
+  .shell.wide { max-width: 100%; }
+  .stats-total { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .stats-total .st { background: linear-gradient(180deg, rgba(212,175,55,.14), rgba(212,175,55,.04)); border: 1px solid rgba(212,175,55,.3); border-radius: 12px; padding: 12px 14px; text-align: center; }
+  .stats-total .st b { display: block; font-size: 22px; color: var(--gold); font-weight: 900; }
+  .stats-total .st span { font-size: 10.5px; color: var(--txt-2); font-weight: 600; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 12px; }
+  .scard { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 15px; position: relative; overflow: hidden; }
+  .scard.top { border-color: rgba(212,175,55,.6); box-shadow: 0 0 0 1px rgba(212,175,55,.25), 0 10px 30px rgba(212,175,55,.07); }
+  .scard.zero { opacity: .55; }
+  .scard .s-mail { font-family: monospace; direction: ltr; text-align: left; font-size: 11px; color: #8ab4f8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 52px; }
+  .scard .s-coins { font-size: 25px; font-weight: 900; color: var(--gold); margin: 7px 0 6px; line-height: 1.1; }
+  .scard .s-coins small { font-size: 10px; color: var(--txt-2); font-weight: 600; }
+  .scard .s-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+  .scard .s-chip { background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; font-size: 10.5px; color: var(--txt-2); }
+  .scard .s-chip b { color: var(--txt); }
+  .scard .s-live { position: absolute; top: 10px; left: 10px; }
+  .scard .s-top-badge { position: absolute; top: 10px; left: 10px; }
   .stat {
     position: relative; overflow: hidden;
     background: linear-gradient(180deg, #14141b, #0e0e12); border: 1px solid var(--line);
@@ -322,54 +357,72 @@
       <div class="stat live-stat"><div class="num" id="statLive">0</div><div class="lbl">🟢 لايف دلوقتي</div></div>
     </div>
 
-    <!-- ===== رسالة جماعية لكل المستخدمين ===== -->
-    <div class="announce-card" id="announceCard" style="display:none">
-      <div class="ann-head">📢 رسالة لكل مستخدمي البرنامج <span class="ann-chip" id="annChip" style="display:none">نشطة الآن</span></div>
-      <div class="ann-current" id="annCurrent" style="display:none">
-        <div class="ann-text" id="annText"></div>
-        <div class="ann-meta" id="annMeta"></div>
-      </div>
-      <textarea id="annInput" rows="2" placeholder="اكتب رسالتك — مثال: هيتم عمل صيانة للسيرفر الساعة 10 مساءً الليلة، البرنامج هيقف مؤقتاً"></textarea>
-      <div class="ann-row">
-        <label>المدة:</label>
-        <select id="annHours" dir="rtl">
-          <option value="1">ساعة</option>
-          <option value="6">6 ساعات</option>
-          <option value="12">12 ساعة</option>
-          <option value="24" selected>يوم</option>
-          <option value="72">3 أيام</option>
-          <option value="168">أسبوع</option>
-        </select>
-        <button class="btn btn-gold btn-sm" id="annSaveBtn">💾 نشر / تعديل</button>
-        <button class="btn btn-danger btn-sm" id="annDeleteBtn">🗑 مسح الرسالة</button>
-      </div>
-      <div class="msg" id="annMsg"></div>
-    </div>
+    <!-- ===== التبويبات: كل قسم في صفحة لوحده ===== -->
+    <nav class="adm-tabs">
+      <button class="adm-tab on" data-tab="clients">👥 العملاء</button>
+      <button class="adm-tab" data-tab="stats">📊 إحصائيات الشهر</button>
+      <button class="adm-tab" data-tab="announce" id="tabAnnounce" style="display:none">📢 الرسائل الجماعية</button>
+      <button class="adm-tab" data-tab="patreon" id="tabPatreon" style="display:none">🔴 Patreon</button>
+    </nav>
 
-    <!-- ===== ربط Patreon (تفعيل تلقائي) ===== -->
-    <div class="announce-card" id="patreonCard" style="display:none">
-      <div class="ann-head">🔴 ربط Patreon — التفعيل التلقائي</div>
-      <div class="ann-current" style="display:none" id="ptStatus">
-        <div class="ann-text" id="ptStatusText"></div>
+    <!-- ===== تبويب العملاء ===== -->
+    <section class="adm-page" id="page-clients">
+      <div class="toolbar">
+        <input type="text" id="searchBox" placeholder="🔍 ابحث بالإيميل...">
+        <button class="btn btn-ghost btn-sm" id="refreshBtn">↻ تحديث</button>
+        <button class="btn btn-ghost btn-sm" id="restoreBtn" style="display:none;color:#6fbfb2;border-color:rgba(111,191,178,.35)">♻️ استرجاع محذوف</button>
+        <span class="auto-note">تحديث تلقائي كل 25 ثانية</span>
       </div>
-      <input type="password" id="ptTokenInput" placeholder="الصق Creator's Access Token من patreon.com/portal/clients" dir="ltr" style="width:100%; padding:10px 12px; font-family:'Cairo',sans-serif; font-size:12.5px; background:#131318; border:1px solid rgba(255,255,255,.09); border-radius:8px; color:#ece9e1; outline:none;">
-      <div class="ann-row">
-        <button class="btn btn-gold btn-sm" id="ptSaveBtn">💾 حفظ التوكن</button>
-        <button class="btn btn-danger btn-sm" id="ptDeleteBtn">🗑 إلغاء الربط</button>
+
+      <div class="users-wrap">
+        <div class="users-list" id="usersList"></div>
       </div>
-      <div class="msg" id="ptMsg" style="font-size:11.5px; color:#6d6960; margin-top:8px;">⚠️ لازم برنامجك يكون شغال على جهازك متسجل بحساب المالك — هو اللي بيفحص باتريون كل دقيقة ويفعّل المشتركين. والعميل لازم يشترك بنفس إيميل حسابه في البرنامج.</div>
-    </div>
+    </section>
 
-    <div class="toolbar">
-      <input type="text" id="searchBox" placeholder="🔍 ابحث بالإيميل...">
-      <button class="btn btn-ghost btn-sm" id="refreshBtn">↻ تحديث</button>
-      <button class="btn btn-ghost btn-sm" id="restoreBtn" style="display:none;color:#6fbfb2;border-color:rgba(111,191,178,.35)">♻️ استرجاع محذوف</button>
-      <span class="auto-note">تحديث تلقائي كل 25 ثانية</span>
-    </div>
+    <!-- ===== تبويب إحصائيات الشهر — كل عميل عمل إيه وجاله كام ===== -->
+    <section class="adm-page hidden" id="page-stats"></section>
 
-    <div class="users-wrap">
-      <div class="users-list" id="usersList"></div>
-    </div>
+    <!-- ===== تبويب الرسائل الجماعية ===== -->
+    <section class="adm-page hidden" id="page-announce">
+      <div class="announce-card" id="announceCard" style="display:none">
+        <div class="ann-head">📢 رسالة لكل مستخدمي البرنامج <span class="ann-chip" id="annChip" style="display:none">نشطة الآن</span></div>
+        <div class="ann-current" id="annCurrent" style="display:none">
+          <div class="ann-text" id="annText"></div>
+          <div class="ann-meta" id="annMeta"></div>
+        </div>
+        <textarea id="annInput" rows="2" placeholder="اكتب رسالتك — مثال: هيتم عمل صيانة للسيرفر الساعة 10 مساءً الليلة، البرنامج هيقف مؤقتاً"></textarea>
+        <div class="ann-row">
+          <label>المدة:</label>
+          <select id="annHours" dir="rtl">
+            <option value="1">ساعة</option>
+            <option value="6">6 ساعات</option>
+            <option value="12">12 ساعة</option>
+            <option value="24" selected>يوم</option>
+            <option value="72">3 أيام</option>
+            <option value="168">أسبوع</option>
+          </select>
+          <button class="btn btn-gold btn-sm" id="annSaveBtn">💾 نشر / تعديل</button>
+          <button class="btn btn-danger btn-sm" id="annDeleteBtn">🗑 مسح الرسالة</button>
+        </div>
+        <div class="msg" id="annMsg"></div>
+      </div>
+    </section>
+
+    <!-- ===== تبويب Patreon ===== -->
+    <section class="adm-page hidden" id="page-patreon">
+      <div class="announce-card" id="patreonCard" style="display:none">
+        <div class="ann-head">🔴 ربط Patreon — التفعيل التلقائي</div>
+        <div class="ann-current" style="display:none" id="ptStatus">
+          <div class="ann-text" id="ptStatusText"></div>
+        </div>
+        <input type="password" id="ptTokenInput" placeholder="الصق Creator's Access Token من patreon.com/portal/clients" dir="ltr" style="width:100%; padding:10px 12px; font-family:'Cairo',sans-serif; font-size:12.5px; background:#131318; border:1px solid rgba(255,255,255,.09); border-radius:8px; color:#ece9e1; outline:none;">
+        <div class="ann-row">
+          <button class="btn btn-gold btn-sm" id="ptSaveBtn">💾 حفظ التوكن</button>
+          <button class="btn btn-danger btn-sm" id="ptDeleteBtn">🗑 إلغاء الربط</button>
+        </div>
+        <div class="msg" id="ptMsg" style="font-size:11.5px; color:#6d6960; margin-top:8px;">⚠️ لازم برنامجك يكون شغال على جهازك متسجل بحساب المالك — هو اللي بيفحص باتريون كل دقيقة ويفعّل المشتركين. والعميل لازم يشترك بنفس إيميل حسابه في البرنامج.</div>
+      </div>
+    </section>
   </div>
 
 </div>
@@ -456,8 +509,16 @@
       myRole = role;
       try { const chip = document.getElementById('myRoleChip'); if (chip) chip.textContent = myRole === 'owner' ? '👑 OWNER' : '🛡 ADMIN'; } catch (e) {}
       try { const rb = document.getElementById('restoreBtn'); if (rb) rb.style.display = myRole === 'owner' ? '' : 'none'; } catch (e) {}
-      try { const ac = document.getElementById('announceCard'); if (ac) { ac.style.display = myRole === 'owner' ? '' : 'none'; if (myRole === 'owner') loadAnnouncement(); } } catch (e) {}
-      try { const pc = document.getElementById('patreonCard'); if (pc) { pc.style.display = myRole === 'owner' ? '' : 'none'; if (myRole === 'owner') loadPatreonStatus(); } } catch (e) {}
+      try {
+        const ac = document.getElementById('announceCard'); if (ac) ac.style.display = myRole === 'owner' ? '' : 'none';
+        const ta = document.getElementById('tabAnnounce'); if (ta) ta.style.display = myRole === 'owner' ? '' : 'none';
+        if (myRole === 'owner') loadAnnouncement();
+      } catch (e) {}
+      try {
+        const pc = document.getElementById('patreonCard'); if (pc) pc.style.display = myRole === 'owner' ? '' : 'none';
+        const tp = document.getElementById('tabPatreon'); if (tp) tp.style.display = myRole === 'owner' ? '' : 'none';
+        if (myRole === 'owner') loadPatreonStatus();
+      } catch (e) {}
       $('loginGate').style.display = 'none';
       $('panelRoot').style.display = 'block';
       loadUsers();
@@ -479,7 +540,7 @@
     const f = (doc && doc.fields) || {};
     const g = (v) => v == null ? null : (v.booleanValue !== undefined ? v.booleanValue : v.stringValue !== undefined ? v.stringValue : v.timestampValue !== undefined ? v.timestampValue : v.integerValue !== undefined ? parseInt(v.integerValue, 10) : null);
     const name = (doc.name || '').split('/').pop() || '';
-    return {
+    const u = {
       email: decodeURIComponent(g(f.email) || name),
       tier: g(f.tier) || 'free',
       hwid: g(f.hwid) || '',
@@ -491,10 +552,11 @@
       live: g(f.live) === true,
       liveAt: g(f.liveAt) || '',
     };
-    // الإحصائيات الشهرية: حقول stats_YYYY-MM_(lives|durationMs|coins)
+    // الإحصائيات الشهرية: حقول stats_YYYY-MM_(lives|durationMs|coins|connects)
+    // (كانت هنا قبل return فبقت dead code وعمرها ما اشتغلت — متصلحة)
     const stats = {};
     for (const k of Object.keys(f)) {
-      const m = String(k).match(/^stats_(\d{4}-\d{2})_(lives|durationMs|coins)$/);
+      const m = String(k).match(/^stats_(\d{4}-\d{2})_(lives|durationMs|coins|connects)$/);
       if (m) {
         const v = f[k] && f[k].integerValue !== undefined ? parseInt(f[k].integerValue, 10) || 0 : 0;
         (stats[m[1]] = stats[m[1]] || {})[m[2]] = v;
@@ -558,6 +620,7 @@
     const q = $('searchBox').value.trim().toLowerCase();
     const all = usersCache.filter((u) => !u.deleted); // المحذوفين مش بيظهروا
     const filtered = q ? all.filter((u) => u.email.toLowerCase().includes(q)) : all;
+    renderStatsTab(filtered);
     const list = $('usersList');
 
     const proCount = all.filter((u) => tierInfo(u).pro).length;
@@ -593,6 +656,7 @@
             <div class="u-stats-chips">
               <span class="u-st">🎬 لايفات <b>${ms.lives || 0}</b></span>
               <span class="u-st">⏱ بث <b>${((ms.durationMs || 0) / 3600000).toFixed(1)}</b> ساعة</span>
+              <span class="u-st">🔌 تشغيلات <b>${ms.connects || 0}</b></span>
               <span class="u-st gold">💎 كوينز <b>${(ms.coins || 0).toLocaleString('en-US')}</b></span>
             </div>
           </div>` : '';
@@ -620,6 +684,7 @@
         list.appendChild(card);
       });
 
+    renderStatsTab(filtered);
     list.querySelectorAll('button[data-act]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const act = btn.dataset.act;
@@ -637,6 +702,97 @@
   }
 
   $('searchBox').addEventListener('input', renderUsers);
+
+  // ===== تبويب إحصائيات الشهر — جدول مركزي: كل عميل عمل إيه وجاله كام =====
+  function renderStatsTab(list) {
+    const el = document.getElementById('page-stats');
+    if (!el) return;
+    const mk = new Date().toISOString().slice(0, 7);
+    const monthLabel = mk.split('-').reverse().join('/');
+    const rows = (list || []).map((u) => ({
+      email: u.email,
+      tier: tierInfo(u),
+      live: isFreshLive(u),
+      ms: (u.stats && u.stats[mk]) || {},
+    }));
+    rows.sort((a, b) =>
+      (b.ms.coins || 0) - (a.ms.coins || 0) ||
+      (b.ms.lives || 0) - (a.ms.lives || 0) ||
+      (b.ms.connects || 0) - (a.ms.connects || 0),
+    );
+    const T = rows.reduce(
+      (s, r) => ({
+        lives: s.lives + (r.ms.lives || 0),
+        hours: s.hours + (r.ms.durationMs || 0),
+        conn: s.conn + (r.ms.connects || 0),
+        coins: s.coins + (r.ms.coins || 0),
+      }),
+      { lives: 0, hours: 0, conn: 0, coins: 0 },
+    );
+    const esc = (x) => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const topCoins = rows.length && (rows[0].ms.coins || 0) > 0 ? rows[0].ms.coins : -1;
+    const row = (r, i, isTotal) => {
+      const coins = r.ms.coins || 0;
+      const isTop = !isTotal && coins > 0 && coins === topCoins;
+      const numStyle = 'font-size:17px;font-weight:800;text-align:center;direction:ltr';
+      return (
+        '<tr style="' + (isTotal ? 'background:linear-gradient(180deg,rgba(212,175,55,.16),rgba(212,175,55,.05));' : (i % 2 ? 'background:rgba(255,255,255,.025);' : '')) + 'border-top:1px solid var(--line)">' +
+        '<td style="padding:14px 16px">' +
+          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+            '<span style="font-size:15px;font-weight:800;color:#8ab4f8;direction:ltr">' + esc(r.email) + '</span>' +
+            '<span class="badge ' + r.tier.cls + '">' + r.tier.label + '</span>' +
+            (r.live ? '<span class="badge badge-live">LIVE</span>' : '') +
+            (isTop ? '<span class="badge badge-owner">👑 الأعلى كوينز</span>' : '') +
+          '</div>' +
+        '</td>' +
+        '<td style="' + numStyle + ';color:' + ((r.ms.lives || 0) ? '#d4af37' : '#6d6960') + '">' + (r.ms.lives || 0) + '</td>' +
+        '<td style="' + numStyle + ';color:var(--txt)">' + ((r.ms.durationMs || 0) / 3600000).toFixed(1) + '<span style="font-size:11px;color:#6d6960"> ساعة</span></td>' +
+        '<td style="' + numStyle + ';color:var(--txt)">' + (r.ms.connects || 0) + '</td>' +
+        '<td style="' + numStyle + ';color:' + (coins > 0 ? '#57a273' : '#6d6960') + ';font-size:18px">' + coins.toLocaleString('en-US') + ' <span style="font-size:12px">💎</span></td>' +
+        '</tr>'
+      );
+    };
+    el.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:0 4px 12px">' +
+        '<div style="font-size:13px;font-weight:800;color:var(--gold)">📅 إحصائيات ' + monthLabel + ' — كل عميل في سطر مع بياناته</div>' +
+        '<div style="font-size:11.5px;color:#a6a198">مرتبين بالكوينز من الأعلى • تحديث تلقائي</div>' +
+      '</div>' +
+      '<table style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden">' +
+        '<tr>' +
+          '<th style="padding:14px 16px;font-size:13px;text-align:right">👤 العميل</th>' +
+          '<th style="padding:14px;font-size:13px;text-align:center">🎬 لايفات</th>' +
+          '<th style="padding:14px;font-size:13px;text-align:center">⏱ ساعات البث</th>' +
+          '<th style="padding:14px;font-size:13px;text-align:center">🔌 تشغيلات البرنامج</th>' +
+          '<th style="padding:14px;font-size:13px;text-align:center">💎 كوينز الشهر</th>' +
+        '</tr>' +
+        '<tr style="background:linear-gradient(180deg,rgba(212,175,55,.16),rgba(212,175,55,.05))">' +
+          '<td style="padding:12px 16px;font-size:14px;font-weight:900;color:var(--gold)">📊 الإجمالي — ' + rows.length + ' عميل</td>' +
+          '<td style="font-size:18px;font-weight:900;text-align:center;color:var(--gold)">' + T.lives + '</td>' +
+          '<td style="font-size:18px;font-weight:900;text-align:center;color:var(--gold)">' + (T.hours / 3600000).toFixed(1) + '</td>' +
+          '<td style="font-size:18px;font-weight:900;text-align:center;color:var(--gold)">' + T.conn + '</td>' +
+          '<td style="font-size:18px;font-weight:900;text-align:center;color:var(--gold)">' + T.coins.toLocaleString('en-US') + '</td>' +
+        '</tr>' +
+        rows.map((r, i) => row(r, i, false)).join('') +
+      '</table>' +
+      (rows.length ? '' : '<div class="empty">لسه مفيش عملاء مسجلين</div>');
+  }
+
+  // ===== منطق التبويبات — كل قسم بصفحته لوحده بدل حائط واحد طويل =====
+  document.querySelectorAll('.adm-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.adm-tab').forEach((t) => t.classList.remove('on'));
+      tab.classList.add('on');
+      const target = tab.dataset.tab;
+      document.querySelectorAll('.adm-page').forEach((p) => p.classList.add('hidden'));
+      const page = document.getElementById('page-' + target);
+      if (page) page.classList.remove('hidden');
+      // صفحة الإحصائيات بتمد الصفحة بعرض الشاشة كلها
+      const shell = document.querySelector('.shell');
+      if (shell) shell.classList.toggle('wide', target === 'stats');
+      // تحديث فوري للبيانات عند فتح الإحصائيات
+      if (target === 'stats' && adminToken) loadUsers(true);
+    });
+  });
   $('refreshBtn').addEventListener('click', () => loadUsers());
 
   // تحديث تلقائي صامت كل 25 ثانية — اللمبات والأرقام تفضل لايف من غير ما تفقد مكانك
@@ -905,8 +1061,16 @@
       myRole = role;
       try { const chip = document.getElementById('myRoleChip'); if (chip) chip.textContent = myRole === 'owner' ? '👑 OWNER' : '🛡 ADMIN'; } catch (e) {}
       try { const rb = document.getElementById('restoreBtn'); if (rb) rb.style.display = myRole === 'owner' ? '' : 'none'; } catch (e) {}
-      try { const ac = document.getElementById('announceCard'); if (ac) { ac.style.display = myRole === 'owner' ? '' : 'none'; if (myRole === 'owner') loadAnnouncement(); } } catch (e) {}
-      try { const pc = document.getElementById('patreonCard'); if (pc) { pc.style.display = myRole === 'owner' ? '' : 'none'; if (myRole === 'owner') loadPatreonStatus(); } } catch (e) {}
+      try {
+        const ac = document.getElementById('announceCard'); if (ac) ac.style.display = myRole === 'owner' ? '' : 'none';
+        const ta = document.getElementById('tabAnnounce'); if (ta) ta.style.display = myRole === 'owner' ? '' : 'none';
+        if (myRole === 'owner') loadAnnouncement();
+      } catch (e) {}
+      try {
+        const pc = document.getElementById('patreonCard'); if (pc) pc.style.display = myRole === 'owner' ? '' : 'none';
+        const tp = document.getElementById('tabPatreon'); if (tp) tp.style.display = myRole === 'owner' ? '' : 'none';
+        if (myRole === 'owner') loadPatreonStatus();
+      } catch (e) {}
       $('loginGate').style.display = 'none';
       $('panelRoot').style.display = 'block';
       loadUsers();

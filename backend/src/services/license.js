@@ -731,6 +731,46 @@ class LicenseService {
     } catch (e) {}
   }
 
+  // عداد فتحات البرنامج (كونكت) — بيزيد stats_YYYY-MM_connects مع كل دخول
+  // ناجح. للوحة الأدمن: "كام مرة فتح البرنامج الشهر ده"
+  async bumpConnects() {
+    try {
+      const session = this._session;
+      if (!session || !session.refreshToken) return;
+      const idToken = await this.getIdToken();
+      if (!idToken) return;
+      const month = new Date().toISOString().slice(0, 7);
+      const k = `stats_${month}_connects`;
+      const docRes = await fetch(
+        USERS_URL + "/" + encodeURIComponent(session.email),
+        { headers: { Authorization: "Bearer " + idToken } },
+      );
+      if (!docRes.ok) return;
+      const fields = ((await docRes.json()) || {}).fields || {};
+      const cur =
+        fields[k] && fields[k].integerValue !== undefined
+          ? parseInt(fields[k].integerValue, 10) || 0
+          : 0;
+      await fetch(
+        USERS_URL +
+          "/" +
+          encodeURIComponent(session.email) +
+          "?updateMask.fieldPaths=" +
+          encodeURIComponent(k),
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + idToken,
+          },
+          body: JSON.stringify({
+            fields: { [k]: { integerValue: String(cur + 1) } },
+          }),
+        },
+      );
+    } catch (e) {}
+  }
+
   async logout() {
     // امسح نسخة الجلسة من قاعدة البيانات كمان — مش بس الذاكرة
     if (
