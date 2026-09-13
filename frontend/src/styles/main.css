@@ -1792,3 +1792,22 @@ tr.drag-ghost td {
 #events-table th:nth-child(4), #events-table td:nth-child(4) { width: 19%; }
 #events-table th:nth-child(5), #events-table td:nth-child(5) { width: 33%; }
 #events-table td .toggle { margin: 0 auto; }
+
+/* ===== جداول الأكشنز والإيفنتس: استجابة للشاشات الصغيرة ===== */
+.table-container { overflow-x: auto; }
+#actions-table, #events-table { min-width: 620px; }
+.table-actions { flex-wrap: wrap; row-gap: 6px; }
+
+/* ===== اسكلتون التحميل ===== */
+.skel-row td { padding: 16px 18px; }
+.skel-bar {
+  height: 14px; border-radius: 7px; width: 80%; display: inline-block;
+  background: linear-gradient(90deg, rgba(255,255,255,.05) 25%, rgba(255,255,255,.13) 50%, rgba(255,255,255,.05) 75%);
+  background-size: 200% 100%; animation: skel-shimmer 1.3s infinite linear;
+}
+.skel-bar.w-40 { width: 40%; } .skel-bar.w-60 { width: 60%; } .skel-bar.w-30 { width: 30%; }
+@keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+@media (max-width: 980px) {
+  .data-table th, .data-table td { padding: 10px 10px !important; }
+}

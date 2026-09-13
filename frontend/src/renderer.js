@@ -905,6 +905,16 @@ async function autoMigrateLocalMedia(actions) {
 }
 
 async function loadActions() {
+  // عرض فوري من الكاش المحلي — الأكشنز تظهر في اللحظة الأولى من فتح
+  // البرنامج من غير انتظار السيرفر، وبعدين بتتحدث بالبيانات الرسمية
+  try {
+    const cached = JSON.parse(localStorage.getItem("actions_cache") || "null");
+    if (Array.isArray(cached) && cached.length) {
+      actionsData = cached;
+      renderActions();
+      if (typeof renderEvents === "function") renderEvents();
+    }
+  } catch (e) {}
   actionsData = (await api.actions.getAll()) || [];
   const migration = await autoMigrateLocalMedia(actionsData);
   if (migration.changed) {
@@ -912,6 +922,12 @@ async function loadActions() {
     await saveActionsData();
   }
   renderActions();
+  // إعادة رسم الإيفنتس بعد تحميل الأكشنز — أسماء الأكشنز في عمود ACTION(S)
+  // كانت بتظهر act_xxx لما الرندر يحصل قبل ما الأكشنز توصل
+  if (typeof renderEvents === "function") renderEvents();
+  try {
+    localStorage.setItem("actions_cache", JSON.stringify(actionsData));
+  } catch (e) {}
   // إعادة محاولة دورية: أي صوت/فيديو لسه محلي (فشل رفعه) يتجرب تاني كل 5 دقايق
   // عشان الصوت يضمن إنه يوصل للسحابة ولا يروح أبدًا حتى لو النت كان ضعيف أول مرة
   if (!window.__mediaMigrateTimer) {
@@ -1104,6 +1120,7 @@ function openActionModal(p47 = null) {
   showModal();
 }
 async function saveActionsData() {
+  try { localStorage.setItem("actions_cache", JSON.stringify(actionsData)); } catch (e) {}
   const saveResult = await api.actions.save(actionsData);
   if (saveResult && saveResult.ok === false) {
     if (saveResult.reason === "limit") {
