@@ -306,6 +306,40 @@ function hkLog(msg) {
 let wsClient = null;
 let wsReconnectTimer = null;
 
+// ويب هوك على جهاز العميل نفسه (localhost/الشبكة المحلية) — سيرفر اللعبة
+// أو المود اللي شغال محليًا. السيرفر السحابي مش شايف العناوين دي أصلًا.
+async function runLocalWebhook(d) {
+  const url = String(d?.url || "");
+  if (!url) return;
+  const actionName = d?.actionName || "webhook";
+  const method = String(d?.method || (d?.body ? "POST" : "GET")).toUpperCase();
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: d?.body
+        ? { "Content-Type": d?.contentType || "application/json" }
+        : undefined,
+      body: d?.body || undefined,
+      signal: AbortSignal.timeout(10000),
+    });
+    console.log(`[Local Webhook] ${actionName}: ${method} ${url} -> HTTP ${res.status}`);
+    mainWindow?.webContents.send("local-webhook-result", {
+      ok: true,
+      url,
+      status: res.status,
+      actionName,
+    });
+  } catch (e) {
+    console.error(`[Local Webhook] ${actionName}: ${url} failed:`, e.message);
+    mainWindow?.webContents.send("local-webhook-result", {
+      ok: false,
+      url,
+      error: e.message,
+      actionName,
+    });
+  }
+}
+
 function runLocalMinecraft(payload) {
   const mc = payload?.mc || {};
   const jobs = Array.isArray(payload?.jobs) ? payload.jobs : [];
@@ -394,6 +428,9 @@ function connectBackendWebSocket() {
           );
         } else if (msg.type === "client:minecraft" && msg.data) {
           runLocalMinecraft(msg.data);
+        } else if (msg.type === "client:webhook" && msg.data) {
+          // روابط localhost/الشبكة المحلية بتتنفذ هنا على جهاز العميل
+          runLocalWebhook(msg.data);
         } else if (msg.type === "play-local-tts") {
           mainWindow?.webContents.send("play-local-tts", msg.data);
         } else if (msg.type && msg.type.startsWith("ov:")) {

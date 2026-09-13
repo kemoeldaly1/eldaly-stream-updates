@@ -518,6 +518,24 @@ class EventRunner extends EventEmitter {
     }
   }
 
+  // هل الرابط بيوجه لجهاز العميل نفسه؟ (localhost/شبكة محلية)
+  static _isLocalWebhook(url) {
+    try {
+      const h = new URL(url).hostname.toLowerCase();
+      return (
+        h === "localhost" ||
+        h === "127.0.0.1" ||
+        h === "::1" ||
+        h.endsWith(".local") ||
+        /^10\./.test(h) ||
+        /^192\.168\./.test(h) ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(h)
+      );
+    } catch (e) {
+      return false;
+    }
+  }
+
   executeAction(action, context = {}) {
     const opts = action.opts || {};
     const logFn = (msg) => this.log(msg);
@@ -721,18 +739,33 @@ class EventRunner extends EventEmitter {
               data: context,
             });
           }
-          fetch(formattedUrl, {
-            method: "POST",
-            headers: { "Content-Type": contentType },
-            body,
-            signal: AbortSignal.timeout(10000),
-          })
-            .then((r) =>
-              logFn(
-                `[Action: ${action.name}] Webhook → ${formattedUrl} (HTTP ${r.status})`,
-              ),
-            )
-            .catch((err) => logFn("[Webhook Error] " + err.message));
+          if (EventRunner._isLocalWebhook(formattedUrl)) {
+            // روابط جهاز العميل (localhost/الشبكة المحلية): السيرفر السحابي
+            // مش شايفها — بنحولها للتطبيق نفسه ينفذها محليًا (مودات اللعبة)
+            this.emit("client:webhook", {
+              url: formattedUrl,
+              method: rawBody ? "POST" : "GET",
+              body: rawBody ? body : "",
+              contentType,
+              actionName: action.name,
+            });
+            logFn(
+              `[Action: ${action.name}] Webhook (local) → ${formattedUrl}`,
+            );
+          } else {
+            fetch(formattedUrl, {
+              method: "POST",
+              headers: { "Content-Type": contentType },
+              body,
+              signal: AbortSignal.timeout(10000),
+            })
+              .then((r) =>
+                logFn(
+                  `[Action: ${action.name}] Webhook → ${formattedUrl} (HTTP ${r.status})`,
+                ),
+              )
+              .catch((err) => logFn("[Webhook Error] " + err.message));
+          }
         }
 
         if (opts.minecraft_enabled && action.mc_cmd) {

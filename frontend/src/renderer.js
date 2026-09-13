@@ -778,6 +778,18 @@ if (typeof api.overlay?.onStopLocalTTS === "function") {
     stopLocalTTS();
   });
 }
+// نتيجة الويب هوك المحلي — تظهر في اللايف فيد عشان العميل يشوف إنه اتنفذ
+if (typeof api.overlay?.onLocalWebhookResult === "function") {
+  api.overlay.onLocalWebhookResult(r => {
+    addFeedItem(
+      "system",
+      "Webhook",
+      (r && r.actionName ? r.actionName + " — " : "") +
+        (r && r.ok ? "تم التنفيذ (HTTP " + r.status + ")" : "فشل: " + (r && r.error ? r.error : "؟")),
+      r && r.ok ? "🌐" : "⚠️"
+    );
+  });
+}
 function processLocalTTSQueue() {
   if (localTtsSpeaking || localTtsQueue.length === 0) {
     return;

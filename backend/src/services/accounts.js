@@ -103,6 +103,7 @@ class AccountContext {
       "play-local-tts",
       "stop-local-tts",
       "client:pressKeys",
+      "client:webhook",
       "client:minecraft",
       "stats:update",
     ];
