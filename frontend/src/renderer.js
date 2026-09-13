@@ -5550,6 +5550,90 @@ async function initTTS() {
   }, {
     value: "ar-IQ-BasselNeural",
     text: "Iraqi (Male) - Bassel"
+  }, {
+    value: "en-US-AriaNeural",
+    text: "English US (Female) - Aria"
+  }, {
+    value: "en-US-JennyNeural",
+    text: "English US (Female) - Jenny"
+  }, {
+    value: "en-US-MichelleNeural",
+    text: "English US (Female) - Michelle"
+  }, {
+    value: "en-US-GuyNeural",
+    text: "English US (Male) - Guy"
+  }, {
+    value: "en-US-ChristopherNeural",
+    text: "English US (Male) - Christopher"
+  }, {
+    value: "en-US-EricNeural",
+    text: "English US (Male) - Eric"
+  }, {
+    value: "en-GB-SoniaNeural",
+    text: "English UK (Female) - Sonia"
+  }, {
+    value: "en-GB-LibbyNeural",
+    text: "English UK (Female) - Libby"
+  }, {
+    value: "en-GB-RyanNeural",
+    text: "English UK (Male) - Ryan"
+  }, {
+    value: "en-GB-ThomasNeural",
+    text: "English UK (Male) - Thomas"
+  }, {
+    value: "fr-FR-DeniseNeural",
+    text: "French (Female) - Denise"
+  }, {
+    value: "fr-FR-HenriNeural",
+    text: "French (Male) - Henri"
+  }, {
+    value: "de-DE-KatjaNeural",
+    text: "German (Female) - Katja"
+  }, {
+    value: "de-DE-ConradNeural",
+    text: "German (Male) - Conrad"
+  }, {
+    value: "es-ES-ElviraNeural",
+    text: "Spanish (Female) - Elvira"
+  }, {
+    value: "es-ES-AlvaroNeural",
+    text: "Spanish (Male) - Alvaro"
+  }, {
+    value: "tr-TR-EmelNeural",
+    text: "Turkish (Female) - Emel"
+  }, {
+    value: "tr-TR-AhmetNeural",
+    text: "Turkish (Male) - Ahmet"
+  }, {
+    value: "it-IT-ElsaNeural",
+    text: "Italian (Female) - Elsa"
+  }, {
+    value: "it-IT-DiegoNeural",
+    text: "Italian (Male) - Diego"
+  }, {
+    value: "pt-BR-FranciscaNeural",
+    text: "Portuguese BR (Female) - Francisca"
+  }, {
+    value: "pt-BR-AntonioNeural",
+    text: "Portuguese BR (Male) - Antonio"
+  }, {
+    value: "ru-RU-SvetlanaNeural",
+    text: "Russian (Female) - Svetlana"
+  }, {
+    value: "ru-RU-DmitryNeural",
+    text: "Russian (Male) - Dmitry"
+  }, {
+    value: "hi-IN-SwaraNeural",
+    text: "Hindi (Female) - Swara"
+  }, {
+    value: "hi-IN-MadhurNeural",
+    text: "Hindi (Male) - Madhur"
+  }, {
+    value: "id-ID-GadisNeural",
+    text: "Indonesian (Female) - Gadis"
+  }, {
+    value: "id-ID-ArifNeural",
+    text: "Indonesian (Male) - Arif"
   }];
   function f58() {
     v532.innerHTML = "<option value=\"\">Default (Random Voice)</option>";
@@ -5585,6 +5669,110 @@ async function initTTS() {
       v532.value = v554.voiceURI;
     }
   }, 100);
+  // ===== منتقي الأصوات — نفس تجربة TikFinity: بحث + فلتر لغة/نوع + Test + Select =====
+  const parseVoice = (t) => {
+    const m = String(t || "").match(/^(.*?)\s*\((Male|Female)\)\s*-\s*(.+)$/);
+    return m ? { lang: m[1], gender: m[2], name: m[3] } : { lang: "", gender: "", name: t };
+  };
+  const browseBtn = document.getElementById("tts-browse-voices");
+  if (browseBtn) {
+    browseBtn.addEventListener("click", () => {
+      let vpFilterLang = "all";
+      let vpFilterGender = "all";
+      let vpSearch = "";
+      let vpTestAudio = null;
+      const div = document.createElement("div");
+      div.className = "ks-overlay";
+      div.innerHTML = `
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9990" id="vp-backdrop"></div>
+      <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:560px;max-width:94vw;max-height:88vh;
+        background:#131318;border:1.5px solid rgba(212,175,55,.4);border-radius:16px;z-index:9991;display:flex;flex-direction:column;overflow:hidden;
+        box-shadow:0 30px 80px rgba(0,0,0,.7);font-family:'Cairo',Tahoma,sans-serif">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.07)">
+          <select id="vp-lang" style="background:#0a0a10;border:1px solid rgba(255,255,255,.12);border-radius:9px;color:#ece9e1;padding:8px 10px;font:600 12px 'Cairo'">
+            <option value="all">🌐 All languages</option>
+          </select>
+          <input id="vp-search" placeholder="🔍 Search voices" style="flex:1;background:#0a0a10;border:1px solid rgba(255,255,255,.12);border-radius:9px;color:#ece9e1;padding:8px 12px;font:600 12.5px 'Cairo';outline:none">
+          <button id="vp-close" style="background:none;border:0;color:#a6a198;font-size:18px;cursor:pointer">✕</button>
+        </div>
+        <div style="display:flex;gap:7px;padding:10px 16px">
+          <button class="vp-chip on" data-g="all" style="background:rgba(212,175,55,.15);border:1px solid rgba(212,175,55,.4);color:#d4af37;border-radius:18px;padding:6px 14px;font:700 11.5px 'Cairo';cursor:pointer">All Voices</button>
+          <button class="vp-chip" data-g="Female" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:#a6a198;border-radius:18px;padding:6px 14px;font:700 11.5px 'Cairo';cursor:pointer">👩 Female</button>
+          <button class="vp-chip" data-g="Male" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:#a6a198;border-radius:18px;padding:6px 14px;font:700 11.5px 'Cairo';cursor:pointer">👨 Male</button>
+        </div>
+        <div id="vp-list" style="flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:8px"></div>
+      </div>`;
+      document.body.appendChild(div);
+      const close = () => {
+        try { if (vpTestAudio) vpTestAudio.pause(); } catch (e) {}
+        div.remove();
+      };
+      div.querySelector("#vp-close").addEventListener("click", close);
+      div.querySelector("#vp-backdrop").addEventListener("click", close);
+      const currentURI = document.getElementById("tts-voice-select").value;
+      const langs = [...new Set(vA17.map((v) => parseVoice(v.text).lang))].filter(Boolean).sort();
+      const langSel = div.querySelector("#vp-lang");
+      langs.forEach((L) => {
+        const o = document.createElement("option");
+        o.value = L; o.textContent = L;
+        langSel.appendChild(o);
+      });
+      const listEl = div.querySelector("#vp-list");
+      function renderList() {
+        listEl.innerHTML = "";
+        vA17.forEach((v) => {
+          const p = parseVoice(v.text);
+          if (vpFilterLang !== "all" && p.lang !== vpFilterLang) return;
+          if (vpFilterGender !== "all" && p.gender !== vpFilterGender) return;
+          if (vpSearch && !(v.text + " " + p.name).toLowerCase().includes(vpSearch)) return;
+          const active = v.value === currentURI;
+          const row = document.createElement("div");
+          row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-radius:11px;border:1px solid rgba(255,255,255,.07);" +
+            (active ? "background:rgba(46,204,113,.10);border-color:rgba(46,204,113,.35)" : "background:rgba(255,255,255,.03)");
+          row.innerHTML =
+            '<div style="min-width:0">' +
+            '<div style="font-size:13px;font-weight:700;color:#ece9e1;display:flex;align-items:center;gap:8px">' + p.name +
+            (active ? '<span style="background:rgba(46,204,113,.18);color:#58d68d;border-radius:14px;padding:2px 10px;font-size:10px;font-weight:800">● Active</span>' : '') +
+            '</div>' +
+            '<div style="font-size:10.5px;color:#a6a198;margin-top:2px">' + p.lang + " • " + p.gender + '</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:7px;flex:0 0 auto">' +
+            '<button class="vp-test" data-v="' + v.value + '" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#ece9e1;border-radius:8px;padding:6px 12px;font:700 11.5px Cairo;cursor:pointer">▶ Test</button>' +
+            (active ? '' : '<button class="vp-select" data-v="' + v.value + '" style="background:#d4af37;border:0;color:#141414;border-radius:8px;padding:6px 12px;font:800 11.5px Cairo;cursor:pointer">Select</button>') +
+            '</div>';
+          listEl.appendChild(row);
+        });
+        if (!listEl.children.length) listEl.innerHTML = '<div style="text-align:center;padding:30px;color:#a6a198">مفيش أصوات بالفلتر ده</div>';
+        listEl.querySelectorAll(".vp-test").forEach((b) => b.addEventListener("click", async () => {
+          b.textContent = "⏳ ...";
+          try {
+            if (vpTestAudio) { try { vpTestAudio.pause(); } catch (e) {} }
+            vpTestAudio = null;
+            await api.overlay.testTTS("Hello! This is ELDALY STREAM voice test. أهلاً بيك في البرنامج!", { voice: b.dataset.v });
+            b.textContent = "▶ Test";
+          } catch (e) { b.textContent = "▶ Test"; }
+        }));
+        listEl.querySelectorAll(".vp-select").forEach((b) => b.addEventListener("click", () => {
+          const sel = document.getElementById("tts-voice-select");
+          sel.value = b.dataset.v;
+          close();
+        }));
+      }
+      renderList();
+      langSel.addEventListener("change", () => { vpFilterLang = langSel.value; renderList(); });
+      div.querySelector("#vp-search").addEventListener("input", (e) => { vpSearch = e.target.value.trim().toLowerCase(); renderList(); });
+      div.querySelectorAll(".vp-chip").forEach((chip) => chip.addEventListener("click", () => {
+        div.querySelectorAll(".vp-chip").forEach((c) => {
+          c.classList.remove("on");
+          c.style.background = "rgba(255,255,255,.04)"; c.style.color = "#a6a198"; c.style.borderColor = "rgba(255,255,255,.12)";
+        });
+        chip.classList.add("on");
+        chip.style.background = "rgba(212,175,55,.15)"; chip.style.color = "#d4af37"; chip.style.borderColor = "rgba(212,175,55,.4)";
+        vpFilterGender = chip.dataset.g;
+        renderList();
+      }));
+    });
+  }
   v537.addEventListener("click", async () => {
     const vO20 = {
       enabled: v531.checked,
