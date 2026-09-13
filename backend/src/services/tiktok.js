@@ -119,14 +119,24 @@ class TikTokService extends EventEmitter {
           `[TikTok] Connected to @${this.username} roomId=${roomData.roomId}`,
         );
         this._setupListeners(options);
+        const owner =
+          roomData.roomInfo?.owner && typeof roomData.roomInfo.owner === "object"
+            ? roomData.roomInfo.owner
+            : {};
         return {
           roomId: roomData.roomId,
-          viewers: roomData.viewerCount,
+          viewers:
+            roomData.viewerCount ??
+            roomData.roomInfo?.viewerCount ??
+            roomData.roomInfo?.liveRoomUserInfo?.userCount ??
+            0,
           title: roomData.roomInfo?.title || "",
           profilePictureUrl:
-            roomData.roomInfo?.owner?.avatarThumb?.url_list?.[0] ||
-            roomData.roomInfo?.owner?.avatar_thumb?.url_list?.[0] ||
-            roomData.roomInfo?.owner?.avatarMedium?.url_list?.[0] ||
+            this._imgUrl(owner.profilePictureMedium) ||
+            this._imgUrl(owner.profilePicture) ||
+            this._imgUrl(owner.profilePictureLarge) ||
+            this._imgUrl(owner.avatarThumb) ||
+            this._imgUrl(roomData.roomInfo?.owner?.avatarThumb) ||
             "",
         };
       } catch (err) {
@@ -187,34 +197,97 @@ class TikTokService extends EventEmitter {
     );
   }
 
+  // ====== تسطيح بيانات المكتبة ======
+  // tiktok-live-connector v2.1.1-beta بتبعت الرسائل protobuf خام:
+  // بيانات العضو مدفونة في msg.user والصورة في Image.url — مش مسطحة زي v1.
+  // الدوال دي بتحوّل الشكلين للشكل الموحد اللي باقي البرنامج بيتوقعه
+  // (user / uniqueId / nickname / avatar / badges في مستوى واحد).
+
+  _imgUrl(img) {
+    if (!img) return "";
+    if (typeof img === "string") return img;
+    if (Array.isArray(img.url) && img.url.length) return img.url[0];
+    if (Array.isArray(img.url_list) && img.url_list.length)
+      return img.url_list[0];
+    return "";
+  }
+
+  _userOf(e) {
+    const u = e && e.user && typeof e.user === "object" ? e.user : {};
+    const uniqueId = u.uniqueId || e.uniqueId || "";
+    const badges = [];
+    let isMod = !!e.isModerator;
+    const rawBadges = Array.isArray(u.badges)
+      ? u.badges
+      : Array.isArray(e.badges)
+        ? e.badges
+        : [];
+    for (const b of rawBadges) {
+      if (!b || typeof b !== "object") continue;
+      // v2: badgeScene — 1 = أدمن/موديراتور، 4/7 = مشترك
+      if (b.badgeScene === 1) {
+        badges.push("moderator");
+        isMod = true;
+      } else if (b.badgeScene === 4 || b.badgeScene === 7) {
+        badges.push("subscriber");
+      } else if (typeof b.type === "string") {
+        badges.push(b.type);
+        if (b.type.includes("moderator")) isMod = true;
+      }
+    }
+    const isSubscriber = !!(u.isSubscribe || e.isSubscriber);
+    if (isSubscriber && !badges.includes("subscriber"))
+      badges.push("subscriber");
+    const isFollower = !!(u.isFollower || e.isFollower);
+    if (isFollower && !badges.includes("follower")) badges.push("follower");
+    return {
+      user: uniqueId,
+      uniqueId,
+      nickname: u.nickname || e.nickname || "",
+      userId: String(u.userId || u.idStr || e.userId || ""),
+      avatar:
+        this._imgUrl(u.profilePictureMedium) ||
+        this._imgUrl(u.profilePicture) ||
+        this._imgUrl(u.profilePictureLarge) ||
+        this._imgUrl(u.avatarJpg) ||
+        this._imgUrl(u.avatarThumb) ||
+        (typeof u.profilePictureUrl === "string" ? u.profilePictureUrl : "") ||
+        (typeof e.profilePictureUrl === "string" ? e.profilePictureUrl : ""),
+      isFollower,
+      isSubscriber,
+      isModerator: isMod,
+      badges,
+    };
+  }
+
   _setupListeners(options) {
     if (!this.client) return;
 
     this.client.on("chat", (msg) => {
       this.emit("chat", {
-        user: msg.uniqueId,
-        nickname: msg.nickname,
+        ...this._userOf(msg),
         comment: msg.comment,
-        avatar: msg.profilePictureUrl,
-        userId: msg.userId,
-        isFollower:
-          msg.isFollower || msg.followRole === 1 || msg.followRole === 2,
-        isSubscriber: msg.isSubscriber,
-        isModerator: msg.isModerator,
-        badges: [
-          msg.isModerator ? "moderator" : null,
-          msg.isSubscriber ? "subscriber" : null,
-          msg.isFollower || msg.followRole === 1 || msg.followRole === 2 ? "follower" : null,
-        ].filter(Boolean),
       });
     });
 
     this.client.on("gift", (gift) => {
+      const u = this._userOf(gift);
+      const gd =
+        gift.giftDetails && typeof gift.giftDetails === "object"
+          ? gift.giftDetails
+          : {};
+      const ext =
+        gift.extendedGiftInfo && typeof gift.extendedGiftInfo === "object"
+          ? gift.extendedGiftInfo
+          : {};
+      const giftId = gift.giftId ?? gd.id ?? ext.id;
+      const giftType =
+        gift.giftType ?? gd.giftType ?? ext.giftType ?? 0;
       let shouldEmit = false;
       let count = gift.repeatCount || 1;
       if (options.instantGifts) {
-        if (gift.giftType === 1) {
-          const streakKey = (gift.userId || gift.uniqueId) + "_" + gift.giftId;
+        if (giftType === 1) {
+          const streakKey = (u.userId || u.uniqueId) + "_" + giftId;
           const prevStreak = this.activeStreaks.get(streakKey) || 0;
           const diff = gift.repeatCount - prevStreak;
           if (diff > 0) {
@@ -229,72 +302,61 @@ class TikTokService extends EventEmitter {
           shouldEmit = true;
         }
       } else {
-        if (gift.giftType === 1 && !gift.repeatEnd) {
+        if (giftType === 1 && !gift.repeatEnd) {
           return;
         }
         shouldEmit = true;
       }
       if (shouldEmit) {
         this.emit("gift", {
-          user: gift.uniqueId,
-          uniqueId: gift.uniqueId,
-          nickname: gift.nickname,
-          giftId: gift.giftId,
-          giftName: gift.giftName || gift.describe,
+          ...u,
+          giftId: String(giftId ?? ""),
+          giftName:
+            gift.giftName || gd.giftName || ext.giftName || gd.describe || ext.describe || "",
           repeatCount: count,
-          diamondCount: gift.diamondCount || 0,
-          avatar: gift.profilePictureUrl,
-          giftPictureUrl: gift.giftPictureUrl,
-          userId: gift.userId,
+          diamondCount: gift.diamondCount ?? gd.diamondCount ?? ext.diamondCount ?? 0,
+          giftPictureUrl:
+            this._imgUrl(gd.giftImage) ||
+            this._imgUrl(gd.icon) ||
+            this._imgUrl(ext.image) ||
+            this._imgUrl(ext.icon) ||
+            this._imgUrl(gift.giftPictureUrl),
         });
       }
     });
 
     this.client.on("like", (like) => {
       this.emit("like", {
-        user: like.uniqueId,
-        uniqueId: like.uniqueId,
-        nickname: like.nickname,
+        ...this._userOf(like),
         likeCount: like.likeCount,
         totalLikeCount: like.totalLikeCount,
-        avatar: like.profilePictureUrl,
       });
     });
 
     this.client.on("follow", (follow) => {
-      this.emit("follow", {
-        user: follow.uniqueId,
-        uniqueId: follow.uniqueId,
-        nickname: follow.nickname,
-        avatar: follow.profilePictureUrl,
-      });
+      this.emit("follow", this._userOf(follow));
     });
 
     this.client.on("member", (member) => {
-      this.emit("join", {
-        user: member.uniqueId,
-        uniqueId: member.uniqueId,
-        nickname: member.nickname,
-        avatar: member.profilePictureUrl,
-      });
+      this.emit("join", this._userOf(member));
     });
 
     this.client.on("share", (share) => {
-      this.emit("share", {
-        user: share.uniqueId,
-        uniqueId: share.uniqueId,
-        nickname: share.nickname,
-        avatar: share.profilePictureUrl,
-      });
+      this.emit("share", this._userOf(share));
+    });
+
+    // v2 ما بتبعتش حدث "subscribe" مستقل — أي رسالة social من نوع اشتراك بنحولها هنا
+    this.client.on("social", (soc) => {
+      try {
+        const dt = soc?.common?.displayText?.displayType || "";
+        if (String(dt).includes("subscribe")) {
+          this.emit("subscribe", this._userOf(soc));
+        }
+      } catch (e) {}
     });
 
     this.client.on("subscribe", (sub) => {
-      this.emit("subscribe", {
-        user: sub.uniqueId,
-        uniqueId: sub.uniqueId,
-        nickname: sub.nickname,
-        avatar: sub.profilePictureUrl,
-      });
+      this.emit("subscribe", this._userOf(sub));
     });
 
     this.client.on("streamEnd", (info) => {
@@ -331,13 +393,14 @@ class TikTokService extends EventEmitter {
         ? this.client.getAvailableGifts()
         : this.client.fetchAvailableGifts());
       return gifts.map((g) => ({
-          id: String(g.id),
-          name: g.name,
+          id: String(g.id ?? g.giftId ?? ""),
+          name: g.name || g.giftName || g.describe || "",
           coins: g.diamond_count || g.diamondCount || g.coins || 0,
           img:
-            g.image?.url_list?.[0] ||
-            g.icon?.url_list?.[0] ||
-            g.image?.urls?.[0] ||
+            this._imgUrl(g.giftImage) ||
+            this._imgUrl(g.icon) ||
+            this._imgUrl(g.image) ||
+            this._imgUrl(g.previewImage) ||
             "",
         }))
         .sort((a, b) => a.coins - b.coins);

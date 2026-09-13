@@ -641,31 +641,31 @@ function updateStats() {
 api.tiktok.onChat(p23 => {
   stats.comments++;
   updateStats();
-  addFeedItem("chat", p23.nickname || p23.user, p23.comment, "💬");
+  addFeedItem("chat", p23.nickname || p23.user, p23.comment, "💬", p23.avatar);
 });
 api.tiktok.onGift(p24 => {
   stats.gifts += p24.repeatCount || 1;
   updateStats();
-  addFeedItem("gift", p24.nickname || p24.user, p24.giftName + " x" + p24.repeatCount, "🎁");
+  addFeedItem("gift", p24.nickname || p24.user, p24.giftName + " x" + p24.repeatCount, "🎁", p24.avatar);
 });
 api.tiktok.onLike(p25 => {
   stats.likes += p25.likeCount || 1;
   updateStats();
-  addFeedItem("like", p25.nickname || p25.user, p25.likeCount + " likes", "❤️");
+  addFeedItem("like", p25.nickname || p25.user, (p25.likeCount || 1) + " likes", "❤️", p25.avatar);
 });
 api.tiktok.onFollow(p26 => {
   stats.followers++;
   updateStats();
-  addFeedItem("follow", p26.nickname || p26.user, "New follower", "➕");
+  addFeedItem("follow", p26.nickname || p26.user, "New follower", "➕", p26.avatar);
 });
 api.tiktok.onJoin(p27 => {
-  addFeedItem("join", p27.nickname || p27.user, "Joined the stream", "👋");
+  addFeedItem("join", p27.nickname || p27.user, "Joined the stream", "👋", p27.avatar);
 });
 api.tiktok.onShare(p28 => {
-  addFeedItem("system", p28.nickname || p28.user, "Shared the stream", "🔄");
+  addFeedItem("system", p28.nickname || p28.user, "Shared the stream", "🔄", p28.avatar);
 });
 api.tiktok.onSubscribe(p29 => {
-  addFeedItem("system", p29.nickname || p29.user, "Subscribed!", "⭐");
+  addFeedItem("system", p29.nickname || p29.user, "Subscribed!", "⭐", p29.avatar);
 });
 api.tiktok.onStreamEnd(() => {
   setDisconnected();
@@ -839,7 +839,7 @@ mcTestBtn.addEventListener("click", async () => {
 });
 const feedList = document.getElementById("feed-list");
 let feedCount = 0;
-function addFeedItem(p36, p37, p38, p39) {
+function addFeedItem(p36, p37, p38, p39, p39b) {
   if (feedCount === 0) {
     feedList.innerHTML = "";
   }
@@ -852,7 +852,8 @@ function addFeedItem(p36, p37, p38, p39) {
     minute: "2-digit",
     second: "2-digit"
   });
-  divEl11.innerHTML = "\n    <div class=\"feed-item-icon " + p36 + "\">" + p39 + "</div>\n    <div class=\"feed-item-content\">\n      <div class=\"feed-item-user\">" + escapeHtml(p37) + "</div>\n      <div class=\"feed-item-text\">" + escapeHtml(p38) + "</div>\n    </div>\n    <div class=\"feed-item-time\">" + v50 + "</div>";
+  const v50b = p39b ? "<img class=\"feed-item-avatar\" src=\"" + escapeAttr(p39b) + "\" alt=\"\" loading=\"lazy\" referrerpolicy=\"no-referrer\" onerror=\"this.remove();var s=this.parentNode&&this.parentNode.querySelector('.feed-item-emoji');if(s)s.classList.remove('hidden')\">" : "";
+  divEl11.innerHTML = "\n    <div class=\"feed-item-icon " + p36 + "\">" + v50b + "<span class=\"feed-item-emoji" + (p39b ? " hidden" : "") + "\">" + p39 + "</span></div>\n    <div class=\"feed-item-content\">\n      <div class=\"feed-item-user\">" + escapeHtml(p37) + "</div>\n      <div class=\"feed-item-text\">" + escapeHtml(p38) + "</div>\n    </div>\n    <div class=\"feed-item-time\">" + v50 + "</div>";
   feedList.prepend(divEl11);
   if (feedList.children.length > 200) {
     feedList.lastChild.remove();
