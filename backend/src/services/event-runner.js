@@ -380,9 +380,6 @@ class EventRunner extends EventEmitter {
 
     // أول ثواني بعد الكونكت بتجيب دفعة شات قديم من تيك توك — ما نقراهاش
     if (Date.now() < (this._ttsMuteUntil || 0)) return;
-    // سقف التزامن: وقت الزحمة نرمي الزيادة بدل ما الصوت يتراكم
-    if ((this._ttsPending || 0) >= 2) return;
-    this._ttsPending++;
 
     let isBlocked = false;
     if (ttsCfg.blacklist && ttsCfg.blacklist.trim() !== "") {
@@ -426,6 +423,11 @@ class EventRunner extends EventEmitter {
     const cooldownMs = (ttsCfg.cooldown || 5) * 1000;
     if (now - lastTts < cooldownMs) return;
     this._ttsCooldowns[user] = now;
+
+    // سقف التزامن: وقت الزحمة نرمي الزيادة بدل ما الصوت يتراكم
+    // (بعد كل الـ returns المبكرة — أي return بعد الزيادة لازم يعدي بالـ finally)
+    if ((this._ttsPending || 0) >= 2) return;
+    this._ttsPending++;
 
     let voice = ttsCfg.voiceURI;
     if (!voice || ttsCfg.randomVoice) {
@@ -490,6 +492,7 @@ class EventRunner extends EventEmitter {
   // أول ثواني بعد الكونكت: دفعة الشات القديم من تيك توك ما تتقراش
   onTikTokConnected() {
     this._ttsMuteUntil = Date.now() + 8000;
+    this._ttsPending = 0;
   }
 
   // فصل: امسك أي TTS جاي (حتى اللي في نص تخليق) + بلّغ العملاء توقف فوري
