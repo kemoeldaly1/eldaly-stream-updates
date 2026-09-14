@@ -520,42 +520,46 @@ class LicenseService {
       return { ok: false, reason: "الباسورد ضعيف — 6 حروف على الأقل" };
     }
     const session = this._session;
-    if (!session || !session.refreshToken) {
+    if (!session || !session.refreshToken || !session.email) {
       return { ok: false, reason: "لازم تكون مسجل دخول" };
     }
 
-    try {
-      const refreshed = await this._refreshToken(session.refreshToken);
-      if (!refreshed || !refreshed.id_token) {
-        return { ok: false, reason: "انتهت الجلسة — سجل دخول تاني" };
-      }
-      const response = await fetch(
-        IDENTITY_URL + ":update?key=" + WEB_API_KEY,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            idToken: refreshed.id_token,
-            password: newPassword,
-            returnSecureToken: true,
-          }),
-        },
-      );
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        return { ok: false, reason: "تعذر تغيير الباسورد — جرب تاني" };
-      }
-      if (data.refreshToken) {
-        await this._saveSession(
-          session.email,
-          data.refreshToken,
-          data.idToken || refreshed.id_token,
-        );
-      }
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, reason: "خطأ في الاتصال — جرب تاني" };
+    // تأكيد تغيير الباسورد بيمر على إيميل صاحب الحساب — مش بيتغير من التطبيق مباشرة.
+    // الهدف: لو حد فاتح الأكونت على جهاز حد تاني ميقدرش يغير الباسورد بصمت —
+    // Firebase بيبعت رسالة استرجاع الباسورد على الإيميل، والباسورد ميتغيرش
+    // غير لما صاحب الإيميل يفتح الرسالة ويأكد بنفسه من صفحة Firebase.
+    const now = Date.now();
+    if (this._lastResetEmailAt && now - this._lastResetEmailAt < 60 * 1000) {
+      return {
+        ok: false,
+        reason:
+          "بعتنا رسالة تأكيد قريب — استنى دقيقة قبل ما نبعت واحدة تانية",
+      };
     }
+
+    const resetResult = await this.sendPasswordReset(session.email);
+    if (!resetResult.ok) {
+      return {
+        ok: false,
+        reason:
+          resetResult.reason || "تعذر إرسال رسالة التأكيد — جرب تاني",
+      };
+    }
+    this._lastResetEmailAt = now;
+    return {
+      ok: true,
+      requiresEmailConfirm: true,
+      email: this._maskEmail(session.email),
+    };
+  }
+
+  _maskEmail(email) {
+    const s = String(email || "");
+    const at = s.indexOf("@");
+    if (at <= 0) {
+      return s;
+    }
+    return s[0] + "•••" + s.slice(at);
   }
 
   async restoreSession(hwid) {
