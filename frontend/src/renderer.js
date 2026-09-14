@@ -2188,7 +2188,18 @@ window.renameProfile = async p188 => {
   if (!v195) {
     return;
   }
-  currentProfiles = await api.profiles.rename(p188, v195);
+  // السيرفر بيرجّع {ok, profiles} — زي duplicate/create بالظبط. أخذ profiles فقط،
+  // ولو الرد مش متوقع نسيب الحالة زي ما هي ونعرض خطأ بدل ما نبوظ currentProfiles
+  // (الخطأ القديم كان بيتحط الـ object كله مكان الـ array فكل عمليات البروفايل بتبوظ)
+  const renameResult = await api.profiles.rename(p188, v195);
+  if (renameResult && Array.isArray(renameResult.profiles)) {
+    currentProfiles = renameResult.profiles;
+  } else if (Array.isArray(renameResult)) {
+    currentProfiles = renameResult;
+  } else {
+    uiAlert("تعذر إعادة تسمية البروفايل" + (renameResult && renameResult.error ? " — " + renameResult.error : " — حاول تاني"));
+    return;
+  }
   renderProfilesList();
   addFeedItem("system", "Profile", "Profile renamed to: " + v195, "✏️");
 };
