@@ -124,24 +124,23 @@
   .btn-ghost:hover { background: rgba(212,175,55,0.12); box-shadow: 0 0 26px rgba(212,175,55,0.18); }
   .hero-note { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
 
-  /* ===== App screenshot (animated mockup) ===== */
-  .shot-wrap { position: relative; max-width: 980px; margin: 56px auto 10px; perspective: 1200px; }
+  /* ===== Hero banner (الصورة الرسمية للبرنامج) ===== */
+  .shot-wrap { position: relative; max-width: 680px; margin: 56px auto 10px; }
   .shot-frame {
     position: relative;
     border: 1px solid rgba(212,175,55,0.35);
     border-radius: 14px;
     background: #0b0b10;
-    padding: 10px;
+    padding: 8px;
     box-shadow:
       0 0 0 1px rgba(212,175,55,0.08),
       0 30px 80px rgba(0,0,0,0.7),
       0 0 70px rgba(212,175,55,0.12);
-    transform: rotateX(6deg);
     animation: floaty 5.5s ease-in-out infinite;
   }
   @keyframes floaty {
-    0%, 100% { transform: rotateX(6deg) translateY(0); }
-    50% { transform: rotateX(4deg) translateY(-14px); }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
   }
   .shot-frame::before {
     content: '';
@@ -150,13 +149,6 @@
     filter: blur(14px); opacity: .5;
   }
   .shot-frame img { display: block; width: 100%; border-radius: 8px; }
-  .shot-dots {
-    display: flex; gap: 6px; padding: 2px 6px 10px;
-  }
-  .shot-dots span { width: 10px; height: 10px; border-radius: 50%; background: #26262e; }
-  .shot-dots span:nth-child(1) { background: #3a2b28; }
-  .shot-dots span:nth-child(2) { background: #33321f; }
-  .shot-dots span:nth-child(3) { background: #2b3a28; }
   .glow-line {
     height: 2px; width: 70%; margin: 8px auto 0;
     background: linear-gradient(90deg, transparent, rgba(212,175,55,0.7), transparent);
@@ -280,11 +272,10 @@
   </div>
   <p class="hero-note">متوافق مع ويندوز 10/11 • يعمل مع OBS و Streamlabs</p>
 
-  <!-- App screenshot mockup -->
+  <!-- Hero banner — الصورة الرسمية -->
   <div class="shot-wrap">
     <div class="shot-frame">
-      <div class="shot-dots"><span></span><span></span><span></span></div>
-      <img src="app-ui.png?v=20260825" alt="واجهة برنامج ELDALY STREAM">
+      <img src="hero-banner.png?v=1" alt="ELDALY STREAM — Your live command center">
     </div>
     <div class="glow-line"></div>
   </div>

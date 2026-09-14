@@ -1908,7 +1908,7 @@ function renderTags(p153) {
     v159.style.display = "none";
   }
   v158.innerHTML = selectedTags[p153].map(item => {
-    const v160 = actionsData.find(item => item.id === item);
+    const v160 = actionsData.find(a => a.id === item);
     return "<span class=\"tag-chip\">" + escapeHtml(v160?.name || item) + " <span class=\"tag-x\" onclick=\"removeTag('" + p153 + "','" + item + "')\">&times;</span></span>";
   }).join("");
 }

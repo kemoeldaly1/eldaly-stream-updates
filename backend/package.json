@@ -4,7 +4,7 @@
   "description": "ELDALY STREAM — Backend API & Overlay Server for TikTok LIVE Streaming Tool",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node --max-old-space-size=420 --expose-gc src/server.js",
     "dev": "node --watch src/server.js",
     "build": "node scripts/build.js",
     "test": "node test/store-cloud-test.js",
