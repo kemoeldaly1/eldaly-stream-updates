@@ -1003,7 +1003,7 @@ function renderActions(p40 = "") {
   const v52 = document.getElementById("actions-tbody");
   const v53 = p40 ? actionsData.filter(item => item.name.toLowerCase().includes(p40.toLowerCase())) : actionsData;
   if (v53.length === 0) {
-    v52.innerHTML = "<tr class=\"empty-row\"><td colspan=\"6\"><div class=\"empty-state\"><p>No actions defined yet</p><span>Click \"Create Action\" to get started</span></div></td></tr>";
+    v52.innerHTML = "<tr class=\"empty-row\"><td colspan=\"7\"><div class=\"empty-state\"><p>No actions defined yet</p><span>Click \"Create Action\" to get started</span></div></td></tr>";
     return;
   }
   v52.innerHTML = v53.map(item => {
@@ -1037,7 +1037,14 @@ function renderActions(p40 = "") {
     // عمود KEYS / VALUE — أوامر بس: ضغطات كيبورد / أوامر ماين كرافت / ويب هوك
     // (مسارات الصوت والفيديو مش ليها مكان هنا — ليها أعمدة البادجات)
     const v56 = item.keys || item.mc_cmd || item.webhook_url || "—";
-    return "<tr data-id=\"" + item.id + "\">\n      <td class=\"drag-handle\">⋮⋮</td>\n      <td style=\"color:var(--text-primary);font-weight:600\">" + escapeHtml(item.name) + "</td>\n      <td>" + v55 + "</td>\n      <td>" + escapeHtml(v56.substring(0, 30)) + "</td>\n      <td>" + (item.cooldown || 0) + "s</td>\n      <td><div class=\"table-actions\">\n        <button class=\"btn btn-ghost btn-sm\" onclick=\"editAction('" + item.id + "')\">Edit</button>\n        <button class=\"btn btn-ghost btn-sm\" onclick=\"duplicateAction('" + item.id + "')\" title=\"Duplicate\">Copy</button>\n        <button class=\"btn btn-danger btn-sm\" onclick=\"deleteAction('" + item.id + "')\">Delete</button>\n        <button class=\"btn btn-ghost btn-sm\" onclick=\"api.actions.execute('" + item.id + "')\" title=\"Play now\">▶</button>\n        <button class=\"btn btn-ghost btn-sm btn-delayed\" onclick=\"executeDelayed('" + item.id + "')\" title=\"Play in 5s\">▶<span class=\"delay-label\">+5</span></button>\n      </div></td></tr>";
+    // عمود SCREEN — تغيير اسكرين الأوفرلاي من الجدول مباشرة بدل فتح الإيديت
+    const vScr = String(item.screen || "1");
+    let vScrOpts = "";
+    for (let vScrI = 1; vScrI <= 10; vScrI++) {
+      vScrOpts += "<option value=\"" + vScrI + "\"" + (vScr === String(vScrI) ? " selected" : "") + ">Screen " + vScrI + "</option>";
+    }
+    const vScrSel = "<select class=\"form-select screen-select\" title=\"OBS Overlay Screen\" onchange=\"changeActionScreen('" + item.id + "', this.value)\">" + vScrOpts + "</select>";
+    return "<tr data-id=\"" + item.id + "\">\n      <td class=\"drag-handle\">⋮⋮</td>\n      <td style=\"color:var(--text-primary);font-weight:600\">" + escapeHtml(item.name) + "</td>\n      <td>" + v55 + "</td>\n      <td>" + escapeHtml(v56.substring(0, 30)) + "</td>\n      <td>" + vScrSel + "</td>\n      <td>" + (item.cooldown || 0) + "s</td>\n      <td><div class=\"table-actions\">\n        <button class=\"btn btn-ghost btn-sm\" onclick=\"editAction('" + item.id + "')\">Edit</button>\n        <button class=\"btn btn-ghost btn-sm\" onclick=\"duplicateAction('" + item.id + "')\" title=\"Duplicate\">Copy</button>\n        <button class=\"btn btn-danger btn-sm\" onclick=\"deleteAction('" + item.id + "')\">Delete</button>\n        <button class=\"btn btn-ghost btn-sm\" onclick=\"api.actions.execute('" + item.id + "')\" title=\"Play now\">▶</button>\n        <button class=\"btn btn-ghost btn-sm btn-delayed\" onclick=\"executeDelayed('" + item.id + "')\" title=\"Play in 5s\">▶<span class=\"delay-label\">+5</span></button>\n      </div></td></tr>";
   }).join("");
   const v57 = document.querySelectorAll(".action-select");
   v57.forEach(item => {
@@ -1240,6 +1247,19 @@ window.deleteAction = async p72 => {
   actionsData = actionsData.filter(item => item.id !== p72);
   await saveActionsData();
   renderActions();
+};
+// تغيير اسكرين أكشن واحد من الجدول مباشرة — بيتحفظ فوراً، ولو الحفظ فشل بيرجع القديم
+window.changeActionScreen = async (p73, p74) => {
+  const v76 = actionsData.findIndex(item => item.id === p73);
+  if (v76 === -1) {
+    return;
+  }
+  const v77 = actionsData[v76].screen;
+  actionsData[v76].screen = String(p74);
+  if (!(await saveActionsData())) {
+    actionsData[v76].screen = v77;
+    renderActions((document.getElementById("actions-search") || {}).value || "");
+  }
 };
 // شريط تقدم الرفع — بينزل تحت عنصر المسار مباشرة ويعرض النسبة المئوية
 window.__mediaBar = (elId, pct) => {

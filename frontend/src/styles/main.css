@@ -772,6 +772,14 @@ body {
 
 .table-actions { display: flex; gap: 6px; justify-content: flex-end; }
 
+/* سيلكت اسكرين الأوفرلاي داخل جدول الأكشنز — نسخة مضغوطة من form-select */
+.screen-select {
+  width: 105px;
+  padding: 5px 24px 5px 8px;
+  font-size: 11.5px;
+  background-position: right 8px center;
+}
+
 /* ============================================================
    Badges
    ============================================================ */
