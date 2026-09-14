@@ -1883,3 +1883,23 @@ tr.drag-ghost td {
   .modal { max-height: 90vh; }
   .modal-body { max-height: none; }
 }
+
+/* — النوافذ الضيقة (1100–1279): توزيع مدمج لجدولي الأكشنز والإيفنتس —
+   الأعمدة الثابتة بتتصغر عشان عمود النوع ميتقصش وسطر الأمر ميلفش أكتر من سطرين — */
+@media (max-width: 1279px) {
+  #actions-table th, #actions-table td { padding-left: 10px; padding-right: 10px; }
+  #actions-table th:nth-child(2), #actions-table td:nth-child(2) { width: 15%; }
+  #actions-table th:nth-child(3), #actions-table td:nth-child(3) { width: 12%; }
+  #actions-table th:nth-child(5), #actions-table td:nth-child(5) { width: 104px; }
+  #actions-table td:nth-child(5) { padding-left: 6px; padding-right: 6px; }
+  #actions-table th:nth-child(6), #actions-table td:nth-child(6) { width: 92px; }
+  #actions-table th:nth-child(6) { padding-left: 6px; padding-right: 6px; }
+  #actions-table th:nth-child(7), #actions-table td:nth-child(7) { width: 226px; }
+
+  #events-table th, #events-table td { padding-left: 10px; padding-right: 10px; }
+  #events-table th:nth-child(2), #events-table td:nth-child(2) { width: 60px; }
+  #events-table th:nth-child(3), #events-table td:nth-child(3) { width: 13%; }
+  #events-table th:nth-child(4), #events-table td:nth-child(4) { width: 15%; }
+  #events-table th:nth-child(5), #events-table td:nth-child(5) { width: 24%; }
+  #events-table th:nth-child(6), #events-table td:nth-child(6) { width: 260px; }
+}
