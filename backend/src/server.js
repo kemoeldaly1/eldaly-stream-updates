@@ -651,7 +651,7 @@ wsHeartbeat.unref();
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    version: "2.3.10c",
+    version: "2.3.17",
     uptime: process.uptime(),
     accounts: accounts.byEmail.size,
     liveStreams: accounts.all().filter((c) => c.tiktok && c.tiktok.isConnected()).length,
@@ -1277,13 +1277,27 @@ app.post("/api/actions", (req, res) => {
   res.json({ ok: true });
 });
 
+// كونتكست التست الافتراضي: لما الأكشن يتنفذ من غير مرسل حقيقي (زرار Test
+// أو Hotkey) — {username}/{nickname} يظهروا اسم البرنامج بدل فاضي.
+// الأحداث الحقيقية بتعدّي الكونتكست بتاعها فما بتوصلش هنا أبداً.
+const DEFAULT_TEST_CONTEXT = {
+  user: "ELDALY STREAM",
+  uniqueId: "ELDALY STREAM",
+  nickname: "ELDALY STREAM",
+  giftName: "Rose",
+  diamondCount: 1,
+  repeatCount: 1,
+  comment: "This is a test",
+  likeCount: 1,
+};
+
 app.post("/api/actions/execute", (req, res) => {
   const { actionId, context } = req.body || {};
   const ctx = req.ctx;
   const actions = ctx.store.get("actions") || [];
   const action = actions.find((a) => a.id === actionId);
   if (action) {
-    ctx.eventRunner.executeAction(action, context || {});
+    ctx.eventRunner.executeAction(action, context || DEFAULT_TEST_CONTEXT);
     ctx.eventRunner.log(`[Execute] ${action.name}`);
   }
   res.json({ ok: true });
@@ -1299,7 +1313,7 @@ app.post("/api/actions/execute-delayed", (req, res) => {
     const s = Math.min(Math.max(parseInt(delaySeconds, 10) || 5, 0), 600);
     ctx.eventRunner.log(`[Delayed] ${action.name} in ${s}s...`);
     setTimeout(() => {
-      ctx.eventRunner.executeAction(action, context || {});
+      ctx.eventRunner.executeAction(action, context || DEFAULT_TEST_CONTEXT);
       ctx.eventRunner.log(`[Execute] ${action.name} (delayed)`);
     }, s * 1000);
   }
