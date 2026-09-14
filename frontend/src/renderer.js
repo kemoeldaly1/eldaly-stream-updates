@@ -249,7 +249,11 @@ document.getElementById("btn-change-pass")?.addEventListener("click", async () =
     return;
   }
   const changePasswordResult = await api.changePassword(v23);
-  if (changePasswordResult.ok) {
+  if (changePasswordResult.ok && changePasswordResult.requiresEmailConfirm) {
+    // السيرفر بعت رسالة تأكيد Firebase على إيميل صاحب الحساب —
+    // الباسورد ميتغيرش غير لما صاحب الإيميل يفتح الرسالة ويأكد من صفحة Firebase
+    uiAlert("بعتنا رسالة تأكيد على إيميلك " + (changePasswordResult.email || "") + " ✔ افتحها من أي جهاز واضغط زرار تغيير كلمة المرور واكتب نفس الباسورد الجديد هناك. الباسورد مش هيتغير غير بعد خطوة التأكيد دي — وده بيحميك لو حد فاتح الأكونت من غير ما تعرف.");
+  } else if (changePasswordResult.ok) {
     uiAlert("تم تغيير كلمة المرور بنجاح ✔ جربها المرة الجاية تسجل بيها");
   } else {
     uiAlert(changePasswordResult.reason || "تعذر تغيير الباسورد — جرب تاني");
