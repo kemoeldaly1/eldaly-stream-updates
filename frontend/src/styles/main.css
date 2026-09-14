@@ -1836,3 +1836,50 @@ tr.drag-ghost td {
 @media (max-width: 980px) {
   .data-table th, .data-table td { padding: 10px 10px !important; }
 }
+
+/* ============================================================
+   Responsive & polish layer — v2.3.21
+   طبقة إضافية فوق التصميم الأساسي (من غير تغيير أي سلوك قائم):
+   نافذة التطبيق بحد أدنى 1100×700 — الهدف:
+   1) مودالات/بوب أب مبتخرجش بره الشاشة مهما ضاقت
+   2) الشريط الجانبي: القايمة بس اللي بتسكرول والحالة السفلية ثابتة
+   3) أشرطة الأدوات بتلف بدل ما تكسر
+   4) شاشات كبيرة: مساحة تنفس أكبر + ارتفاعات قصيرة: هيدر مضغوط
+   ============================================================ */
+
+/* — المودالات والبوب أب: عرض آمن دايماً — */
+.modal { width: min(580px, calc(100vw - 48px)); }
+.ks-popup { max-width: calc(100vw - 48px); box-sizing: border-box; }
+
+/* — الشريط الجانبي: سكرول داخلي للقايمة فقط، الأسفل ثابت — */
+.sidebar { overflow: hidden; }
+.sidebar-top {
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+.sidebar-top::-webkit-scrollbar { width: 6px; }
+.sidebar-top::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 3px; }
+.sidebar-top::-webkit-scrollbar-track { background: transparent; }
+
+/* — شريط الأدوات: بيلف لسطر تاني بدل ما يكسر — */
+.toolbar { flex-wrap: wrap; }
+.toolbar .btn { flex-shrink: 0; }
+
+/* — الجداول: النص الطويل بينقط بنقط بدل ما يكسر الصف — */
+.data-table td { overflow-wrap: break-word; }
+
+/* — الشاشات الكبيرة (1800px+): مساحة تنفس أكبر حوالين المحتوى — */
+@media (min-width: 1800px) {
+  .main-content { padding: 36px 48px 52px; }
+}
+
+/* — الارتفاعات القصيرة: هيدر الصفحة والكروت يضغطوا شوية — */
+@media (max-height: 760px) {
+  .page-header { margin-bottom: 18px; padding-bottom: 12px; }
+  .page-title { font-size: 21px; margin-bottom: 5px; }
+  .page-subtitle { font-size: 12.5px; }
+  .modal { max-height: 90vh; }
+  .modal-body { max-height: none; }
+}
