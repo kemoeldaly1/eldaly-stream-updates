@@ -1315,7 +1315,8 @@ app.post("/api/actions/duplicate", (req, res) => {
   const clone = JSON.parse(JSON.stringify(item));
   clone.id =
     "act_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
-  clone.name = item.name + " (Copy)";
+  // اسم الملف المحفوظ = اسم الأكشن نفسه بالظبط (من غير أي إضافات) + امتداد act_
+  clone.name = item.name;
   actions.push(clone);
   req.ctx.store.set("actions", actions);
   res.json({ ok: true, actions });

@@ -1834,13 +1834,20 @@ window.executeDelayed = p137 => {
   api.actions.executeDelayed(p137, 5);
   addFeedItem("system", "Timer", "Action will execute in 5 seconds...", "⏱");
 };
-window.duplicateAction = async p138 => {
-  const duplicateResult = await api.actions.duplicate(p138);
-  if (duplicateResult) {
-    actionsData = duplicateResult;
-    renderActions();
-    addFeedItem("system", "System", "Action duplicated", "📋");
+window.duplicateAction = p138 => {
+  const source = actionsData.find(item => item.id === p138);
+  if (!source) {
+    return;
   }
+  // نسخ فوري غير حاجب — الكلون بيتعمل محليًا في اللحظة، والحفظ بيحصل في الخلفية
+  const clone = JSON.parse(JSON.stringify(source));
+  clone.id = "act_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+  clone.name = source.name;
+  actionsData.push(clone);
+  renderActions();
+  addFeedItem("system", "System", "Action duplicated", "📋");
+  // الحفظ في الخلفية — من غير انتظار ومش بيقفل الواجهة
+  saveActionsData();
 };
 let selectedTags = {
   all: [],
@@ -5010,7 +5017,7 @@ loadWidgetConfigs();
     });
     const map4 = new Map();
     p322.forEach((item, index) => {
-      const v447 = p321.find(item => item.id === item);
+      const v447 = p321.find(a => a.id === item);
       if (v447) {
         map4.set(vA16[index], v447);
       }

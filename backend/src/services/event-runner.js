@@ -1118,7 +1118,9 @@ class EventRunner extends EventEmitter {
     }
     const testContext = {
       nickname: "TestUser",
-      uniqueId: "testuser",
+      // في التيست بنستخدم اسم البرنامج كقيمة افتراضية لـ {username}
+      // بدل "testuser" — وباقي المتغيرات (nickname/gift/...) تفضل زي ما هي
+      uniqueId: "ELDALY STREAM",
       giftName: ev.trigger?.gift || "Rose",
       diamondCount: ev.trigger?.coins || 1,
       repeatCount: 1,
