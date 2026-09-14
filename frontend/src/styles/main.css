@@ -1677,6 +1677,12 @@ input[type="range"]:focus::-webkit-slider-thumb {
   user-select: none;
   transition: color var(--transition);
 }
+/* مقبض السحب: العلامتين جنب بعض دايماً — منع اللف والتقص مهما ضاق العمود */
+.data-table td.drag-handle {
+  padding-left: 4px;
+  padding-right: 4px;
+  white-space: nowrap;
+}
 .drag-handle:hover { color: var(--gold); }
 .drag-handle:active { cursor: grabbing; }
 
@@ -1888,6 +1894,7 @@ tr.drag-ghost td {
    الأعمدة الثابتة بتتصغر عشان عمود النوع ميتقصش وسطر الأمر ميلفش أكتر من سطرين — */
 @media (max-width: 1279px) {
   #actions-table th, #actions-table td { padding-left: 10px; padding-right: 10px; }
+  #actions-table td.drag-handle, #events-table td.drag-handle { padding-left: 4px; padding-right: 4px; }
   #actions-table th:nth-child(2), #actions-table td:nth-child(2) { width: 15%; }
   #actions-table th:nth-child(3), #actions-table td:nth-child(3) { width: 12%; }
   #actions-table th:nth-child(5), #actions-table td:nth-child(5) { width: 104px; }
