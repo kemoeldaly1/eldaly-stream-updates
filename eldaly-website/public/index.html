@@ -27,7 +27,11 @@
     background: var(--bg);
     color: var(--text);
     overflow-x: hidden;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
   }
+  /* رقم المحفظة مسموح تحديده ونسخه — عشان الدفع */
+  .wallet, .wallet * { -webkit-user-select: text; user-select: text; }
   /* ===== خلفية سينمائية — إضاءة مسرح دافية زي البنر ===== */
   body::before {
     content: '';
@@ -639,6 +643,39 @@ function dlApp(btn){
     .catch(function(){ location.href = btn.getAttribute('href'); });
   return false;
 }
+
+// ═══════════ حماية الصفحة ═══════════
+// منع كليك يمين + اختصارات عرض المصدر وأدوات المطور + النسخ والسحب.
+// استثناء وحيد: رقم المحفظة يتحدد ويتنسخ عشان الدفع.
+(function(){
+  var inWallet = function(el){
+    while (el && el !== document.body) {
+      if (el.classList && el.classList.contains('wallet')) return true;
+      el = el.parentNode;
+    }
+    return false;
+  };
+  // 1) منع كليك يمين
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); }, false);
+  // 2) منع الاختصارات: F12 — Ctrl+Shift+I/J/C — Ctrl+U (المصدر) — Ctrl+S (حفظ الصفحة)
+  document.addEventListener('keydown', function(e){
+    var k = (e.key || '').toLowerCase();
+    if (e.key === 'F12') { e.preventDefault(); return false; }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) { e.preventDefault(); return false; }
+    if ((e.ctrlKey || e.metaKey) && (k === 'u' || k === 's' || k === 'p')) { e.preventDefault(); return false; }
+  }, false);
+  // 3) منع تحديد النص (باستثناء المحفظة)
+  document.addEventListener('selectstart', function(e){
+    if (!inWallet(e.target)) e.preventDefault();
+  }, false);
+  // 4) منع نسخ (باستثناء المحفظة) ومنع سحب الصور
+  document.addEventListener('copy', function(e){
+    var sel = window.getSelection && window.getSelection();
+    var anchor = sel && sel.anchorNode;
+    if (!inWallet(anchor && anchor.nodeType === 1 ? anchor : (anchor && anchor.parentElement))) e.preventDefault();
+  }, false);
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); }, false);
+})();
 </script>
 
 </body>
