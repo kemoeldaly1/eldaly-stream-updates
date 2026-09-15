@@ -3,18 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ELDALY STREAM — أقوى أداة بث تيك توك لايف</title>
+<title>ELDALY STREAM — More Control, Bigger Engagement | أقوى أداة بث تيك توك لايف</title>
 <meta name="description" content="برنامج تفاعلات البث الاحترافي لتيك توك لايف — أوفرلاي، ويدجت، أصوات، تعليق صوتي، وأكتر. جرّب مجاناً الآن.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=Changa:wght@600;700;800&family=Orbitron:wght@600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=Changa:wght@600;700;800&family=Orbitron:wght@600;700;900&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --gold: #d4af37;
-    --gold-light: #ecd28a;
+    --gold-light: #f2dc93;
+    --gold-pale: #ecd28a;
     --gold-dark: #a17c1e;
-    --bg: #07070a;
-    --bg-card: #0f0f15;
+    --amber: #ffb84d;
+    --bg: #050508;
+    --bg-card: #0d0d13;
     --text: #ece9e1;
     --text-muted: #a6a198;
   }
@@ -22,99 +24,132 @@
   html { scroll-behavior: smooth; }
   body {
     font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
-    background:
-      radial-gradient(1000px 520px at 50% -10%, rgba(212,175,55,0.09), transparent 65%),
-      radial-gradient(circle at 50% 100%, rgba(212,175,55,0.045), transparent 55%),
-      var(--bg);
+    background: var(--bg);
     color: var(--text);
     overflow-x: hidden;
   }
-  /* gaming grid backdrop */
+  /* ===== خلفية سينمائية — إضاءة مسرح دافية زي البنر ===== */
   body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: -2; pointer-events: none;
+    background:
+      radial-gradient(900px 500px at 12% -6%, rgba(255,166,60,0.14), transparent 60%),
+      radial-gradient(900px 500px at 88% -6%, rgba(212,120,40,0.12), transparent 60%),
+      radial-gradient(1200px 700px at 50% 108%, rgba(212,175,55,0.10), transparent 62%),
+      var(--bg);
+  }
+  /* شبكة جيمنج خفيفة */
+  body::after {
     content: '';
     position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background-image:
-      linear-gradient(rgba(212,175,55,0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(212,175,55,0.035) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 40%, transparent 100%);
-    -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 40%, transparent 100%);
+      linear-gradient(rgba(212,175,55,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212,175,55,0.04) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: radial-gradient(ellipse 85% 55% at 50% 0%, #000 35%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 85% 55% at 50% 0%, #000 35%, transparent 100%);
   }
 
   /* ===== Nav ===== */
   nav {
     position: sticky; top: 0; z-index: 50;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 5vw;
-    background: rgba(7,7,10,0.85);
-    backdrop-filter: blur(10px);
+    padding: 13px 5vw;
+    background: rgba(5,5,8,0.82);
+    backdrop-filter: blur(12px);
     border-bottom: 1px solid transparent;
-    border-image: linear-gradient(90deg, rgba(212,175,55,0) 0%, rgba(212,175,55,0.35) 18%, rgba(212,175,55,0.12) 55%, rgba(212,175,55,0) 100%) 1;
+    border-image: linear-gradient(90deg, rgba(212,175,55,0) 0%, rgba(212,175,55,0.4) 18%, rgba(212,175,55,0.12) 55%, rgba(212,175,55,0) 100%) 1;
   }
-  .nav-logo {
+  .nav-logo { display: flex; align-items: center; gap: 11px; }
+  .nav-crown { width: 30px; height: 30px; filter: drop-shadow(0 0 10px rgba(212,175,55,0.55)); }
+  .nav-logo b {
     font-family: 'Orbitron', sans-serif;
-    font-weight: 900; font-size: 17px; letter-spacing: 3px;
-    background: linear-gradient(135deg, #f2dc93 0%, #d4af37 50%, #a17c1e 100%);
+    font-weight: 900; font-size: 16.5px; letter-spacing: 3px;
+    background: linear-gradient(135deg, #f2dc93 0%, #d4af37 55%, #a17c1e 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 22px rgba(212,175,55,0.35);
   }
   .nav-links { display: flex; gap: 22px; align-items: center; }
   .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 700; transition: color .2s; }
   .nav-links a:hover { color: var(--gold-light); }
 
   /* ===== Hero ===== */
-  .hero { text-align: center; padding: 70px 5vw 30px; max-width: 1080px; margin: 0 auto; }
+  .hero { text-align: center; padding: 78px 5vw 26px; max-width: 1120px; margin: 0 auto; position: relative; }
   .hero-badge {
-    display: inline-block;
-    background: rgba(212,175,55,0.08);
-    border: 1px solid rgba(212,175,55,0.4);
-    color: var(--gold-light);
+    display: inline-flex; align-items: center; gap: 9px;
+    background: linear-gradient(180deg, rgba(212,175,55,0.14), rgba(212,175,55,0.05));
+    border: 1px solid rgba(212,175,55,0.45);
+    color: var(--gold-pale);
     font-size: 13px; font-weight: 800;
-    padding: 9px 20px; border-radius: 100px;
-    margin-bottom: 26px;
-    box-shadow: 0 0 18px rgba(212,175,55,0.15);
-    animation: pulse 2.4s ease-in-out infinite;
+    padding: 9px 22px; border-radius: 100px;
+    margin-bottom: 30px;
+    box-shadow: 0 0 22px rgba(212,175,55,0.16), inset 0 0 18px rgba(212,175,55,0.05);
+    animation: pulse 2.6s ease-in-out infinite;
   }
   @keyframes pulse {
     0%, 100% { box-shadow: 0 0 14px rgba(212,175,55,0.12); }
-    50% { box-shadow: 0 0 30px rgba(212,175,55,0.3); }
+    50% { box-shadow: 0 0 34px rgba(255,184,77,0.35); }
   }
   h1 {
     font-family: 'Changa', 'Cairo', sans-serif;
-    font-size: clamp(30px, 5vw, 54px);
-    font-weight: 800; line-height: 1.55;
+    font-size: clamp(30px, 5vw, 56px);
+    font-weight: 800; line-height: 1.5;
     background: linear-gradient(180deg, #fff8e1 5%, #f2dc93 35%, #d4af37 70%, #9c7819 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 26px rgba(212, 175, 55, 0.22));
-    margin-bottom: 16px;
+    filter: drop-shadow(0 0 30px rgba(212,175,55,0.25));
+    margin-bottom: 6px;
   }
   h1 .brand {
     font-family: 'Orbitron', sans-serif;
-    font-size: 0.95em;
-    font-weight: 900;
-    letter-spacing: 5px;
-    white-space: nowrap;
+    font-size: 1.02em; font-weight: 900; letter-spacing: 6px; white-space: nowrap;
+  }
+  /* السطر السكربت الذهبي — زي "More Control, Bigger Engagement" */
+  .hero-script {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(24px, 3.4vw, 38px);
+    font-weight: 700; color: var(--amber);
+    transform: rotate(-2.5deg);
+    display: inline-block;
+    margin: 6px 0 18px;
+    text-shadow: 0 0 26px rgba(255,184,77,0.45);
+    direction: ltr;
   }
   .hero p.sub {
-    color: var(--text-muted); font-size: clamp(14.5px, 2vw, 18px);
-    line-height: 1.9; max-width: 720px; margin: 0 auto 34px;
+    color: var(--text-muted); font-size: clamp(14.5px, 2vw, 17.5px);
+    line-height: 1.95; max-width: 700px; margin: 0 auto 24px;
+  }
+  /* شارات الصح — Stream Better / Automate Events / Grow Your Audience */
+  .check-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
+  .check-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(212,175,55,0.06);
+    border: 1px solid rgba(212,175,55,0.3);
+    color: var(--gold-pale);
+    font-size: 13.5px; font-weight: 800;
+    padding: 9px 18px; border-radius: 100px;
+  }
+  .check-pill i {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: linear-gradient(180deg, #f0d078, #c69c2d);
+    color: #201803; font-style: normal; font-weight: 900; font-size: 11px;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 10px rgba(212,175,55,0.5);
   }
   .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
   .btn {
     display: inline-flex; align-items: center; gap: 10px;
-    padding: 16px 34px;
+    padding: 16px 36px;
     font-family: 'Changa', 'Cairo', sans-serif;
     font-size: 16px; font-weight: 700;
     cursor: pointer; text-decoration: none; transition: all .2s;
     border: none; position: relative;
-    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
   }
   .btn-gold {
-    background: linear-gradient(180deg, #f0d078 0%, #c69c2d 100%);
+    background: linear-gradient(180deg, #f5d98a 0%, #d4af37 45%, #b3871f 100%);
     color: #201803;
-    box-shadow: 0 10px 30px rgba(212,175,55,0.3);
+    box-shadow: 0 10px 34px rgba(212,175,55,0.35);
   }
-  .btn-gold:hover { filter: brightness(1.08); box-shadow: 0 0 44px rgba(212,175,55,0.45); transform: translateY(-2px); }
+  .btn-gold:hover { filter: brightness(1.09); box-shadow: 0 0 50px rgba(255,184,77,0.5); transform: translateY(-2px); }
   .btn-ghost {
     background: rgba(212,175,55,0.05);
     border: 1px solid rgba(212,175,55,0.35);
@@ -122,20 +157,20 @@
     clip-path: none; border-radius: 4px;
   }
   .btn-ghost:hover { background: rgba(212,175,55,0.12); box-shadow: 0 0 26px rgba(212,175,55,0.18); }
-  .hero-note { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+  .hero-note { margin-top: 16px; font-size: 13px; color: var(--text-muted); }
 
-  /* ===== Hero banner (الصورة الرسمية للبرنامج) ===== */
-  .shot-wrap { position: relative; max-width: 680px; margin: 56px auto 10px; }
+  /* ===== البنر الرسمي — فريم ذهبي عائم ===== */
+  .shot-wrap { position: relative; max-width: 660px; margin: 52px auto 8px; }
   .shot-frame {
     position: relative;
-    border: 1px solid rgba(212,175,55,0.35);
-    border-radius: 14px;
+    border: 1px solid rgba(212,175,55,0.4);
+    border-radius: 16px;
     background: #0b0b10;
-    padding: 8px;
+    padding: 9px;
     box-shadow:
       0 0 0 1px rgba(212,175,55,0.08),
-      0 30px 80px rgba(0,0,0,0.7),
-      0 0 70px rgba(212,175,55,0.12);
+      0 34px 90px rgba(0,0,0,0.75),
+      0 0 80px rgba(255,166,60,0.14);
     animation: floaty 5.5s ease-in-out infinite;
   }
   @keyframes floaty {
@@ -144,62 +179,128 @@
   }
   .shot-frame::before {
     content: '';
-    position: absolute; inset: -2px; border-radius: 16px; z-index: -1;
-    background: linear-gradient(120deg, rgba(212,175,55,0.5), transparent 30%, transparent 70%, rgba(212,175,55,0.5));
-    filter: blur(14px); opacity: .5;
+    position: absolute; inset: -2px; border-radius: 18px; z-index: -1;
+    background: linear-gradient(120deg, rgba(255,166,60,0.55), transparent 30%, transparent 70%, rgba(212,175,55,0.55));
+    filter: blur(16px); opacity: .55;
   }
-  .shot-frame img { display: block; width: 100%; border-radius: 8px; }
+  .shot-frame img { display: block; width: 100%; border-radius: 10px; }
   .glow-line {
-    height: 2px; width: 70%; margin: 8px auto 0;
-    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.7), transparent);
+    height: 2px; width: 68%; margin: 10px auto 0;
+    background: linear-gradient(90deg, transparent, rgba(255,184,77,0.75), transparent);
     border-radius: 2px;
   }
 
-  /* ===== Sections ===== */
-  section { padding: 70px 5vw; max-width: 1100px; margin: 0 auto; }
+  /* ===== عنوان قسم ===== */
+  section { padding: 74px 5vw; max-width: 1140px; margin: 0 auto; }
   .sec-title {
     font-family: 'Changa', 'Cairo', sans-serif;
-    text-align: center; font-size: clamp(23px, 4vw, 33px); font-weight: 800;
-    color: var(--gold-light); margin-bottom: 12px;
-    text-shadow: 0 0 30px rgba(212,175,55,0.25);
+    text-align: center; font-size: clamp(24px, 4vw, 34px); font-weight: 800;
+    background: linear-gradient(180deg, #fff8e1 10%, #f2dc93 45%, #d4af37 85%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 24px rgba(212,175,55,0.2));
   }
-  .sec-sub { text-align: center; color: var(--text-muted); font-size: 15px; margin-bottom: 44px; line-height: 1.8; }
+  .sec-sub { text-align: center; color: var(--text-muted); font-size: 15px; margin-bottom: 48px; line-height: 1.8; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-  .card {
-    background: linear-gradient(180deg, rgba(212,175,55,0.03), rgba(255,255,255,0) 35%), var(--bg-card);
+  /* ===== شريط المميزات — أيقونات دائرية زي البنر ===== */
+  .feat-strip {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px; max-width: 1080px; margin: 0 auto;
+  }
+  .feat {
+    text-align: center; padding: 30px 14px 24px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(212,175,55,0.05), rgba(255,255,255,0) 55%), var(--bg-card);
     border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 6px; padding: 28px 22px;
-    transition: all .25s;
-    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+    transition: transform .22s, border-color .22s, box-shadow .22s;
   }
-  .card:hover {
-    border-color: rgba(212,175,55,0.45);
-    box-shadow: 0 14px 44px rgba(212,175,55,0.1);
-    transform: translateY(-4px);
+  .feat:hover { transform: translateY(-6px); border-color: rgba(212,175,55,0.45); box-shadow: 0 18px 44px rgba(0,0,0,0.5), 0 0 30px rgba(212,175,55,0.12); }
+  .feat .bubble {
+    width: 66px; height: 66px; margin: 0 auto 16px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    background: radial-gradient(circle at 50% 30%, #17130a, #0b0b10 70%);
+    border: 2px solid rgba(212,175,55,0.55);
+    box-shadow: 0 0 0 4px rgba(212,175,55,0.07), 0 0 24px rgba(212,175,55,0.22), inset 0 0 14px rgba(212,175,55,0.12);
   }
-  .card .icon { font-size: 38px; margin-bottom: 14px; filter: drop-shadow(0 0 12px rgba(212,175,55,0.3)); }
-  .card h3 { font-family: 'Changa', 'Cairo', sans-serif; font-size: 17px; font-weight: 700; color: var(--gold-light); margin-bottom: 10px; }
-  .card p { font-size: 13.5px; color: var(--text-muted); line-height: 1.9; }
+  .feat h3 { font-family: 'Changa','Cairo',sans-serif; font-size: 15.5px; font-weight: 800; color: var(--gold-pale); margin-bottom: 7px; }
+  .feat p { font-size: 12.5px; color: var(--text-muted); line-height: 1.8; }
+
+  /* ===== شريط الثقة — Easy to Use / Secure / 24-7 Support + المنصات ===== */
+  .trust-wrap { max-width: 980px; margin: 0 auto; }
+  .trust-bar {
+    display: flex; align-items: stretch; justify-content: center;
+    flex-wrap: wrap; gap: 0;
+    background: linear-gradient(180deg, rgba(212,175,55,0.07), rgba(212,175,55,0.02));
+    border: 1px solid rgba(212,175,55,0.35);
+    border-radius: 18px;
+    padding: 8px;
+    box-shadow: 0 14px 44px rgba(0,0,0,0.5), inset 0 0 30px rgba(212,175,55,0.04);
+  }
+  .trust-item {
+    flex: 1 1 150px;
+    display: flex; align-items: center; justify-content: center; gap: 11px;
+    padding: 16px 12px;
+    border-left: 1px solid rgba(212,175,55,0.14);
+  }
+  .trust-item:last-child { border-left: none; }
+  .trust-item .t-ico {
+    width: 42px; height: 42px; border-radius: 12px; flex: 0 0 42px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px;
+    background: rgba(212,175,55,0.1);
+    border: 1px solid rgba(212,175,55,0.4);
+  }
+  .trust-item b { display: block; font-size: 13.5px; font-weight: 800; color: var(--gold-pale); }
+  .trust-item span { display: block; font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .platforms {
+    display: flex; align-items: center; justify-content: center; gap: 26px;
+    margin-top: 20px; flex-wrap: wrap;
+    color: var(--text-muted); font-size: 13px; font-weight: 700;
+  }
+  .platforms b { font-family: 'Orbitron', sans-serif; letter-spacing: 1px; color: var(--text); }
+  .platforms .dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(212,175,55,0.5); }
+
+  /* ===== ريبون ذهبي — Take Your Stream to the Next Level ===== */
+  .ribbon-wrap { text-align: center; margin: 0 auto; }
+  .ribbon {
+    display: inline-block;
+    font-family: 'Changa','Cairo',sans-serif;
+    font-size: clamp(18px, 3vw, 26px); font-weight: 800;
+    color: #201803;
+    background: linear-gradient(180deg, #f5d98a, #d4af37 55%, #b3871f);
+    padding: 16px 46px;
+    clip-path: polygon(3% 12%, 100% 0%, 97% 88%, 0% 100%);
+    box-shadow: 0 14px 44px rgba(212,175,55,0.35);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+    animation: ribbonGlow 3s ease-in-out infinite;
+  }
+  @keyframes ribbonGlow {
+    0%,100% { box-shadow: 0 14px 44px rgba(212,175,55,0.3); }
+    50% { box-shadow: 0 14px 60px rgba(255,184,77,0.5); }
+  }
 
   /* ===== Pricing ===== */
-  .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 380px)); gap: 20px; justify-content: center; }
+  .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 380px)); gap: 22px; justify-content: center; }
   .plan {
-    background: var(--bg-card);
+    background: linear-gradient(180deg, rgba(212,175,55,0.04), rgba(255,255,255,0) 40%), var(--bg-card);
     border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 8px; padding: 36px 28px;
+    border-radius: 14px; padding: 38px 28px;
     text-align: center;
     display: flex; flex-direction: column; gap: 18px;
+    transition: transform .22s, box-shadow .22s;
   }
+  .plan:hover { transform: translateY(-4px); box-shadow: 0 18px 50px rgba(0,0,0,0.5); }
   .plan.hot {
-    border-color: rgba(212,175,55,0.55);
-    box-shadow: 0 0 60px rgba(212,175,55,0.13);
+    border-color: rgba(212,175,55,0.6);
+    box-shadow: 0 0 70px rgba(212,175,55,0.14);
     position: relative;
-    clip-path: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px);
+    clip-path: polygon(24px 0, 100% 0, 100% calc(100% - 24px), calc(100% - 24px) 100%, 0 100%, 0 24px);
   }
-  .plan-name { font-family: 'Changa','Cairo',sans-serif; font-size: 24px; font-weight: 800; color: var(--gold-light); letter-spacing: 1px; }
+  .plan-name { font-family: 'Changa','Cairo',sans-serif; font-size: 25px; font-weight: 800; color: var(--gold-pale); letter-spacing: 1px; }
   .plan-price { font-size: 15px; color: var(--text-muted); }
-  .plan-price strong { font-family: 'Orbitron',sans-serif; color: var(--gold); font-size: 30px; }
+  .plan-price strong { font-family: 'Orbitron',sans-serif; color: var(--gold); font-size: 32px; }
   .plan ul { list-style: none; flex: 1; }
   .plan ul li { padding: 9px 0; font-size: 14.5px; color: var(--text-muted); border-bottom: 1px dashed rgba(255,255,255,0.06); }
   .plan ul li:last-child { border-bottom: none; }
@@ -210,37 +311,40 @@
   /* ===== Payment ===== */
   .pay-box {
     max-width: 640px; margin: 0 auto;
-    background: var(--bg-card);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 8px; padding: 30px; text-align: center;
+    background: linear-gradient(180deg, rgba(212,175,55,0.04), rgba(255,255,255,0) 40%), var(--bg-card);
+    border: 1px solid rgba(212,175,55,0.22);
+    border-radius: 14px; padding: 32px; text-align: center;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.45);
   }
   .pay-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 22px; }
   .pay-chip {
     display: inline-flex; align-items: center; gap: 8px;
     background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
     color: var(--text); font-size: 14px; font-weight: 700;
-    padding: 12px 20px; border-radius: 6px; cursor: pointer;
+    padding: 12px 20px; border-radius: 8px; cursor: pointer;
     text-decoration: none; transition: all .2s;
   }
   .pay-chip:hover { border-color: rgba(212,175,55,0.5); color: var(--gold-light); box-shadow: 0 0 20px rgba(212,175,55,0.12); }
   .wallet {
     background: rgba(232,0,14,0.06); border: 1px solid rgba(232,0,14,0.28);
-    border-radius: 6px; padding: 18px; margin-top: 6px;
+    border-radius: 8px; padding: 18px; margin-top: 6px;
   }
   .wallet .num { font-family: 'Orbitron', monospace; font-size: 22px; font-weight: 800; color: #ffd7d7; letter-spacing: 3px; direction: ltr; }
   .wallet p { font-size: 13px; color: var(--text-muted); margin-top: 10px; line-height: 1.9; }
 
   footer {
-    text-align: center; padding: 40px 5vw 30px;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    text-align: center; padding: 42px 5vw 32px;
+    border-top: 1px solid transparent;
+    border-image: linear-gradient(90deg, rgba(212,175,55,0) 0%, rgba(212,175,55,0.3) 50%, rgba(212,175,55,0) 100%) 1;
     color: var(--text-muted); font-size: 13px; line-height: 2.2;
   }
   footer a { color: var(--gold); text-decoration: none; font-weight: 800; }
 
-  @media (max-width: 600px) {
+  @media (max-width: 720px) {
     .nav-links a.hide-m { display: none; }
-    .shot-frame { transform: none; animation: floaty-sm 5.5s ease-in-out infinite; }
-    @keyframes floaty-sm { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    .trust-item { border-left: none; border-bottom: 1px solid rgba(212,175,55,0.12); flex: 1 1 100%; }
+    .trust-item:last-child { border-bottom: none; }
+    .hero-script { transform: rotate(-1.5deg); }
   }
 </style>
 </head>
@@ -248,7 +352,10 @@
 
 <!-- ═══════════ Nav ═══════════ -->
 <nav>
-  <div class="nav-logo">ELDALY STREAM</div>
+  <div class="nav-logo">
+    <svg class="nav-crown" viewBox="0 0 24 24" fill="none"><path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-1.6 10.5a1.5 1.5 0 0 1-1.5 1.3H6.1a1.5 1.5 0 0 1-1.5-1.3L3 8z" fill="url(#cg)" stroke="#a17c1e" stroke-width="0.6"/><defs><linearGradient id="cg" x1="3" y1="4" x2="21" y2="20"><stop stop-color="#f2dc93"/><stop offset="0.55" stop-color="#d4af37"/><stop offset="1" stop-color="#a17c1e"/></linearGradient></defs></svg>
+    <b>ELDALY STREAM</b>
+  </div>
   <div class="nav-links">
     <a href="#features" class="hide-m">المميزات</a>
     <a href="#pricing" class="hide-m">الأسعار</a>
@@ -258,12 +365,18 @@
 
 <!-- ═══════════ Hero ═══════════ -->
 <div class="hero">
-  <div class="hero-badge">🔥 الإصدار 1.0 — متاح الآن للتحميل</div>
-  <h1>خلّي بثك احترافي<br>مع برنامج <span class="brand">ELDALY STREAM</span><br>للتفاعل مع البث بالهدايا والأوامر<br>بكل سهولة واحترافية</h1>
+  <div class="hero-badge">🔥 الإصدار الأخير — متاح الآن للتحميل</div>
+  <h1>خلّي بثك احترافي<br>مع <span class="brand">ELDALY STREAM</span></h1>
+  <div class="hero-script">More Control, Bigger Engagement</div>
   <p class="sub">
     أوفرلاي، ويدجت متحركة، أصوات وفيديوهات لحظية، تعليق صوتي بالعربي،
     وربط كامل بالهدايا والتعليقات والمتابعين — كله بيشتغل أوتوماتيك وأنت بتبث.
   </p>
+  <div class="check-row">
+    <span class="check-pill"><i>✓</i> بث أحتراف</span>
+    <span class="check-pill"><i>✓</i> أتمتة كاملة للأحداث</span>
+    <span class="check-pill"><i>✓</i> كوّن جمهورك</span>
+  </div>
   <div class="cta-row">
     <a class="btn btn-gold" href="https://github.com/kemoeldaly1/eldaly-stream-updates/releases/latest/download/ELDALY-STREAM-Setup-Latest.exe" onclick="return dlApp(this)">
       ⬇ حمّل البرنامج مجاناً
@@ -272,26 +385,44 @@
   </div>
   <p class="hero-note">متوافق مع ويندوز 10/11 • يعمل مع OBS و Streamlabs</p>
 
-  <!-- Hero banner — الصورة الرسمية -->
+  <!-- البنر الرسمي -->
   <div class="shot-wrap">
     <div class="shot-frame">
-      <img src="hero-banner.png?v=1" alt="ELDALY STREAM — Your live command center">
+      <img src="hero-banner.png?v=2" alt="ELDALY STREAM — More Control, Bigger Engagement">
     </div>
     <div class="glow-line"></div>
   </div>
 </div>
 
-<!-- ═══════════ Features ═══════════ -->
+<!-- ═══════════ Features — شريط أيقونات دائرية ═══════════ -->
 <section id="features">
   <div class="sec-title">⚡ كل اللي بثك محتاجه في مكان واحد</div>
   <div class="sec-sub">صممناه عشان يشتغل معاك في البث المباشر من غير تعقيد</div>
-  <div class="grid">
-    <div class="card"><div class="icon">🖥️</div><h3>10 شاشات أوفرلاي</h3><p>فيديوهات وأصوات وصور بتشتغل لحظياً على سورس OBS — بترتيب وتوقيت أنت بتتحكم فيهم.</p></div>
-    <div class="card"><div class="icon">🎁</div><h3>تفاعل فوري مع الهدايا</h3><p>كل هدية بتشغل الأكشن بتاعها تلقائياً — صوت، فيديو، بانر باسم المرسل وصورته فوق الفيديو.</p></div>
-    <div class="card"><div class="icon">🗣️</div><h3>تعليق صوتي عربي</h3><p>قراءة التعليقات وأسماء المرسلين بأصوات عربية طبيعية — مع طابور منظم من غير تداخل.</p></div>
-    <div class="card"><div class="icon">🏆</div><h3>ويدجت احترافية</h3><p>سباق الهدايا، لوحة الصدارة، عداد الأهداف بالقلب الماي، باتل الفرق، سبييدومتر وأكتر.</p></div>
-    <div class="card"><div class="icon">⌨️</div><h3>هوت كيز وأتمتة</h3><p>شغّل أي أكشن بضغطة زرار، وأحداث أوتوماتيك للمتابعة واللايكات والمشاركة والتعليقات.</p></div>
-    <div class="card"><div class="icon">🛡️</div><h3>تحديثات تلقائية</h3><p>البرنامج يحدّث نفسه في الخلفية من غير ما يقطع بثك أبداً — وأمان كامل للاشتراك.</p></div>
+  <div class="feat-strip">
+    <div class="feat"><div class="bubble">⚡</div><h3>أكشنز لحظية</h3><p>مؤثرات وأوامر مخصوصة بتشتغل في اللحظة</p></div>
+    <div class="feat"><div class="bubble">🎁</div><h3>هدايا وأحداث</h3><p>حوّل الهدايا لأكشنز جوا اللعبة</p></div>
+    <div class="feat"><div class="bubble">🖼️</div><h3>ويدجت وأوفرلاي</h3><p>تنبيهات حية تخلي جمهورك متفاعل</p></div>
+    <div class="feat"><div class="bubble">⌨️</div><h3>هوت كيز</h3><p>تحكم في كل حاجة بضغطة زرار</p></div>
+    <div class="feat"><div class="bubble">🗣️</div><h3>TTS وأكتر</h3><p>صوت وموسيقى وتفاعلات مخصوصة</p></div>
+  </div>
+</section>
+
+<!-- ═══════════ Trust bar ═══════════ -->
+<section style="padding-top:0;">
+  <div class="trust-wrap">
+    <div class="trust-bar">
+      <div class="trust-item"><div class="t-ico">🛡️</div><div><b>سهل الاستخدام</b><span>من غير أي خبرة تقنية</span></div></div>
+      <div class="trust-item"><div class="t-ico">🔒</div><div><b>بياناتك آمنة</b><span>حماية كاملة لحسابك</span></div></div>
+      <div class="trust-item"><div class="t-ico">🎧</div><div><b>دعم 24/7</b><span>دايماً موجودين معاك</span></div></div>
+    </div>
+    <div class="platforms">
+      <span>🎵 <b>TikTok LIVE</b></span>
+      <span class="dot"></span>
+      <span>🎥 <b>OBS</b></span>
+      <span class="dot"></span>
+      <span>📺 <b>Streamlabs</b></span>
+      <span>والمزيد...</span>
+    </div>
   </div>
 </section>
 
@@ -318,15 +449,13 @@
       <div class="plan-price"><strong>$10</strong> شهرياً</div>
       <ul>
         <li>🔴 دفع Patreon — تفعيل تلقائي خلال دقيقة</li>
-        <li>بروفايلات بلا حدود — بياناتك محفوظة لحسابك لوحدك</li>
+        <li>كل مميزات المجانية</li>
+        <li>ويدجت متقدمة: سباق، صدارة، أهداف، باتل</li>
+        <li>هوت كيز وإضافات غير محدودة</li>
         <li>أكشنات وأحداث بلا حدود</li>
-        <li>كل الويدجت المتقدمة والحصرية</li>
-        <li>⌨️ ضغطات ألعاب حقيقية (Roblox وGTA وكل الألعاب)</li>
-        <li>🔊 تنبيهات صوتية فورية للاتصال والانقطاع</li>
-        <li>📢 استقبال إشعارات ورسائل الإدارة أول بأول</li>
-        <li>🎧 دعم فني مباشر (واتساب + ديسكورد) من جوه البرنامج</li>
+        <li>أولوية في الدعم الفني</li>
       </ul>
-      <a class="btn btn-gold" href="https://www.patreon.com/c/ELDALYSTREAM/membership" target="_blank">اشترك الآن</a>
+      <a class="btn btn-gold" href="https://www.patreon.com/c/ELDALYSTREAM/membership" target="_blank">اشترك في PRO</a>
     </div>
   </div>
 </section>
@@ -350,11 +479,13 @@
   </div>
 </section>
 
-<!-- ═══════════ Download CTA ═══════════ -->
+<!-- ═══════════ Ribbon + Download CTA ═══════════ -->
 <section id="download" style="text-align:center;">
-  <div class="sec-title">🚀 جاهز ترفع مستوى بثك؟</div>
-  <div class="sec-sub">حمّل أحدث نسخة الآن — تسطيب بضغطة واحدة، وجرّب مجاناً فوراً</div>
-  <a class="btn btn-gold" style="font-size:18px; padding:18px 44px;" href="https://github.com/kemoeldaly1/eldaly-stream-updates/releases/latest/download/ELDALY-STREAM-Setup-Latest.exe" onclick="return dlApp(this)">⬇ تحميل ELDALY STREAM — أحدث إصدار</a>
+  <div class="ribbon-wrap" style="margin-bottom:40px;">
+    <span class="ribbon">خذ بثك للمستوى اللي بعده!</span>
+  </div>
+  <div class="sec-sub" style="margin-bottom:26px;">حمّل أحدث نسخة الآن — تسطيب بضغطة واحدة، وجرّب مجاناً فوراً</div>
+  <a class="btn btn-gold" style="font-size:18px; padding:18px 46px;" href="https://github.com/kemoeldaly1/eldaly-stream-updates/releases/latest/download/ELDALY-STREAM-Setup-Latest.exe" onclick="return dlApp(this)">⬇ تحميل ELDALY STREAM — أحدث إصدار</a>
 </section>
 
 <footer>
