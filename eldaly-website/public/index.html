@@ -50,6 +50,123 @@
     -webkit-mask-image: radial-gradient(ellipse 85% 55% at 50% 0%, #000 35%, transparent 100%);
   }
 
+  /* ===== مشهد الخلفية — أوضة البث (مستوحاة من البنر — CSS خالص) ===== */
+  .scene { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+  /* شعاع إضاءة مايل من فوق (سبوت لايت) */
+  .scene .beam {
+    position: absolute; top: -12%; left: 50%;
+    width: 60vw; height: 70vh;
+    transform: translateX(-50%) rotate(14deg);
+    background: linear-gradient(180deg, rgba(255,176,70,0.10), transparent 65%);
+    filter: blur(30px);
+  }
+  .scene .beam.b2 { transform: translateX(-50%) rotate(-13deg); opacity: .8; }
+  /* لمبات RGB جنب المكتوب — بنفسجي وشال تركواز زي أوضة الجيمنج */
+  .scene .rgb-a, .scene .rgb-b {
+    position: absolute; width: 34vw; height: 34vw; border-radius: 50%;
+    filter: blur(46px); opacity: .8;
+  }
+  .scene .rgb-a { left: -12vw; top: 34%; background: radial-gradient(circle, rgba(132,60,255,0.13), transparent 68%); }
+  .scene .rgb-b { right: -12vw; top: 28%; background: radial-gradient(circle, rgba(0,210,220,0.10), transparent 68%); }
+  /* المكتب والإضاءة السفلية الدافية */
+  .scene .desk {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 24vh;
+    background: linear-gradient(180deg, transparent, rgba(46,24,8,0.5) 38%, rgba(8,5,2,0.92) 100%);
+  }
+  .scene .desk-glow {
+    position: absolute; bottom: 15vh; left: 50%; transform: translateX(-50%);
+    width: 74vw; height: 140px;
+    background: radial-gradient(52% 100% at 50% 100%, rgba(255,166,60,0.16), transparent 72%);
+  }
+  .scene .desk-line {
+    position: absolute; bottom: 23.6vh; left: 8vw; right: 8vw; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,184,77,0.35), transparent);
+    filter: blur(1px);
+  }
+
+  /* المونيتور — شاشة TikTok LIVE زي اللي في البنر */
+  .tt-monitor {
+    position: absolute; bottom: 3vh; left: 1.2vw;
+    width: min(270px, 21vw);
+    opacity: .82;
+    transform: rotate(-1.6deg);
+    filter: drop-shadow(0 26px 50px rgba(0,0,0,0.7)) blur(0.6px);
+  }
+  .tt-screen {
+    position: relative;
+    background:
+      radial-gradient(120% 90% at 20% 0%, rgba(255,166,60,0.10), transparent 55%),
+      linear-gradient(160deg, #101018 0%, #07070c 70%);
+    border: 2px solid #23232e;
+    border-radius: 14px;
+    aspect-ratio: 16/10;
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.03),
+      0 0 46px rgba(255,140,50,0.13),
+      -18px 10px 70px rgba(132,60,255,0.10);
+    overflow: hidden;
+  }
+  /* لمعة زجاج الشاشة */
+  .tt-screen::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(115deg, rgba(255,255,255,0.07) 0%, transparent 28%);
+  }
+  .tt-brand { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .tt-note { width: 52px; height: 52px; filter: drop-shadow(0 0 14px rgba(255,255,255,0.35)); }
+  .tt-word { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 21px; color: #fff; letter-spacing: 0.5px; direction: ltr; display: flex; align-items: center; gap: 8px; }
+  .tt-live {
+    font-family: 'Orbitron', sans-serif; font-size: 12.5px; font-weight: 900; letter-spacing: 1px;
+    background: linear-gradient(180deg, #ff4b5c, #e2102b);
+    color: #fff; padding: 3px 9px; border-radius: 5px;
+    box-shadow: 0 0 16px rgba(255,60,80,0.55);
+  }
+  .tt-play {
+    width: 58px; height: 58px; border-radius: 50%; flex: 0 0 58px;
+    background: linear-gradient(180deg, #ff5f6d, #e2102b);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 28px rgba(255,60,80,0.5), inset 0 2px 6px rgba(255,255,255,0.35);
+  }
+  .tt-play::after {
+    content: ''; display: block;
+    border-style: solid; border-width: 11px 0 11px 18px;
+    border-color: transparent transparent transparent #fff;
+    margin-left: 5px;
+  }
+  /* رجل المونيتور */
+  .tt-stand-neck { width: 14%; height: 26px; margin: 0 auto; background: linear-gradient(180deg, #16161f, #0c0c12); }
+  .tt-stand-base {
+    width: 46%; height: 10px; margin: 0 auto;
+    background: linear-gradient(180deg, #1a1a24, #0b0b10);
+    border-radius: 0 0 10px 10px;
+  }
+  /* مايك الاستوديو — سيلويت بخط إضاءة دهبي */
+  .mic {
+    position: absolute; bottom: 11vh; left: 10.5vw;
+    width: 24px; height: 68px;
+    background: linear-gradient(90deg, #0d0d13, #232330 55%, #0d0d13);
+    border-radius: 12px 12px 8px 8px;
+    opacity: .85;
+    box-shadow: 0 0 0 1px rgba(212,175,55,0.18), 0 0 22px rgba(212,175,55,0.10);
+  }
+  .mic::before {
+    content: ''; position: absolute; bottom: -58px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 58px; background: linear-gradient(180deg, #17171f, #0b0b10);
+  }
+  .mic::after {
+    content: ''; position: absolute; bottom: -58px; left: 50%; transform: translateX(-50%);
+    width: 44px; height: 8px; border-radius: 4px;
+    background: linear-gradient(180deg, #1a1a24, #0b0b10);
+  }
+  @media (max-width: 980px) {
+    .tt-monitor { opacity: .28; left: -6vw; }
+    .mic { display: none; }
+  }
+  @media (max-width: 640px) {
+    .tt-monitor, .scene .beam { display: none; }
+  }
+
   /* ===== Nav ===== */
   nav {
     position: sticky; top: 0; z-index: 50;
@@ -349,6 +466,37 @@
 </style>
 </head>
 <body>
+
+<!-- ═══════════ خلفية المشهد — أوضة البث السينمائية (CSS خالص) ═══════════ -->
+<div class="scene" aria-hidden="true">
+  <div class="beam"></div>
+  <div class="beam b2"></div>
+  <div class="rgb-a"></div>
+  <div class="rgb-b"></div>
+  <div class="desk-glow"></div>
+  <div class="desk"></div>
+  <div class="desk-line"></div>
+
+  <!-- مونيتور TikTok LIVE -->
+  <div class="tt-monitor">
+    <div class="tt-screen">
+      <div class="tt-brand">
+        <svg class="tt-note" viewBox="0 0 24 24" fill="none">
+          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z" fill="#fff"/>
+          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z" fill="#25f4ee" transform="translate(-1.4,-1.4)" opacity="0.55"/>
+          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z" fill="#fe2c55" transform="translate(1.4,1.4)" opacity="0.55"/>
+        </svg>
+        <div class="tt-word">TikTok <span class="tt-live">LIVE</span></div>
+      </div>
+      <div class="tt-play"></div>
+    </div>
+    <div class="tt-stand-neck"></div>
+    <div class="tt-stand-base"></div>
+  </div>
+
+  <!-- مايك الاستوديو -->
+  <div class="mic"></div>
+</div>
 
 <!-- ═══════════ Nav ═══════════ -->
 <nav>
