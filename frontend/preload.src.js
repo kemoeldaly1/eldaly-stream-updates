@@ -195,6 +195,8 @@ const api = {
           xhr.send(target.buffer);
         });
       }),
+    // إصلاح رابط ميديا تالف: يبعت اسم الملف ويرجع الرابط العام الكامل
+    resolve: (name) => ipcRenderer.invoke("media:resolve", name),
   },
 
   // Profile Management & Local Export/Import

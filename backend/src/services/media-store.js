@@ -145,6 +145,23 @@ class MediaStore {
       url: `https://github.com/${MEDIA_REPO}/releases/download/${MEDIA_TAG}/${filename}`,
     };
   }
+
+  // إصلاح قيمة ميديا تالفة: لو الحقل اتخزن كاسم ملف بس (m-<sha>.<ext>)
+  // بدل الرابط الكامل، نرجّع الرابط العام لو الملف موجود فعلًا على الـ release.
+  // بيرجع null لو الشكل مش اسم ميديا سحابي أو الملف مش موجود — عشان مانخرّبش
+  // أي مسار محلي حقي. مفيدة لعلاج الأكشنات القديمة اللي اتلفت بالإيديت.
+  async resolve(name) {
+    if (!this.enabled) return null;
+    const raw = String(name || "").trim();
+    if (!/^m-[0-9a-f]{6,}\.[a-z0-9]+$/i.test(raw)) return null;
+    try {
+      const release = await this._getRelease();
+      const existing = release.assets.find((a) => a.name === raw);
+      return existing ? existing.url : null;
+    } catch (e) {
+      return null;
+    }
+  }
 }
 
 function path_ext(name) {

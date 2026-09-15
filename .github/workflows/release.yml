@@ -36,6 +36,18 @@ jobs:
         shell: pwsh
         run: |
           $version = (Get-Content frontend/package.json | ConvertFrom-Json).version
+          # فحص إجباري قبل الرفع: البناء ولatest.yml لازم يطابقوا نسخة package.json
+          # (مرة release باسم v2.3.14 كان جوّاه اسم ملف 2.3.13 — نمنع تكرارها)
+          $setupExe = "frontend/dist/ELDALY-STREAM-Setup-$version.exe"
+          if (-not (Test-Path $setupExe)) {
+            Write-Error "No installer for version $version - build does not match package.json"
+            exit 1
+          }
+          $ymlVersion = (Select-String -Path "frontend/dist/latest.yml" -Pattern '^version:\s*(.+)$').Matches.Groups[1].Value.Trim()
+          if ($ymlVersion -ne $version) {
+            Write-Error "latest.yml says $ymlVersion but package.json says $version - stopping upload"
+            exit 1
+          }
           # إنشاء الـ release لو مش موجود (upload بيطلب release موجود مسبقًا)
           gh release view $env:GITHUB_REF_NAME 2>$null
           if ($LASTEXITCODE -ne 0) {

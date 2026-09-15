@@ -366,6 +366,31 @@ app.post(
   },
 );
 
+// إصلاح رابط ميديا تالف: العميل يبعت اسم الملف (m-<sha>.<ext>) والسيرفر
+// يرجّع الرابط العام الكامل لو الملف متخزن فعلًا — بيعالج الأكشنات القديمة
+// اللي مسار الصوت/الفيديو فيها اتقصّر لاسم الملف بسبب الإيديت.
+app.get("/api/media/resolve", async (req, res) => {
+  try {
+    const sess = req.headers["x-app-session"];
+    const ctx = accounts.getBySession(sess);
+    if (
+      !sess ||
+      !ctx ||
+      !ctx.session ||
+      !safeEqual(sess, ctx.session.token) ||
+      (ctx.session.hwid && !safeEqual(req.headers["x-app-hwid"], ctx.session.hwid))
+    ) {
+      return res.status(401).json({ ok: false, error: "unauthorized" });
+    }
+    ctx.touch();
+    const url = await mediaStore.resolve(String(req.query.name || ""));
+    res.json({ ok: !!url, url: url || null });
+  } catch (err) {
+    console.error("[MediaResolve]", err.message);
+    res.status(500).json({ ok: false, error: "resolve failed" });
+  }
+});
+
 const PUBLIC_API_PATHS = [
   "/api/health",
   "/api/auth/login",

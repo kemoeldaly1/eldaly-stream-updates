@@ -39,13 +39,32 @@ module.exports = async function afterAllArtifactBuild() {
 
   // مش معتمدين على الـ parameter — ندور على الملف في dist مباشرة
   const dist = path.join(__dirname, "..", "dist");
-  // نختار أحدث إنستالر (mtime الأحدث) — dist ممكن يكون فيه بقايا نسخ قديمة
-  // فأول match كان ممكن يكون لنسخة قديمة ويتنشر بالغلط باسم Latest
-  const installer = fs
-    .readdirSync(dist)
-    .map((f) => path.join(dist, f))
-    .filter((f) => /ELDALY-STREAM-Setup-[\d.]+\.exe$/i.test(path.basename(f)))
-    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0];
+  // نختار الإنستالر بنسخة package.json بالظبط (مش mtime الأحدث).
+  // السبب: dist ممكن يكون فيه بقايا نسخة قديمة — الاعتماد على mtime كان
+  // بيخلي release يتنشر باسم نسخة وهو جوّه نسخة تانية (حصل فعلًا: v2.3.14
+  // كان جوّاه ELDALY-STREAM-Setup-2.3.13.exe).
+  const pkgVersion = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf-8"),
+  ).version;
+  const expectedName = `ELDALY-STREAM-Setup-${pkgVersion}.exe`;
+  let installer = path.join(dist, expectedName);
+  if (!fs.existsSync(installer)) {
+    // fallback: لو النسخة مش موجودة بالاسم المتوقع، نرفع أحدث إنستالر
+    // بس بنحذّر بوضوح عشان نلاحظ أي عدم تطابق نسخة على طول
+    const latest = fs
+      .readdirSync(dist)
+      .map((f) => path.join(dist, f))
+      .filter((f) => /ELDALY-STREAM-Setup-[\d.]+\.exe$/i.test(path.basename(f)))
+      .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0];
+    console.warn(
+      "[latest-artifact] WARNING: expected " +
+        expectedName +
+        " not found — falling back to " +
+        (latest ? path.basename(latest) : "none") +
+        " (version mismatch possible!)",
+    );
+    installer = latest;
+  }
   if (!installer || !fs.existsSync(installer)) {
     console.warn("[latest-artifact] installer not found — skip");
     return [];

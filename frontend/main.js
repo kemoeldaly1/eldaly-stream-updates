@@ -1144,6 +1144,11 @@ function setupIPC() {
     }
   });
 
+  // إصلاح رابط ميديا تالف — بيمر على apiFetch (جلسة + hwid)
+  ipcMain.handle("media:resolve", (event, name) =>
+    apiFetch(`/api/media/resolve?name=${encodeURIComponent(name || "")}`)
+  );
+
   // Backup — نافذة التصدير/الاستيراد المشفرة: كل الندوات بتمر على apiFetch
   // (جلسة + حماية kicked + الحظر) — الفرونت بيستلم/يبعت blob مشفر بس
   ipcMain.handle("backup:export", (e, categories) =>
