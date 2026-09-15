@@ -12,7 +12,7 @@ const path = require("path");
 const fs = require("fs");
 
 const TOTAL_SCREENS = 10;
-const OVERLAY_PAGE_VERSION = "9";
+const OVERLAY_PAGE_VERSION = "10";
 const DEFAULT_PORT = parseInt(process.env.LOCAL_OVERLAY_PORT || "7330", 10);
 
 const MIME_TYPES = {
@@ -721,13 +721,13 @@ class LocalOverlayServer {
   .alert-float { transform: translateY(-18px); opacity: 0; transition: transform 0.45s ease, opacity 0.45s ease; }
   .alert-float.show { transform: translateY(0); opacity: 1; }
   .alert-float.fade-out { transform: translateY(-14px); opacity: 0; transition: all 0.5s ease; }
-  .alert-bob { display: flex; flex-direction: column; align-items: center; gap: 5px; animation: alertBob 2.4s ease-in-out infinite; font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; }
+  .alert-bob { display: flex; flex-direction: column; align-items: center; gap: 5px; animation: alertBob 2.4s ease-in-out infinite; will-change: transform; font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; }
   @keyframes alertBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
   .alert-bob img.alert-photo { width: calc(var(--alert-photo-size, 64) * 1px); height: calc(var(--alert-photo-size, 64) * 1px); border-radius: 50%; object-fit: cover; border: 3px solid #d4af37; box-shadow: 0 3px 14px rgba(0, 0, 0, 0.5); }
-  .alert-bob .alert-line { display: flex; align-items: center; gap: 7px; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9)); }
-  .alert-bob .alert-name { font-size: calc(var(--alert-fs, 22) * 1px); font-weight: 800; white-space: nowrap; }
+  .alert-bob .alert-line { display: flex; align-items: center; gap: 7px; }
+  .alert-bob .alert-name { font-size: calc(var(--alert-fs, 22) * 1px); font-weight: 800; white-space: nowrap; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9); }
   .alert-bob .alert-sep { color: #d4af37; font-weight: 700; font-size: calc((var(--alert-fs, 22) - 6) * 1px); }
-  .alert-bob .alert-msg { font-size: calc((var(--alert-fs, 22) - 3) * 1px); font-weight: 600; color: rgba(255, 255, 255, 0.95); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 44vw; }
+  .alert-bob .alert-msg { font-size: calc((var(--alert-fs, 22) - 3) * 1px); font-weight: 600; color: rgba(255, 255, 255, 0.95); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 44vw; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9); }
   .alert-user { font-size: 28px; font-weight: 800; color: #fff; text-shadow: 0 2px 12px rgba(168, 85, 247, 0.7), 0 0 40px rgba(168, 85, 247, 0.3); margin-bottom: 8px; animation: alertPulse 1.5s ease infinite; }
   .alert-text { font-size: 20px; font-weight: 600; color: rgba(255,255,255,0.9); text-shadow: 0 2px 8px rgba(0,0,0,0.5); text-align: center; max-width: 80%; }
   @keyframes alertPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
@@ -866,18 +866,31 @@ function handleMedia(data) {
     if (existingBanner) existingBanner.remove();
     const banner = buildAlertBanner(data);
     stage.appendChild(banner);
-    requestAnimationFrame(() => {
-      const floatEl = banner.querySelector('.alert-float');
-      if (floatEl) floatEl.classList.add('show');
-    });
+    // الفيديو: التنبيه بيظهر مع أول فريم من الفيديو نفسه — مش قبله
+    // (المظهر القديم كان يطلع الاسم والصورة أولًا والفيديو بيتأخر بعدها).
+    // الصوت أو الفيديو من غير رابط: يظهر فورًا زي ما هو.
+    if (data.kind === 'video' && url) {
+      banner.dataset.pending = '1';
+    } else {
+      requestAnimationFrame(() => {
+        const floatEl = banner.querySelector('.alert-float');
+        if (floatEl) floatEl.classList.add('show');
+      });
+    }
   }
 
   if (data.kind === 'video') {
     if (!url) { currentTimeout = setTimeout(() => finishMedia(null), duration); return; }
     const el = document.createElement('video');
     el.src = url; el.autoplay = true; el.className = 'media'; el.volume = volume; el.playsInline = true;
+    el.preload = 'auto'; // ابدأ التحميل فورًا — تقليل التهنيج في الثواني الأولى
     el.style.background = 'transparent';
-    el.onloadeddata = () => { requestAnimationFrame(() => el.classList.add('show')); };
+    el.onloadeddata = () => {
+      requestAnimationFrame(() => el.classList.add('show'));
+      // اكشف تنبيه الاسم والصورة في نفس لحظة ظهور الفيديو
+      var pb = stage.querySelector('.alert-banner[data-pending]');
+      if (pb) { pb.removeAttribute('data-pending'); var f2 = pb.querySelector('.alert-float'); if (f2) f2.classList.add('show'); }
+    };
     el.onended = () => finishMedia(el);
     el.onerror = (e) => { console.error('Video error:', e); finishMedia(el); };
     stage.appendChild(el);
