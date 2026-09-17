@@ -77,7 +77,8 @@ jobs:
             Write-Host "== Upload attempt $i of $max =="
             gh release upload $env:GITHUB_REF_NAME @files --clobber
             Start-Sleep -Seconds 5
-            $rel = gh api "repos/${{ github.repository }}/releases/tags/$env:GITHUB_REF_NAME" 2>$null | ConvertFrom-Json
+            # قائمة الريليزات بيشوف المسودات كمان (releases/tags مش بيشوفهم)
+            $rel = gh api "repos/${{ github.repository }}/releases" | ConvertFrom-Json | Where-Object { $_.tag_name -eq $env:GITHUB_REF_NAME } | Select-Object -First 1
             $missing = @()
             if ($rel -and $rel.assets) {
               foreach ($f in $files) {
@@ -92,4 +93,11 @@ jobs:
             if ($i -lt $max) { Write-Host "Retrying in 45s..."; Start-Sleep -Seconds 45 }
           }
           if (-not $ok) { Write-Error "Upload failed after $max attempts"; exit 1 }
-          Write-Host "All $($files.Count) assets verified on the release."
+          # لو الريليز مسودة — انشره (gh ساعات بسيبه draft والأوبديتر مش بيشوفه)
+          $rel = gh api "repos/${{ github.repository }}/releases" | ConvertFrom-Json | Where-Object { $_.tag_name -eq $env:GITHUB_REF_NAME } | Select-Object -First 1
+          if ($rel -and $rel.draft) {
+            Write-Host "Release is a draft - publishing..."
+            gh api -X PATCH "repos/${{ github.repository }}/releases/$($rel.id)" -f draft=false | Out-Null
+            Write-Host "Published."
+          }
+          Write-Host "All $($files.Count) assets verified and release published."
