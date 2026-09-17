@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>ELDALY STREAM — شارك اللايف</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════ ELDALY LATEST-EVENT CARD — تصميم خاص © ELDALY STREAM ═══════════ */
+.lew2, .lew2 * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+.lew2 {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; direction: rtl;
+  color: #ece9e1; --a1: #ffb84d; --a2: #ffd98a;
+}
+.lew2-card {
+  position: relative; display: flex; align-items: center; gap: 16px;
+  padding: 18px 22px; border-radius: 18px;
+  background: linear-gradient(140deg, rgba(20,17,26,0.92), rgba(10,10,16,0.88));
+  border: 1px solid rgba(255,255,255,0.09);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.55), inset 0 1px rgba(255,255,255,0.06);
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
+  animation: lew2In .6s cubic-bezier(.34,1.4,.64,1) both;
+}
+@keyframes lew2In { from { opacity: 0; transform: translateY(22px) scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes lew2Spin { to { transform: rotate(360deg); } }
+@keyframes lew2Float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes lew2Pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+
+/* الأفاتار — إطار مستدير الزوايا + حلقتا قوس دوّارتان بتصميمنا */
+.lew2-ava { position: relative; flex: 0 0 92px; width: 92px; height: 92px; }
+.lew2-ava img {
+  position: absolute; inset: 9px; width: 74px; height: 74px;
+  object-fit: cover; border-radius: 22px 8px 22px 8px; z-index: 2;
+  border: 2px solid var(--a1);
+}
+.lew2-ava svg.ring { position: absolute; inset: 0; width: 100%; height: 100%; animation: lew2Spin 6s linear infinite; }
+.lew2-ava svg.ring.rev { animation-direction: reverse; animation-duration: 9s; }
+.lew2-ava .glow { position: absolute; inset: -7px; border-radius: 50%; z-index: 0;
+  background: radial-gradient(circle, var(--a1) 0%, transparent 62%); opacity: .3;
+  animation: lew2Pulse 2.4s ease-in-out infinite; }
+
+/* النصوص */
+.lew2-copy { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.lew2-label {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
+  background: #0b0b10; border: 1px solid var(--a1);
+  color: var(--a2); font-size: 11px; font-weight: 900; letter-spacing: 2px;
+  padding: 3px 12px; border-radius: 100px; text-transform: uppercase;
+  box-shadow: 0 0 12px rgba(212,175,55,0.14);
+}
+.lew2-name {
+  font-size: 27px; font-weight: 900; color: #fff; line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;
+  text-shadow: 0 2px 14px rgba(0,0,0,0.75);
+}
+.lew2-info { font-size: 13px; font-weight: 700; color: var(--a2); direction: ltr; text-align: right; }
+.lew2-info b { color: #fff; }
+
+/* حالات خاصة بالأشكال */
+.lew2--glass .lew2-card { background: rgba(255,255,255,0.06); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.16); }
+.lew2--glass .lew2-ava img { border-radius: 50%; }
+.lew2--neon .lew2-card { background: rgba(6,8,16,0.72); border: 1.5px solid var(--a1); border-radius: 24px;
+  box-shadow: 0 0 26px rgba(212,175,55,0.22), inset 0 0 18px rgba(212,175,55,0.05); }
+.lew2--neon .lew2-name { text-shadow: 0 0 14px var(--a1); }
+.lew2--plain .lew2-card { background: transparent; border: none; box-shadow: none; clip-path: none; }
+.lew2--plain .lew2-ava svg.ring { animation-duration: 10s; }
+
+/* حالة الانتظار */
+.lew2-wait { display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: #6d6960; font-weight: 700; font-size: 13px; text-align: center; padding: 30px; }
+.lew2-wait .big { font-size: 26px; animation: lew2Float 2.6s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<div class="lew2 lew2--royal" id="host">
+  <div class="lew2-wait"><div class="big">🔗</div>في انتظار أول شارك اللايف...</div>
+</div>
+<script>
+const PAGE_ID = 'latest-share';
+const EVT_TYPE = 'share';
+const CONFIG = __INITIAL_CONFIG__;
+const evtSource = new EventSource('/widgets/stream');
+
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let cfg = Object.assign({ theme: "royal", title: "", c1: '#ffb84d', c2: '#ffd98a', showCoins: true }, CONFIG || {});
+
+const host = document.getElementById("host");
+
+// حلقة القوسين — مساراتنا الخاصة (أقواس مفتوحة بتلف حول الأفاتار)
+function ringSvg(c1, c2) {
+  return '<svg class="ring" viewBox="0 0 100 100" fill="none">'
+    + '<circle cx="50" cy="50" r="46" stroke="' + c1 + '" stroke-width="2.5" stroke-dasharray="52 237" stroke-linecap="round"/>'
+    + '<circle cx="50" cy="50" r="46" stroke="' + c2 + '" stroke-width="2.5" stroke-dasharray="30 259" stroke-linecap="round" transform="rotate(120 50 50)"/>'
+    + '<circle cx="50" cy="50" r="46" stroke="' + c1 + '" stroke-width="1.2" stroke-dasharray="8 281" stroke-linecap="round" opacity="0.7" transform="rotate(240 50 50)"/>'
+    + '</svg>'
+    + '<svg class="ring rev" viewBox="0 0 100 100" fill="none">'
+    + '<circle cx="50" cy="50" r="41" stroke="' + c2 + '" stroke-width="1.4" stroke-dasharray="18 240" stroke-linecap="round" opacity="0.8"/>'
+    + '</svg>';
+}
+
+function infoHtml(d) {
+  if (EVT_TYPE === 'gift') {
+    const coins = (d.diamondCount || 0) * (d.repeatCount || 1);
+    return cfg.showCoins === false
+      ? '<div class="lew2-info"><b>' + esc(d.giftName || "هدية") + '</b> ×' + (d.repeatCount || 1) + '</div>'
+      : '<div class="lew2-info"><b>' + esc(d.giftName || "هدية") + ' ×' + (d.repeatCount || 1) + '</b> · ' + coins + ' coins</div>';
+  }
+  if (EVT_TYPE === 'like') return '<div class="lew2-info">❤️ <b>' + (d.likeCount || 1) + '</b> لايك</div>';
+  return '';
+}
+
+function renderEvent(d) {
+  const name = d.nickname || d.user || "Viewer";
+  const ava = d.avatar || d.profilePictureUrl
+    ? '<img src="' + esc(d.avatar || d.profilePictureUrl) + '" onerror="this.src=window.__fb(\'' + esc(name).replace(/'/g, "\\'") + '\')">'
+    : window.__fb(name);
+  host.innerHTML =
+    '<div class="lew2-card">'
+    + '<div class="lew2-copy">'
+    + '<span class="lew2-label">' + '🔗' + ' ' + (cfg.title || 'شارك اللايف') + '</span>'
+    + '<div class="lew2-name">' + esc(name) + '</div>'
+    + infoHtml(d)
+    + '</div>'
+    + '<div class="lew2-ava"><div class="glow"></div>' + ringSvg(cfg.c1 || '#ffb84d', cfg.c2 || '#ffd98a') + ava + '</div>'
+    + '</div>';
+  host.className = 'lew2 lew2--' + (cfg.theme || 'royal');
+}
+
+function applyConfig(c) {
+  cfg = Object.assign(cfg, c || {});
+  applyAccent();
+}
+function applyAccent() {
+  host.style.setProperty('--a1', cfg.c1 || '#ffb84d');
+  host.style.setProperty('--a2', cfg.c2 || '#ffd98a');
+  // لو مفيش حدث معروض نحدث الألوان على حالة الانتظار برضه
+  const lbl = host.querySelector('.lew2-label');
+  if (lbl) lbl.style.borderColor = cfg.c1 || '#ffb84d';
+}
+function fb(name) {
+  return "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="#1c1526"/><text x="60" y="82" font-size="52" text-anchor="middle" fill="#d4af37" font-family="Arial">' + esc(String(name || "?").trim()[0] || "?") + '</text></svg>');
+}
+window.__fb = fb;
+applyAccent();
+
+evtSource.onmessage = (e) => {
+  let m = null;
+  try { m = JSON.parse(e.data); } catch (_) { return; }
+  if (!m) return;
+  if (m.type === EVT_TYPE && m.data) {
+    renderEvent(m.data);
+  } else if (m.type === "config" && m.id === PAGE_ID && m.config) {
+    applyConfig(m.config);
+  } else if (m.type === "test") {
+    const samples = {
+      like: { user: "ELDALY KING", nickname: "ELDALY KING", likeCount: 50 },
+      follow: { user: "نور الهدى", nickname: "نور الهدى" },
+      join: { user: "محمد علي", nickname: "محمد علي" },
+      share: { user: "Hassan Pro", nickname: "Hassan Pro" },
+      gift: { user: "سارة أحمد", nickname: "سارة أحمد", giftName: "Rose", repeatCount: 10, diamondCount: 1 },
+    };
+    renderEvent(samples[EVT_TYPE]);
+  }
+};
+</script>
+</body>
+</html>
