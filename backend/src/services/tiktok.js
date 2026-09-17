@@ -281,33 +281,18 @@ class TikTokService extends EventEmitter {
           ? gift.extendedGiftInfo
           : {};
       const giftId = gift.giftId ?? gd.id ?? ext.id;
-      const giftType =
-        gift.giftType ?? gd.giftType ?? ext.giftType ?? 0;
-      let shouldEmit = false;
+      const streakKey = (u.userId || u.uniqueId) + "_" + giftId;
+      const prevStreak = this.activeStreaks.get(streakKey) || 0;
       let count = gift.repeatCount || 1;
-      if (options.instantGifts) {
-        if (giftType === 1) {
-          const streakKey = (u.userId || u.uniqueId) + "_" + giftId;
-          const prevStreak = this.activeStreaks.get(streakKey) || 0;
-          const diff = gift.repeatCount - prevStreak;
-          if (diff > 0) {
-            count = diff;
-            this.activeStreaks.set(streakKey, gift.repeatCount);
-            shouldEmit = true;
-          }
-          if (gift.repeatEnd) {
-            this.activeStreaks.delete(streakKey);
-          }
-        } else {
-          shouldEmit = true;
-        }
-      } else {
-        if (giftType === 1 && !gift.repeatEnd) {
-          return;
-        }
-        shouldEmit = true;
+      // منطق تكيفي بيحسب الفرق: بيشتغل صح في الحالتين —
+      //  • الهدايا المتتالية (ضغط مطوّل): repeatCount بيزيد تراكمياً → الفرق هو الجديد
+      //  • الهدايا المنفصلة: repeatCount ثابت → كل حدث = هدية كاملة
+      // من غير ما نعتمد على giftType لأن النسخة الجديدة ساعات بتبعته ناقص
+      if (prevStreak > 0 && count > prevStreak) {
+        count = count - prevStreak;
       }
-      if (shouldEmit) {
+      if (count > 0) {
+        this.activeStreaks.set(streakKey, gift.repeatCount || count);
         this.emit("gift", {
           ...u,
           giftId: String(giftId ?? ""),
@@ -322,6 +307,9 @@ class TikTokService extends EventEmitter {
             this._imgUrl(ext.icon) ||
             this._imgUrl(gift.giftPictureUrl),
         });
+      }
+      if (gift.repeatEnd) {
+        this.activeStreaks.delete(streakKey);
       }
     });
 
