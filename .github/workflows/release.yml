@@ -52,6 +52,15 @@ jobs:
           gh release view $env:GITHUB_REF_NAME 2>$null
           if ($LASTEXITCODE -ne 0) {
             gh release create $env:GITHUB_REF_NAME --title "ELDALY STREAM $version" --notes "ELDALY STREAM v$version" --target main
+            # GitHub عنده تأخير اتساق — الريليز بيتعمل بس مش بيتشاف فوراً.
+            # نستنى لحد ما view ينجح قبل ما نرفع (الرفع على ريليز مش منتشر = 404)
+            $ready = $false
+            for ($w = 1; $w -le 15; $w++) {
+              Start-Sleep -Seconds 5
+              gh release view $env:GITHUB_REF_NAME 2>$null
+              if ($LASTEXITCODE -eq 0) { $ready = $true; Write-Host "Release visible after $((w*5))s"; break }
+            }
+            if (-not $ready) { Write-Error "Release not visible after 75s"; exit 1 }
           }
           $files = @(
             "frontend/dist/ELDALY-STREAM-Setup-$version.exe",
@@ -59,23 +68,28 @@ jobs:
             "frontend/dist/latest.yml",
             "frontend/dist/ELDALY-STREAM-Setup-Latest.exe"
           )
-          # الرفع مع إعادة محاولة — سيرفرات رفع GitHub بترجع HTTP 500 أحيانًا
-          # مع الملفات الكبيرة (81MB)، وإعادة المحاولة بعد مهلة بتنجح
+          # الرفع مع إعادة محاولة — سيرفرات رفع GitHub بترجع HTTP 500/404 أحيانًا
+          # مع الملفات الكبيرة (81MB)، و gh أحيانًا يطبع خطأ ويخرج 0 — عشان كده
+          # التحقق بعد كل محاولة هو الحكم الحقيقي مش كود الخروج
           $max = 5
           $ok = $false
           for ($i = 1; $i -le $max; $i++) {
             Write-Host "== Upload attempt $i of $max =="
             gh release upload $env:GITHUB_REF_NAME @files --clobber
-            if ($LASTEXITCODE -eq 0) { $ok = $true; break }
-            if ($i -lt $max) { Write-Host "Upload failed - retrying in 45s..."; Start-Sleep -Seconds 45 }
+            Start-Sleep -Seconds 5
+            $rel = gh api "repos/${{ github.repository }}/releases/tags/$env:GITHUB_REF_NAME" 2>$null | ConvertFrom-Json
+            $missing = @()
+            if ($rel -and $rel.assets) {
+              foreach ($f in $files) {
+                $name = Split-Path $f -Leaf
+                if (-not ($rel.assets | Where-Object { $_.name -eq $name })) { $missing += $name }
+              }
+            } else {
+              $missing = @("release-not-found")
+            }
+            if ($missing.Count -eq 0) { $ok = $true; break }
+            Write-Host "Missing after attempt ${i}: $($missing -join ', ')"
+            if ($i -lt $max) { Write-Host "Retrying in 45s..."; Start-Sleep -Seconds 45 }
           }
           if (-not $ok) { Write-Error "Upload failed after $max attempts"; exit 1 }
-          # تحقق نهائي: كل ملف فعلاً موجود على الريليز — ممنوع ريليز ناقص يتنشر
-          $rel = gh api "repos/${{ github.repository }}/releases/tags/$env:GITHUB_REF_NAME" | ConvertFrom-Json
-          $missing = @()
-          foreach ($f in $files) {
-            $name = Split-Path $f -Leaf
-            if (-not ($rel.assets | Where-Object { $_.name -eq $name })) { $missing += $name }
-          }
-          if ($missing.Count -gt 0) { Write-Error ("Assets missing after upload: " + ($missing -join ", ")); exit 1 }
           Write-Host "All $($files.Count) assets verified on the release."
