@@ -56,7 +56,10 @@ html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
 .ew-val .ic { font-size: 15px; text-shadow: none; }
 .ew-bar { height: 5px; border-radius: 4px; background: rgba(255,255,255,0.07); margin-top: 6px; overflow: hidden; }
 .ew-bar i { display: block; height: 100%; border-radius: 4px;
-  background: linear-gradient(90deg, var(--accent1), var(--accent2)); box-shadow: 0 0 8px rgba(212,175,55,0.5); }
+  background: linear-gradient(90deg, var(--accent1), var(--accent2)); box-shadow: 0 0 8px rgba(212,175,55,0.5);
+  transition: width .6s cubic-bezier(.22,1,.36,1); }
+/* ثبات: الصفوف الموجودة قبل كده متعيدش أنيميشن الدخول عند أي تحديث */
+.ew-row.stay, .ew-pod.stay { animation: none; }
 
 @keyframes ewIn { from { opacity: 0; transform: translateY(18px) scale(.96); } to { opacity: 1; transform: none; } }
 @keyframes ewSpin { to { transform: rotate(360deg); } }
@@ -271,7 +274,7 @@ function rowFor(layout, rank, e, maxVal, label) {
   const val = '<div class="ew-val"><span class="ic">🪙</span>' + fmt(e.count) + '</div>';
   let row = "";
   if (layout === "podium") return null; // المنصة تتبني في buildList
-  row = '<div class="ew-row r' + rank + '">';
+  row = '<div class="ew-row r' + rank + '" data-user="' + esc(name) + '">';
   if (layout === "bars") {
     const pct = Math.max(6, Math.min(100, Math.round((e.count / Math.max(1, maxVal)) * 100)));
     row += '<div class="ew-fill" style="width:' + pct + '%"></div>';
@@ -297,7 +300,7 @@ function buildList(entries) {
   if (!top.length) return titleHtml() + "";
   if (layout === "podium" && top.length >= 3) {
     const pod = (e, r) =>
-      '<div class="ew-pod p' + r + '"><div class="ew-ava"><img src="' + esc(e.icon || ava(e.user)) + '" onerror="this.src=\'' + ava(e.user).replace(/'/g, "&#39;") + '\'"></div>'
+      '<div class="ew-pod p' + r + '" data-user="' + esc(e.user || "Viewer") + '"><div class="ew-ava"><img src="' + esc(e.icon || ava(e.user)) + '" onerror="this.src=\'' + ava(e.user).replace(/'/g, "&#39;") + '\'"></div>'
       + '<div class="ew-name">' + esc(e.user || "Viewer") + '</div>'
       + '<div class="ew-val"><span class="ic">🪙</span>' + fmt(e.count) + '</div>'
       + '<div class="ew-step">' + r + '</div></div>';
@@ -311,16 +314,66 @@ function buildList(entries) {
 }
 
 function applyConfig(c) {
+  const oldLayout = cfg.layout;
   cfg = Object.assign(cfg, c || {});
   if (!cfg.layout && cfg.style && STYLE_MAP[cfg.style]) cfg.layout = STYLE_MAP[cfg.style];
   applyAccent();
-  render();
+  // تغيير الشكل = إعادة بناء ضرورية — بس من غير وميض (stay)
+  render((cfg.layout || "royal") !== oldLayout);
 }
 let lastEntries = null;
-function render() {
+let prevKeys = "";
+let prevUsers = new Set();
+const keyOf = e => e.user || e.nickname || "Viewer";
+// نفس الأشخاص بنفس الترتيب — تحديث الأرقام والشرائط في مكانها:
+// مفيش هدم للهيكل ومفيش إعادة لأنيميشن الدخول = صفر وميض
+function updateInPlace(entries) {
+  const host = document.getElementById("host");
+  const newTitle = titleHtml();
+  const oldTitle = host.querySelector(".ew-title");
+  if (newTitle) {
+    if (oldTitle) {
+      if (oldTitle.textContent !== cfg.title) oldTitle.textContent = cfg.title;
+    } else host.insertAdjacentHTML("afterbegin", newTitle);
+  } else if (oldTitle) oldTitle.remove();
+  const maxVal = entries[0] ? entries[0].count : 1;
+  const byUser = {};
+  entries.forEach(e => { byUser[keyOf(e)] = e; });
+  host.querySelectorAll("[data-user]").forEach(el => {
+    const e = byUser[el.dataset.user];
+    if (!e) return;
+    const val = el.querySelector(".ew-val");
+    if (val) {
+      const num = fmt(e.count);
+      let hit = false;
+      for (const n of val.childNodes) {
+        if (n.nodeType === 3 && /[\d,.]/.test(n.nodeValue)) { n.nodeValue = n.nodeValue.replace(/[\d,.]+/, num); hit = true; }
+      }
+      if (!hit) val.append(" " + num);
+    }
+    const pct = Math.max(6, Math.min(100, Math.round((e.count / Math.max(1, maxVal)) * 100)));
+    const bar = el.querySelector(".ew-bar i");
+    if (bar) bar.style.width = pct + "%";
+    const fill = el.querySelector(".ew-fill");
+    if (fill) fill.style.width = pct + "%";
+  });
+}
+function render(force) {
   const host = document.getElementById("host");
   if (lastEntries && lastEntries.length) {
+    const keys = lastEntries.map(keyOf).join("|");
+    if (!force && keys === prevKeys && host.dataset.rendered === "1") {
+      updateInPlace(lastEntries);
+      return;
+    }
+    prevKeys = keys;
     host.innerHTML = buildList(lastEntries);
+    host.dataset.rendered = "1";
+    // اللي كان موجود قبل كده ميتكررش عليه أنيميشن الدخول — الجدد بس يدخلوا
+    host.querySelectorAll("[data-user]").forEach(el => {
+      if (prevUsers.has(el.dataset.user)) el.classList.add("stay");
+    });
+    prevUsers = new Set(lastEntries.map(keyOf));
   } else {
     host.innerHTML = titleHtml()
       + '<div style="text-align:center;padding:34px 10px;color:#6d6960;font-weight:700;font-size:13px;">'
@@ -336,8 +389,8 @@ function showTest() {
   ];
   const prev = lastEntries;
   lastEntries = sample;
-  document.getElementById("host").innerHTML = buildList(sample);
-  setTimeout(() => { lastEntries = prev; render(); }, 8000);
+  render(true);
+  setTimeout(() => { lastEntries = prev; render(true); }, 8000);
 }
 applyAccent();
 render();
