@@ -20,7 +20,7 @@ const crypto = require("crypto");
 const { WebSocketServer } = require("ws");
 
 const OVERLAY_PAGE_VERSION = "10"; // رفع الإصدار يجبر صفحات OBS تعمل reload وتشغل الكود المصلح
-const WIDGET_PAGE_VERSION = "7"; // نفس الفكرة لصفحات الويدجت (overlay-music) — SSE بيبعت reload لو الإصدار مختلف
+const WIDGET_PAGE_VERSION = "8"; // نفس الفكرة لصفحات الويدجت (overlay-music) — SSE بيبعت reload لو الإصدار مختلف
 const TOTAL_SCREENS = 10;
 
 function safeEqual(a, b) {
