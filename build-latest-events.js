@@ -139,7 +139,7 @@ function infoHtml(d) {
 function renderEvent(d) {
   const name = d.nickname || d.user || "Viewer";
   const ava = d.avatar || d.profilePictureUrl
-    ? '<img src="' + esc(d.avatar || d.profilePictureUrl) + '" onerror="this.src=window.__fb(\\'' + esc(name).replace(/'/g, "\\\\'") + '\\')">'
+    ? '<img src="' + esc(d.avatar || d.profilePictureUrl) + '" alt="' + esc(name) + '" onerror="this.onerror=null;this.src=window.__fb(this.alt)">'
     : window.__fb(name);
   host.innerHTML =
     '<div class="lew2-card">'
