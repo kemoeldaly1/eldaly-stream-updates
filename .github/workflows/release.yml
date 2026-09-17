@@ -53,9 +53,29 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             gh release create $env:GITHUB_REF_NAME --title "ELDALY STREAM $version" --notes "ELDALY STREAM v$version" --target main
           }
-          gh release upload $env:GITHUB_REF_NAME `
-            "frontend/dist/ELDALY-STREAM-Setup-$version.exe" `
-            "frontend/dist/ELDALY-STREAM-Setup-$version.exe.blockmap" `
-            "frontend/dist/latest.yml" `
-            "frontend/dist/ELDALY-STREAM-Setup-Latest.exe" `
-            --clobber
+          $files = @(
+            "frontend/dist/ELDALY-STREAM-Setup-$version.exe",
+            "frontend/dist/ELDALY-STREAM-Setup-$version.exe.blockmap",
+            "frontend/dist/latest.yml",
+            "frontend/dist/ELDALY-STREAM-Setup-Latest.exe"
+          )
+          # الرفع مع إعادة محاولة — سيرفرات رفع GitHub بترجع HTTP 500 أحيانًا
+          # مع الملفات الكبيرة (81MB)، وإعادة المحاولة بعد مهلة بتنجح
+          $max = 5
+          $ok = $false
+          for ($i = 1; $i -le $max; $i++) {
+            Write-Host "== Upload attempt $i of $max =="
+            gh release upload $env:GITHUB_REF_NAME @files --clobber
+            if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+            if ($i -lt $max) { Write-Host "Upload failed - retrying in 45s..."; Start-Sleep -Seconds 45 }
+          }
+          if (-not $ok) { Write-Error "Upload failed after $max attempts"; exit 1 }
+          # تحقق نهائي: كل ملف فعلاً موجود على الريليز — ممنوع ريليز ناقص يتنشر
+          $rel = gh api "repos/${{ github.repository }}/releases/tags/$env:GITHUB_REF_NAME" | ConvertFrom-Json
+          $missing = @()
+          foreach ($f in $files) {
+            $name = Split-Path $f -Leaf
+            if (-not ($rel.assets | Where-Object { $_.name -eq $name })) { $missing += $name }
+          }
+          if ($missing.Count -gt 0) { Write-Error ("Assets missing after upload: " + ($missing -join ", ")); exit 1 }
+          Write-Host "All $($files.Count) assets verified on the release."
