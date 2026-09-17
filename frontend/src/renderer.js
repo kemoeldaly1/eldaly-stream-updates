@@ -2404,6 +2404,17 @@ document.getElementById("w-likes-apply")?.addEventListener("click", () => applyW
 document.getElementById("w-follows-apply")?.addEventListener("click", () => applyWidgetConfig("follows", "follows-goal"));
 document.getElementById("w-top-gifter-apply")?.addEventListener("click", () => applyWidgetConfig("top-gifter", "top-gifter"));
 document.getElementById("w-top-liker-apply")?.addEventListener("click", () => applyWidgetConfig("top-liker", "top-liker"));
+// زرار Test — يجمع الإعدادات الحالية ويرسلها للويدجت كتجربة حية فوراً
+async function testLeaderboardWidget(id, prefix) {
+  const btn = document.getElementById("w-" + prefix + "-test");
+  if (btn) { btn.textContent = "⏳ Testing..."; }
+  // طبق الإعدادات الأول عشان التست يظهر بيها
+  await applyWidgetConfig(id, prefix);
+  await api.widget.test(id, { source: "settings-test" });
+  if (btn) { btn.textContent = "✅ Sent!"; setTimeout(() => btn.textContent = "🧪 Test", 2000); }
+}
+document.getElementById("w-top-gifter-test")?.addEventListener("click", () => testLeaderboardWidget("top-gifter", "top-gifter"));
+document.getElementById("w-top-liker-test")?.addEventListener("click", () => testLeaderboardWidget("top-liker", "top-liker"));
 document.getElementById("w-last-follower-apply")?.addEventListener("click", () => applyWidgetConfig("last-follower", "last-follower"));
 document.getElementById("w-last-gift-apply")?.addEventListener("click", () => applyWidgetConfig("last-gift", "last-gift"));
 let heartGoalImg = "";

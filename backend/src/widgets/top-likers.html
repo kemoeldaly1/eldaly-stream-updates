@@ -318,7 +318,27 @@ function applyConfig(c) {
 }
 let lastEntries = null;
 function render() {
-  document.getElementById("host").innerHTML = lastEntries ? buildList(lastEntries) : buildList([]);
+  const host = document.getElementById("host");
+  if (lastEntries && lastEntries.length) {
+    host.innerHTML = buildList(lastEntries);
+  } else {
+    // حالة الانتظار — الويدجت باين وحي وعنوانه ظاهر
+    host.innerHTML = titleHtml()
+      + '<div style="text-align:center;padding:34px 10px;color:#6d6960;font-weight:700;font-size:13px;">'
+      + '⏳ في انتظار تفاعلات اللايف...<br><span style="font-size:11px;">أول لايك هيظهر هنا فوراً</span></div>';
+  }
+}
+// زرار Test من التطبيق — يعرض بيانات تجريبية 8 ثواني
+function showTest() {
+  const sample = [
+    { user: "ELDALY KING", count: 24800 }, { user: "نور الهدى", count: 18350 },
+    { user: "محمد علي", count: 12150 }, { user: "Hassan Pro", count: 8700 },
+    { user: "سارة أحمد", count: 6050 },
+  ];
+  const prev = lastEntries;
+  lastEntries = sample;
+  document.getElementById("host").innerHTML = buildList(sample);
+  setTimeout(() => { lastEntries = prev; render(); }, 8000);
 }
 applyAccent();
 render();
@@ -332,6 +352,8 @@ evtSource.onmessage = (e) => {
     if (arr.length) { lastEntries = arr; render(); }
   } else if (m.type === "config" && m.id === PAGE_ID && m.config) {
     applyConfig(m.config);
+  } else if (m.type === "test") {
+    showTest();
   }
 };
 </script>
