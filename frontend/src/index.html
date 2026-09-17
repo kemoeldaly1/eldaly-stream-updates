@@ -767,66 +767,90 @@
             <div class="widget-group-body">
               <div class="profile-grid">
 
-                <!-- Top Gifter -->
+                <!-- Top Gifters -->
                 <div class="glass-card profile-card">
                   <h3 class="form-section-title">💎 Top Gifters</h3>
-                  <p class="widget-desc">Displays the top 10 users who sent the most diamonds.</p>
+                  <p class="widget-desc">أكثر 5 داعمين رموا كوينز في اللايف — تحديث لحظي بالسوكيت.</p>
                   <div class="form-row">
-                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-top-gifter-title" value="Top Gifter"></div>
-                  </div>
-                  <div class="form-row">
-                    <div class="form-group"><label class="form-label">Color 1</label><input type="color" class="form-input" id="w-top-gifter-c1" value="#ffd700"></div>
-                    <div class="form-group"><label class="form-label">Color 2</label><input type="color" class="form-input" id="w-top-gifter-c2" value="#ff8c00"></div>
-                  </div>
-                  <div class="form-row" style="align-items: flex-end;">
+                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-top-gifter-title" value="Top Gifters"></div>
                     <div class="form-group">
-                      <label class="form-label">Style</label>
-                      <select class="form-input" id="w-top-gifter-style">
-                        <option value="style-1">Style 1 (Glass Box)</option>
-                        <option value="style-2">Style 2 (Elegant Ribbon)</option>
-                        <option value="style-3">Style 3 (Minimal Text)</option>
-                        <option value="style-4">Style 4 (Stepped Leaderboard)</option>
-                        <option value="style-5">Style 5 (Top 3 Podium)</option>
+                      <label class="form-label">Layout</label>
+                      <select class="form-input" id="w-top-gifter-layout">
+                        <option value="royal">👑 ملكي</option>
+                        <option value="falcon">🦅 صقور</option>
+                        <option value="cyber">🤖 سايبر</option>
+                        <option value="neon">💡 نيون</option>
+                        <option value="glass">🧊 زجاج</option>
+                        <option value="tiles">🀄 بلاطات</option>
+                        <option value="flow">🌊 انسياب</option>
+                        <option value="bars">📊 شرائط</option>
+                        <option value="podium">🏆 منصة</option>
+                        <option value="compact">ميني</option>
+                        <option value="minimal">📝 بسيط</option>
+                        <option value="crown">♛ تاج</option>
                       </select>
                     </div>
-                    <div class="form-group">
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Color 1</label><input type="color" class="form-input" id="w-top-gifter-c1" value="#d4af37"></div>
+                    <div class="form-group"><label class="form-label">Color 2</label><input type="color" class="form-input" id="w-top-gifter-c2" value="#ffb84d"></div>
+                    <div class="form-group" style="display:flex;align-items:flex-end;">
+                      <label style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--text-secondary);cursor:pointer;padding-bottom:8px;">
+                        <input type="checkbox" id="w-top-gifter-ava" checked style="width:16px;height:16px;accent-color:#d4af37;cursor:pointer;"> الصور
+                      </label>
+                    </div>
+                  </div>
+                  <div class="form-row" style="align-items: flex-end;">
+                    <div class="form-group" style="flex:1;">
                       <button class="btn btn-primary" id="w-top-gifter-apply" style="width:100%;">Apply Settings</button>
                     </div>
                   </div>
                   <div class="url-row">
-                    <input type="text" class="form-input" id="w-top-gifter-url" readonly value="http://ELDALYSTREAM.PRO.localhost:2233/widget/leaderboard?type=top_gifter&id=top-gifter">
+                    <input type="text" class="form-input" id="w-top-gifter-url" readonly value="...">
                     <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-top-gifter-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
                   </div>
                 </div>
 
-                <!-- Top Liker -->
+                <!-- Top Likers -->
                 <div class="glass-card profile-card">
                   <h3 class="form-section-title">❤️ Top Likers</h3>
-                  <p class="widget-desc">Displays the top 10 users who sent the most likes.</p>
+                  <p class="widget-desc">أكثر 5 مشاهدين عملوا لايكات (التكبيس) — تحديث لحظي بالسوكيت.</p>
                   <div class="form-row">
-                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-top-liker-title" value="Top Liker"></div>
+                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-top-liker-title" value="Top Likers"></div>
+                    <div class="form-group">
+                      <label class="form-label">Layout</label>
+                      <select class="form-input" id="w-top-liker-layout">
+                        <option value="royal">👑 ملكي</option>
+                        <option value="falcon">🦅 صقور</option>
+                        <option value="cyber">🤖 سايبر</option>
+                        <option value="neon">💡 نيون</option>
+                        <option value="glass">🧊 زجاج</option>
+                        <option value="tiles">🀄 بلاطات</option>
+                        <option value="flow">🌊 انسياب</option>
+                        <option value="bars">📊 شرائط</option>
+                        <option value="podium">🏆 منصة</option>
+                        <option value="compact">ميني</option>
+                        <option value="minimal">📝 بسيط</option>
+                        <option value="crown">♛ تاج</option>
+                      </select>
+                    </div>
                   </div>
                   <div class="form-row">
                     <div class="form-group"><label class="form-label">Color 1</label><input type="color" class="form-input" id="w-top-liker-c1" value="#ff2d55"></div>
                     <div class="form-group"><label class="form-label">Color 2</label><input type="color" class="form-input" id="w-top-liker-c2" value="#ff8c00"></div>
+                    <div class="form-group" style="display:flex;align-items:flex-end;">
+                      <label style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--text-secondary);cursor:pointer;padding-bottom:8px;">
+                        <input type="checkbox" id="w-top-liker-ava" checked style="width:16px;height:16px;accent-color:#d4af37;cursor:pointer;"> الصور
+                      </label>
+                    </div>
                   </div>
                   <div class="form-row" style="align-items: flex-end;">
-                    <div class="form-group">
-                      <label class="form-label">Style</label>
-                      <select class="form-input" id="w-top-liker-style">
-                        <option value="style-1">Style 1 (Glass Box)</option>
-                        <option value="style-2">Style 2 (Elegant Ribbon)</option>
-                        <option value="style-3">Style 3 (Minimal Lines)</option>
-                        <option value="style-4">Style 4 (Stepped Leaderboard)</option>
-                        <option value="style-5">Style 5 (Top 3 Podium)</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
+                    <div class="form-group" style="flex:1;">
                       <button class="btn btn-primary" id="w-top-liker-apply" style="width:100%;">Apply Settings</button>
                     </div>
                   </div>
                   <div class="url-row">
-                    <input type="text" class="form-input" id="w-top-liker-url" readonly value="http://ELDALYSTREAM.PRO.localhost:2233/widget/leaderboard?type=top_liker&id=top-liker">
+                    <input type="text" class="form-input" id="w-top-liker-url" readonly value="...">
                     <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-top-liker-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
                   </div>
                 </div>

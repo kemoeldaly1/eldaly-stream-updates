@@ -1858,6 +1858,15 @@ async function loadOverlayUrls() {
     return "\n    <div class=\"screen-item\" style=\"background:rgba(255,255,255,0.05);padding:10px 14px;border-radius:8px;margin-bottom:2px;\">\n      <div style=\"display:flex;align-items:center;gap:10px;margin-bottom:6px;\">\n        <div style=\"font-weight:600;min-width:70px;color:var(--text-primary)\">Screen " + item.screen + "</div>\n        <input type=\"text\" class=\"form-input\" style=\"flex:1;padding:4px 8px;font-size:12px;\" value=\"" + item.url + "\" readonly>\n        <button class=\"btn btn-ghost btn-sm\" onclick=\"navigator.clipboard.writeText('" + item.url + "'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy',2000);\">Copy</button>\n      </div>\n    </div>";
   }).join("");
   refreshQueueCounts();
+  // لينكات ويدجتات التصنيف — الدومين الرسمي بتاع الأوفرلاي بتاع كل حساب
+  try {
+    const gifterUrl = await api.overlay.getWidgetUrl("top-gifters", "id=top-gifter");
+    const gifterInput = document.getElementById("w-top-gifter-url");
+    if (gifterInput && gifterUrl) gifterInput.value = gifterUrl;
+    const likerUrl = await api.overlay.getWidgetUrl("top-likers", "id=top-liker");
+    const likerInput = document.getElementById("w-top-liker-url");
+    if (likerInput && likerUrl) likerInput.value = likerUrl;
+  } catch (err) {}
 }
 async function refreshQueueCounts() {
   try {
@@ -2379,6 +2388,11 @@ async function applyWidgetConfig(p194, p195) {
     action: document.getElementById("w-" + p194 + "-action")?.value || "",
     behavior: document.getElementById("w-" + p194 + "-behavior")?.value || "none"
   };
+  // حقول الويدجتات الجديدة (التصنيفات): الشكل + الصور
+  const layoutEl = document.getElementById("w-" + p194 + "-layout");
+  if (layoutEl) vO5.layout = layoutEl.value;
+  const avaEl = document.getElementById("w-" + p194 + "-ava");
+  if (avaEl) vO5.showAvatars = avaEl.checked;
   if (v216) {
     vO5.goal = v216.value;
   }
@@ -2721,6 +2735,16 @@ async function loadWidgetConfigs() {
       const v248 = document.getElementById("w-" + v242.prefix + "-style");
       if (v248) {
         v248.value = getResult5.style || "style-1";
+      }
+      // حقول التصنيفات: الشكل + الصور (مع تحويل الستايل القديم لشكل جديد)
+      const STYLE_TO_LAYOUT = { "style-1": "glass", "style-2": "crown", "style-3": "minimal", "style-4": "bars", "style-5": "podium" };
+      const layoutField = document.getElementById("w-" + v242.prefix + "-layout");
+      if (layoutField) {
+        layoutField.value = getResult5.layout || STYLE_TO_LAYOUT[getResult5.style] || "royal";
+      }
+      const avaField = document.getElementById("w-" + v242.prefix + "-ava");
+      if (avaField) {
+        avaField.checked = getResult5.showAvatars !== false;
       }
       const v249 = document.getElementById("w-" + v242.prefix + "-action");
       if (v249) {

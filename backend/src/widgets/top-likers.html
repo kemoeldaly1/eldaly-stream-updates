@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>ELDALY STREAM — Top Likers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════ ELDALY WIDGETS — تصميم خاص © ELDALY STREAM ═══════════ */
+.ew, .ew * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+.ew {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  direction: rtl; color: #ece9e1;
+  padding: 14px 12px; width: 100%;
+  --accent1: #d4af37; --accent2: #ffb84d;
+  --gold: var(--accent1); --gold2: var(--accent2); --amber: var(--accent2);
+  --teal: #2dd4bf; --red: #ff3b5c;
+  --silver: #c0c7d1; --bronze: #cd8f52;
+}
+.ew-list { display: flex; flex-direction: column; gap: 9px; max-width: 460px; margin-inline: auto; }
+.ew-title {
+  text-align: center; font-size: 19px; font-weight: 900; letter-spacing: 1px;
+  background: linear-gradient(180deg, #fff8e1 10%, var(--accent2) 55%, var(--accent1) 95%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 16px rgba(212,175,55,0.25));
+  margin-bottom: 12px;
+}
+.ew-row {
+  position: relative; display: flex; align-items: center; gap: 11px;
+  padding: 9px 12px; border-radius: 13px;
+  background: linear-gradient(135deg, #16121d, #0e0c14);
+  border: 1px solid rgba(255,255,255,0.07);
+  overflow: hidden; animation: ewIn .55s cubic-bezier(.34,1.4,.64,1) both;
+}
+.ew-row .ew-rank {
+  flex: 0 0 34px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 15px; border-radius: 10px;
+  background: #1d1d27; color: #8f8a9c; border: 1px solid rgba(255,255,255,0.08);
+}
+.ew-row.r1 .ew-rank { background: linear-gradient(160deg, #f2dc93, #c69c2d); color: #201803; border: none; box-shadow: 0 0 16px rgba(212,175,55,0.55); }
+.ew-row.r2 .ew-rank { background: linear-gradient(160deg, #e8edf5, #97a3b5); color: #1a1d24; border: none; }
+.ew-row.r3 .ew-rank { background: linear-gradient(160deg, #e8b98a, #b06f36); color: #241305; border: none; }
+.ew-ava { position: relative; flex: 0 0 52px; width: 52px; height: 52px; }
+.ew-ava img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; display: block; }
+.ew-row.r1 .ew-ava img { border: 2px solid var(--accent1); box-shadow: 0 0 18px rgba(212,175,55,0.4); }
+.ew-row.r2 .ew-ava img { border: 2px solid var(--silver); }
+.ew-row.r3 .ew-ava img { border: 2px solid var(--bronze); }
+.ew-noavatar .ew-ava { display: none; }
+.ew-mid { flex: 1; min-width: 0; }
+.ew-name { font-size: 14.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ew-sub { font-size: 10.5px; color: #8f8a9c; font-weight: 700; letter-spacing: 1px; margin-top: 2px; }
+.ew-val { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; font-weight: 900; font-size: 16px;
+  font-variant-numeric: tabular-nums; direction: ltr; color: var(--accent2);
+  text-shadow: 0 0 10px rgba(212,175,55,0.35); }
+.ew-val .ic { font-size: 15px; text-shadow: none; }
+.ew-bar { height: 5px; border-radius: 4px; background: rgba(255,255,255,0.07); margin-top: 6px; overflow: hidden; }
+.ew-bar i { display: block; height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent1), var(--accent2)); box-shadow: 0 0 8px rgba(212,175,55,0.5); }
+
+@keyframes ewIn { from { opacity: 0; transform: translateY(18px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes ewSpin { to { transform: rotate(360deg); } }
+@keyframes ewFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes ewPulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes ewSpark { 0% { transform: translateY(0) scale(1); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-46px) scale(.2); opacity: 0; } }
+@keyframes ewSheen { 0% { transform: translateX(-160%) skewX(-18deg); } 100% { transform: translateX(260%) skewX(-18deg); } }
+
+/* ── ملكي ── */
+.ew--royal .ew-row { border: none; background: linear-gradient(140deg, #1a1408, #0d0a12 65%); }
+.ew--royal .ew-row.r1 { background: linear-gradient(140deg, #241a06, #140a10 60%); }
+.ew--royal .ew-row::before {
+  content: ''; position: absolute; inset: -2px; border-radius: 15px; z-index: 0;
+  background: conic-gradient(from 0deg, var(--accent1), #8a6a1c, var(--accent2), var(--accent1));
+  animation: ewSpin 5s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1.6px;
+}
+.ew--royal .ew-row > * { position: relative; z-index: 1; }
+.ew--royal .ew-ava img { border-radius: 16px 4px 16px 4px; }
+.ew--royal .ew-row.r1 .ew-ava::after {
+  content: '♛'; position: absolute; top: -13px; right: 50%; transform: translateX(50%);
+  color: var(--accent1); font-size: 17px; text-shadow: 0 0 10px rgba(212,175,55,0.8);
+  animation: ewFloat 2.6s ease-in-out infinite;
+}
+.ew--royal .ew-row::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 46px; z-index: 2; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(242,220,147,0.14), transparent);
+  animation: ewSheen 3.6s ease-in-out infinite;
+}
+.ew--royal .ew-spark { position: absolute; bottom: 6px; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--accent2); box-shadow: 0 0 6px var(--accent1); z-index: 2;
+  animation: ewSpark 2.8s ease-in infinite; }
+.ew--royal .ew-spark.s1 { right: 18%; }
+.ew--royal .ew-spark.s2 { right: 46%; animation-delay: .9s; }
+.ew--royal .ew-spark.s3 { right: 74%; animation-delay: 1.7s; }
+
+/* ── صقور ── */
+.ew--falcon .ew-row {
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  border: none; border-right: 3px solid #3a2a12;
+  background: linear-gradient(120deg, #171009, #0e0b10 70%);
+}
+.ew--falcon .ew-row.r1 { border-right-color: var(--accent2); background: linear-gradient(120deg, #241505, #120a10 70%); }
+.ew--falcon .ew-row.r2 { border-right-color: #58a6c8; }
+.ew--falcon .ew-row.r3 { border-right-color: #c87a3a; }
+.ew--falcon .ew-row.r1::after {
+  content: ''; position: absolute; bottom: -8px; right: 8%; left: 8%; height: 14px; border-radius: 50%;
+  background: radial-gradient(50% 100% at 50% 100%, rgba(255,120,40,0.5), transparent 75%);
+  filter: blur(5px); animation: ewPulse 1.8s ease-in-out infinite;
+}
+.ew--falcon .ew-ava img { border-radius: 4px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%); }
+
+/* ── سايبر ── */
+.ew--cyber .ew-row {
+  background: linear-gradient(90deg, rgba(10,14,20,0.9), rgba(8,10,16,0.7));
+  border: 1px solid rgba(45,212,191,0.25); border-radius: 4px;
+}
+.ew--cyber .ew-row::before, .ew--cyber .ew-row::after {
+  content: ''; position: absolute; width: 14px; height: 14px; border: 2px solid var(--teal); z-index: 2;
+}
+.ew--cyber .ew-row::before { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.ew--cyber .ew-row::after { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+.ew--cyber .ew-row.r1::before, .ew--cyber .ew-row.r1::after { border-color: var(--accent1); }
+.ew--cyber .ew-row.r2::before, .ew--cyber .ew-row.r2::after { border-color: #58a6ff; }
+.ew--cyber .ew-ava img { border-radius: 3px; }
+.ew--cyber .ew-name { color: #d8fefa; letter-spacing: .5px; }
+.ew--cyber .ew-val { color: #fff; text-shadow: 0 0 10px rgba(45,212,191,0.6); }
+.ew--cyber .ew-row.r1 .ew-val { text-shadow: 0 0 12px rgba(212,175,55,0.8); }
+
+/* ── نيون ── */
+.ew--neon .ew-row { background: rgba(8,10,18,0.6); border: 1.5px solid transparent; border-radius: 22px; }
+.ew--neon .ew-row.r1 { border-color: rgba(255,184,77,0.75); box-shadow: 0 0 18px rgba(255,184,77,0.25), inset 0 0 14px rgba(255,184,77,0.06); }
+.ew--neon .ew-row.r2 { border-color: rgba(88,166,255,0.55); box-shadow: 0 0 14px rgba(88,166,255,0.18); }
+.ew--neon .ew-row.r3 { border-color: rgba(255,59,92,0.55); box-shadow: 0 0 14px rgba(255,59,92,0.18); }
+.ew--neon .ew-row.r4, .ew--neon .ew-row.r5 { border-color: rgba(255,255,255,0.14); }
+.ew--neon .ew-ava img { border-radius: 50%; }
+.ew--neon .ew-name { text-shadow: 0 0 9px rgba(255,255,255,0.25); }
+
+/* ── زجاج ── */
+.ew--glass .ew-row {
+  background: rgba(255,255,255,0.055); backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.13); border-radius: 16px;
+  box-shadow: inset 0 1px rgba(255,255,255,0.09);
+}
+.ew--glass .ew-row.r1 { border-color: rgba(212,175,55,0.55); background: rgba(212,175,55,0.09); }
+.ew--glass .ew-ava img { border-radius: 50%; }
+
+/* ── بلاطات ── */
+.ew--tiles .ew-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.ew--tiles .ew-row { flex-direction: column; text-align: center; padding: 13px 6px 11px; gap: 7px; border-radius: 15px; }
+.ew--tiles .ew-row .ew-rank { position: absolute; top: 7px; right: 7px; width: 24px; height: 24px; font-size: 12px; border-radius: 8px; }
+.ew--tiles .ew-ava { width: 46px; height: 46px; flex: 0 0 46px; }
+.ew--tiles .ew-name { font-size: 11.5px; max-width: 100%; }
+.ew--tiles .ew-val { font-size: 13px; }
+.ew--tiles .ew-row.r1 { border-color: rgba(212,175,55,0.6); box-shadow: 0 0 26px rgba(212,175,55,0.18); }
+
+/* ── انسياب ── */
+.ew--flow .ew-row { border-radius: 18px; border: none; background: #14141c; }
+.ew--flow .ew-row.r1 { background: linear-gradient(90deg, rgba(212,175,55,0.16), #14141c 55%); }
+.ew--flow .ew-row.r2 { background: linear-gradient(90deg, rgba(148,163,184,0.13), #14141c 55%); }
+.ew--flow .ew-row.r3 { background: linear-gradient(90deg, rgba(205,143,82,0.13), #14141c 55%); }
+.ew--flow .ew-rank { border-radius: 50%; }
+.ew--flow .ew-ava img { border-radius: 50%; }
+
+/* ── شرائط ── */
+.ew--bars .ew-row { padding: 9px 12px; }
+.ew--bars .ew-fill {
+  position: absolute; inset: 0; z-index: 0; border-radius: 13px;
+  background: linear-gradient(90deg, rgba(212,175,55,0.22), rgba(212,175,55,0.03) 75%);
+  border-right: 2.5px solid var(--accent1);
+  transition: width .8s cubic-bezier(.22,1,.36,1);
+}
+.ew--bars .ew-row > * { position: relative; z-index: 1; }
+
+/* ── منصة ── */
+.ew--podium .ew-pod-zone { display: flex; align-items: flex-end; justify-content: center; gap: 12px; margin-bottom: 12px; }
+.ew--podium .ew-pod { flex: 1; max-width: 128px; text-align: center; animation: ewIn .6s both; }
+.ew--podium .ew-pod .ew-ava { width: 58px; height: 58px; margin: 0 auto 8px; }
+.ew--podium .ew-pod.p1 .ew-ava { width: 74px; height: 74px; }
+.ew--podium .ew-pod img { border-radius: 50%; width: 100%; height: 100%; object-fit: cover; }
+.ew--podium .ew-pod.p1 img { border: 3px solid var(--accent1); box-shadow: 0 0 26px rgba(212,175,55,0.55); }
+.ew--podium .ew-pod.p2 img { border: 2.5px solid var(--silver); }
+.ew--podium .ew-pod.p3 img { border: 2.5px solid var(--bronze); }
+.ew--podium .ew-pod .ew-name { font-size: 12.5px; }
+.ew--podium .ew-pod .ew-val { justify-content: center; font-size: 14px; color: var(--accent2); }
+.ew--podium .ew-pod .ew-step { margin-top: 7px; border-radius: 9px 9px 0 0; display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 19px; }
+.ew--podium .ew-pod.p1 .ew-step { height: 64px; background: linear-gradient(180deg, #f2dc93, #a17c1e); color: #201803;
+  box-shadow: 0 -6px 30px rgba(212,175,55,0.3); }
+.ew--podium .ew-pod.p2 .ew-step { height: 44px; background: linear-gradient(180deg, #dfe6f0, #7c8798); color: #171a20; }
+.ew--podium .ew-pod.p3 .ew-step { height: 30px; background: linear-gradient(180deg, #e8b98a, #96622e); color: #241305; }
+.ew--podium .ew-rest .ew-row { margin-bottom: 7px; }
+.ew--podium .ew-rest .ew-row:last-child { margin-bottom: 0; }
+
+/* ── ميني ── */
+.ew--compact .ew-list { gap: 6px; }
+.ew--compact .ew-row { padding: 6px 10px; gap: 9px; border-radius: 10px; }
+.ew--compact .ew-ava { width: 38px; height: 38px; flex-basis: 38px; }
+.ew--compact .ew-name { font-size: 12.5px; }
+.ew--compact .ew-val { font-size: 13.5px; }
+.ew--compact .ew-rank { flex-basis: 26px; width: 26px; height: 26px; font-size: 12px; border-radius: 8px; }
+
+/* ── بسيط ── */
+.ew--minimal .ew-row { background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.06); border-radius: 0; padding: 10px 4px; }
+.ew--minimal .ew-row:last-child { border-bottom: none; }
+.ew--minimal .ew-rank { background: transparent; border: none; color: #6d6960; font-size: 13px; }
+.ew--minimal .ew-row.r1 .ew-rank { background: transparent; color: var(--accent1); box-shadow: none; }
+.ew--minimal .ew-ava img { border-radius: 50%; border: none !important; box-shadow: none !important; }
+.ew--minimal .ew-name { font-weight: 700; }
+
+/* ── تاج ── */
+.ew--crown .ew-row { border-color: rgba(212,175,55,0.2); }
+.ew--crown .ew-row::before {
+  content: ''; position: absolute; top: 0; bottom: 0; right: 0; width: 5px; z-index: 2;
+  background: linear-gradient(180deg, var(--accent1), transparent); opacity: .8;
+}
+.ew--crown .ew-row.r2::before { background: linear-gradient(180deg, var(--silver), transparent); }
+.ew--crown .ew-row.r3::before { background: linear-gradient(180deg, var(--bronze), transparent); }
+.ew--crown .ew-row.r1 .ew-name::after { content: '♛'; margin-right: 6px; color: var(--accent1); font-size: 13px; }
+.ew--crown .ew-ava img { border-radius: 12px; }
+</style>
+</head>
+<body>
+<div class="ew" id="host"></div>
+<script>
+const PAGE_ID = 'top-liker';
+const CONFIG = __INITIAL_CONFIG__;
+const evtSource = new EventSource('/widgets/stream');
+
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Number(n || 0).toLocaleString("en-US");
+// توكن الصفحة من لينك الويدجت (لو مش موجود يبقى ديمو)
+const TOKEN_MATCH = location.pathname.match(/\/([0-9a-f]{8,64})\//);
+const HAS_TOKEN = !!TOKEN_MATCH;
+
+let cfg = Object.assign({
+  layout: "royal", title: "Top Likers", c1: "#d4af37", c2: "#ffb84d",
+  showAvatars: true, showLevels: true, style: ""
+}, CONFIG || {});
+// توافق الإعدادات القديمة (style-1..5)
+const STYLE_MAP = { "style-1": "glass", "style-2": "crown", "style-3": "minimal", "style-4": "bars", "style-5": "podium" };
+if (!cfg.layout && cfg.style && STYLE_MAP[cfg.style]) cfg.layout = STYLE_MAP[cfg.style];
+
+function applyAccent() {
+  const host = document.getElementById("host");
+  host.style.setProperty("--accent1", cfg.c1 || "#d4af37");
+  host.style.setProperty("--accent2", cfg.c2 || "#ffb84d");
+  host.className = "ew ew--" + (cfg.layout || "royal") + (cfg.showAvatars === false ? " ew-noavatar" : "");
+}
+function ava(name) {
+  if (name && name._img) return name._img;
+  // أيقونة حرف أنيقة بدل الصورة
+  return "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><circle cx="60" cy="60" r="60" fill="#1c1526"/><text x="60" y="80" font-size="46" text-anchor="middle" fill="#d4af37" font-family="Arial">' + esc(String(name || "?").trim()[0] || "?") + '</text></svg>');
+}
+function titleHtml() {
+  return cfg.title ? '<div class="ew-title">' + esc(cfg.title) + '</div>' : "";
+}
+function midBox(rank, name, value, maxVal, label) {
+  const pct = Math.max(6, Math.min(100, Math.round((value / Math.max(1, maxVal)) * 100)));
+  const lvl = rank === 1 ? 10 : rank === 2 ? 8 : rank === 3 ? 6 : rank === 4 ? 4 : 2;
+  const sub = (cfg.showLevels === false ? label : label + ' • LVL ' + lvlOf(rank));
+  return '<div class="ew-mid"><div class="ew-name">' + esc(name) + '</div>'
+    + '<div class="ew-sub">' + sub + '</div>'
+    + '<div class="ew-bar"><i style="width:' + pct + '%"></i></div></div>';
+}
+function rowFor(layout, rank, e, maxVal, label) {
+  const name = e.user || e.nickname || "Viewer";
+  const img = e.icon ? '<div class="ew-ava"><img loading="lazy" src="' + esc(e.icon) + '" onerror="this.src=\'' + ava(name).replace(/'/g, "&#39;") + '\'"></div>' : avaBoxFb(name);
+  const rankBox = '<div class="ew-rank">' + rank + '</div>';
+  const val = '<div class="ew-val"><span class="ic">❤️</span>' + fmt(e.count) + '</div>';
+  let row = "";
+  if (layout === "podium") return null; // المنصة تتبني في buildList
+  row = '<div class="ew-row r' + rank + '">';
+  if (layout === "bars") {
+    const pct = Math.max(6, Math.min(100, Math.round((e.count / Math.max(1, maxVal)) * 100)));
+    row += '<div class="ew-fill" style="width:' + pct + '%"></div>';
+  }
+  if (layout === "royal") row += '<span class="ew-spark s1"></span><span class="ew-spark s2"></span><span class="ew-spark s3"></span>';
+  row += rankBox + img
+    + '<div class="ew-mid"><div class="ew-name">' + esc(name) + (layout === "crown" && rank === 1 ? '<span style="color:var(--accent1)"> ♛</span>' : '') + '</div>'
+    + (layout === "minimal" ? "" : '<div class="ew-sub">' + label + (cfg.showLevels === false ? '' : ' • LVL ' + lvlOf(rank)) + '</div>')
+    + (layout === "minimal" || layout === "compact" || layout === "tiles" ? "" : '<div class="ew-bar"><i style="width:' + pct2(e, maxVal) + '%"></i></div>')
+    + '</div>' + val + '</div>';
+  return row;
+}
+function pct2(v, max) { return Math.max(6, Math.min(100, Math.round((v.count / Math.max(1, max)) * 100))); }
+function lvlOf(rank) { return rank === 1 ? 10 : rank === 2 ? 8 : rank === 3 ? 6 : rank === 4 ? 4 : 2; }
+function avaBoxFb(name) {
+  return '<div class="ew-ava"><img loading="lazy" src="' + ava(name) + '"></div>';
+}
+function buildList(entries) {
+  const layout = cfg.layout || "royal";
+  const label = "لايكات";
+  const top = (entries || []).slice(0, 5);
+  const maxVal = top.length ? top[0].count : 1;
+  if (!top.length) return titleHtml() + "";
+  if (layout === "podium" && top.length >= 3) {
+    const pod = (e, r) =>
+      '<div class="ew-pod p' + r + '"><div class="ew-ava"><img src="' + esc(e.icon || ava(e.user)) + '" onerror="this.src=\'' + ava(e.user).replace(/'/g, "&#39;") + '\'"></div>'
+      + '<div class="ew-name">' + esc(e.user || "Viewer") + '</div>'
+      + '<div class="ew-val"><span class="ic">❤️</span>' + fmt(e.count) + '</div>'
+      + '<div class="ew-step">' + r + '</div></div>';
+    const rest = top.slice(3).map((e, i) => rowFor("royal", i + 4, e, maxVal, label)).join("");
+    return titleHtml()
+      + '<div class="ew-pod-zone">' + pod(top[1], 2) + pod(top[0], 1) + pod(top[2], 3) + '</div>'
+      + '<div class="ew-rest">' + rest + '</div>';
+  }
+  const rows = top.map((e, i) => rowFor(layout, i + 1, e, maxVal, label)).join("");
+  return titleHtml() + '<div class="ew-list">' + rows + '</div>';
+}
+
+function applyConfig(c) {
+  cfg = Object.assign(cfg, c || {});
+  if (!cfg.layout && cfg.style && STYLE_MAP[cfg.style]) cfg.layout = STYLE_MAP[cfg.style];
+  applyAccent();
+  render();
+}
+let lastEntries = null;
+function render() {
+  document.getElementById("host").innerHTML = lastEntries ? buildList(lastEntries) : buildList([]);
+}
+applyAccent();
+render();
+
+evtSource.onmessage = (e) => {
+  let m = null;
+  try { m = JSON.parse(e.data); } catch (_) { return; }
+  if (!m) return;
+  if (m.type === "stats" && m.stats) {
+    const arr = m.stats.topLikers || [];
+    if (arr.length) { lastEntries = arr; render(); }
+  } else if (m.type === "config" && m.id === PAGE_ID && m.config) {
+    applyConfig(m.config);
+  }
+};
+</script>
+</body>
+</html>
