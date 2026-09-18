@@ -160,6 +160,7 @@ const api = {
     setConfig: (widgetId, config) =>
       ipcRenderer.invoke("widget:setConfig", widgetId, config),
     getConfig: (widgetId) => ipcRenderer.invoke("widget:getConfig", widgetId),
+    fetch: (url) => ipcRenderer.invoke("widget:fetch", url),
     test: (widgetId, payload) =>
       ipcRenderer.invoke("widget:test", widgetId, payload),
   },

@@ -1828,6 +1828,22 @@ loadActions();
 loadEvents();
 loadHotkeys();
 loadOverlayUrls();
+
+// معاينة الويدجت جوه الكارت: بنجيب صفحة الويدجت من العملية الرئيسية
+// (بتوكن الحساب) وبتتعرض srcdoc — والسوكيت جواها بيوصل لحظياً
+async function setWidgetPreview(widgetId) {
+  try {
+    const url = await api.overlay.getWidgetUrl(widgetId, "id=" + widgetId);
+    const urlInput = document.getElementById("w-" + widgetId + "-url");
+    if (urlInput && url) urlInput.value = url;
+    const frame = document.getElementById("w-" + widgetId + "-preview");
+    if (!frame || !url) return;
+    if (typeof api.widget.fetch !== "function") { frame.src = url; return; }
+    const html = await api.widget.fetch(url);
+    if (html) frame.srcdoc = html;
+  } catch (err) {}
+}
+
 async function loadOverlayUrls() {
   const getUrlsResult = await api.overlay.getUrls();
   const v141 = document.getElementById("overlay-urls-list");
@@ -1866,18 +1882,12 @@ async function loadOverlayUrls() {
     const likerUrl = await api.overlay.getWidgetUrl("top-likers", "id=top-liker");
     const likerInput = document.getElementById("w-top-liker-url");
     if (likerInput && likerUrl) likerInput.value = likerUrl;
+    await setWidgetPreview("top-likers");
+    await setWidgetPreview("top-gifters");
   } catch (err) {}
   // ويدجتات آخر الأحداث: لينك حقيقي + معاينة حية جوه الكارت
   const latestIds = ["latest-like", "latest-follow", "latest-join", "latest-share", "latest-gift"];
-  for (const lw of latestIds) {
-    try {
-      const wUrl = await api.overlay.getWidgetUrl(lw, "id=" + lw);
-      const urlInput = document.getElementById("w-" + lw + "-url");
-      if (urlInput && wUrl) urlInput.value = wUrl;
-      const prevFrame = document.getElementById("w-" + lw + "-preview");
-      if (prevFrame && wUrl) prevFrame.src = wUrl;
-    } catch (err) {}
-  }
+  for (const lw of latestIds) await setWidgetPreview(lw);
 }
 async function refreshQueueCounts() {
   try {
@@ -2412,6 +2422,8 @@ async function applyWidgetConfig(p194, p195) {
   await api.widget.setConfig(p195, vO5);
   v214.textContent = "Applied!";
   setTimeout(() => v214.textContent = v215, 2000);
+  // حدّث المعاينة الحية في الكارت بنفس الإعدادات الجديدة
+  setWidgetPreview(p195);
 }
 document.getElementById("w-likes-apply")?.addEventListener("click", () => applyWidgetConfig("likes", "likes-goal"));
 document.getElementById("w-follows-apply")?.addEventListener("click", () => applyWidgetConfig("follows", "follows-goal"));
@@ -2428,6 +2440,16 @@ async function testLeaderboardWidget(id, prefix) {
 }
 document.getElementById("w-top-gifter-test")?.addEventListener("click", () => testLeaderboardWidget("top-gifter", "top-gifter"));
 document.getElementById("w-top-liker-test")?.addEventListener("click", () => testLeaderboardWidget("top-liker", "top-liker"));
+// LAST EVENTS + TOP LEADERBOARDS — تغيير الشكل/اللون بيتطبق فوراً ومعاينة تتحدث
+const LIVE_PREVIEW_WIDGETS = ["latest-like", "latest-follow", "latest-join", "latest-share", "latest-gift", "top-liker", "top-gifter"];
+for (const lwid of LIVE_PREVIEW_WIDGETS) {
+  const layoutSel = document.getElementById("w-" + lwid + "-layout");
+  layoutSel?.addEventListener("change", () => applyWidgetConfig(lwid, lwid));
+  const c1El = document.getElementById("w-" + lwid + "-c1");
+  c1El?.addEventListener("change", () => applyWidgetConfig(lwid, lwid));
+  const c2El = document.getElementById("w-" + lwid + "-c2");
+  c2El?.addEventListener("change", () => applyWidgetConfig(lwid, lwid));
+}
 // LAST EVENTS — Apply + Test للخمسة
 const LATEST_WIDGETS = ["latest-like", "latest-follow", "latest-join", "latest-share", "latest-gift"];
 for (const lwid of LATEST_WIDGETS) {

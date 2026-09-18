@@ -879,6 +879,11 @@ function setupIPC() {
   ipcMain.handle("widget:getConfig", (event, widgetId) =>
     apiFetch(`/api/widgets/${encodeURIComponent(widgetId)}/config`)
   );
+  ipcMain.handle("widget:fetch", (event, url) =>
+    String(url || "").startsWith("https://")
+      ? fetch(url).then((r) => r.text()).catch(() => "")
+      : Promise.resolve("")
+  );
   ipcMain.handle("widget:test", (event, widgetId, payload) =>
     apiFetch(`/api/widgets/${encodeURIComponent(widgetId)}/test`, { method: "POST", body: JSON.stringify(payload || {}) })
   );
