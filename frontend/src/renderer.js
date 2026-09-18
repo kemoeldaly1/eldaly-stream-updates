@@ -1867,6 +1867,17 @@ async function loadOverlayUrls() {
     const likerInput = document.getElementById("w-top-liker-url");
     if (likerInput && likerUrl) likerInput.value = likerUrl;
   } catch (err) {}
+  // ويدجتات آخر الأحداث: لينك حقيقي + معاينة حية جوه الكارت
+  const latestIds = ["latest-like", "latest-follow", "latest-join", "latest-share", "latest-gift"];
+  for (const lw of latestIds) {
+    try {
+      const wUrl = await api.overlay.getWidgetUrl(lw, "id=" + lw);
+      const urlInput = document.getElementById("w-" + lw + "-url");
+      if (urlInput && wUrl) urlInput.value = wUrl;
+      const prevFrame = document.getElementById("w-" + lw + "-preview");
+      if (prevFrame && wUrl) prevFrame.src = wUrl;
+    } catch (err) {}
+  }
 }
 async function refreshQueueCounts() {
   try {
@@ -2393,6 +2404,8 @@ async function applyWidgetConfig(p194, p195) {
   if (layoutEl) vO5.layout = layoutEl.value;
   const avaEl = document.getElementById("w-" + p194 + "-ava");
   if (avaEl) vO5.showAvatars = avaEl.checked;
+  const descEl = document.getElementById("w-" + p194 + "-desc");
+  if (descEl) vO5.desc = descEl.value;
   if (v216) {
     vO5.goal = v216.value;
   }
@@ -2415,6 +2428,18 @@ async function testLeaderboardWidget(id, prefix) {
 }
 document.getElementById("w-top-gifter-test")?.addEventListener("click", () => testLeaderboardWidget("top-gifter", "top-gifter"));
 document.getElementById("w-top-liker-test")?.addEventListener("click", () => testLeaderboardWidget("top-liker", "top-liker"));
+// LAST EVENTS — Apply + Test للخمسة
+const LATEST_WIDGETS = ["latest-like", "latest-follow", "latest-join", "latest-share", "latest-gift"];
+for (const lwid of LATEST_WIDGETS) {
+  document.getElementById("w-" + lwid + "-apply")?.addEventListener("click", () => applyWidgetConfig(lwid, lwid));
+  document.getElementById("w-" + lwid + "-test")?.addEventListener("click", async () => {
+    const btn = document.getElementById("w-" + lwid + "-test");
+    if (btn) btn.textContent = "⏳ ...";
+    await applyWidgetConfig(lwid, lwid);
+    await api.widget.test(lwid, { source: "settings-test" });
+    if (btn) { btn.textContent = "✅ Sent!"; setTimeout(() => btn.textContent = "🧪 Test", 2000); }
+  });
+}
 document.getElementById("w-last-follower-apply")?.addEventListener("click", () => applyWidgetConfig("last-follower", "last-follower"));
 document.getElementById("w-last-gift-apply")?.addEventListener("click", () => applyWidgetConfig("last-gift", "last-gift"));
 let heartGoalImg = "";
@@ -2695,33 +2720,67 @@ async function loadWidgetConfigs() {
     prefix: "top-gifter",
     id: "top-gifter",
     def: {
-      title: "Top Gifter",
-      c1: "#ffd700",
-      c2: "#ff8c00"
+      title: "Top Gifters",
+      c1: "#d4af37",
+      c2: "#ffb84d"
     }
   }, {
     prefix: "top-liker",
     id: "top-liker",
     def: {
-      title: "Top Liker",
-      c1: "#ff2d55",
-      c2: "#ff8c00"
+      title: "Top Likers",
+      c1: "#ff3b5c",
+      c2: "#ff8c69"
     }
   }, {
-    prefix: "last-follower",
-    id: "last-follower",
+    prefix: "latest-like",
+    id: "latest-like",
     def: {
-      title: "Last Follow",
-      c1: "#00d2ff",
-      c2: "#3a7bd5"
+      title: "آخر لايك",
+      desc: "",
+      layout: "royal",
+      c1: "#ff3b5c",
+      c2: "#ff8c69"
     }
   }, {
-    prefix: "last-gift",
-    id: "last-gift",
+    prefix: "latest-follow",
+    id: "latest-follow",
     def: {
-      title: "Last Gift",
-      c1: "#a855f7",
-      c2: "#ff2d55"
+      title: "متابعة جديدة",
+      desc: "بدأ يتابعك الآن ✨",
+      layout: "royal",
+      c1: "#2dd4bf",
+      c2: "#7bf5d9"
+    }
+  }, {
+    prefix: "latest-join",
+    id: "latest-join",
+    def: {
+      title: "دخل اللايف",
+      desc: "انضم للمعركة 🔥",
+      layout: "royal",
+      c1: "#58a6ff",
+      c2: "#9cc8ff"
+    }
+  }, {
+    prefix: "latest-share",
+    id: "latest-share",
+    def: {
+      title: "شارك اللايف",
+      desc: "شارك البث مع متابعينه 📣",
+      layout: "royal",
+      c1: "#ffb84d",
+      c2: "#ffd98a"
+    }
+  }, {
+    prefix: "latest-gift",
+    id: "latest-gift",
+    def: {
+      title: "آخر هدية",
+      desc: "",
+      layout: "royal",
+      c1: "#d4af37",
+      c2: "#f2dc93"
     }
   }];
   for (const v242 of vA5) {
@@ -2746,6 +2805,10 @@ async function loadWidgetConfigs() {
       const v248 = document.getElementById("w-" + v242.prefix + "-style");
       if (v248) {
         v248.value = getResult5.style || "style-1";
+      }
+      const descField = document.getElementById("w-" + v242.prefix + "-desc");
+      if (descField) {
+        descField.value = getResult5.desc !== undefined ? getResult5.desc : "";
       }
       // حقول التصنيفات: الشكل + الصور (مع تحويل الستايل القديم لشكل جديد)
       const STYLE_TO_LAYOUT = { "style-1": "glass", "style-2": "crown", "style-3": "minimal", "style-4": "bars", "style-5": "podium" };

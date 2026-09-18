@@ -175,6 +175,7 @@ function sparkles() {
 }
 
 function infoHtml(d) {
+  if (cfg.desc) return '<div class="lew2-info">' + esc(cfg.desc) + '</div>';
   if (EVT_TYPE === 'gift') {
     const coins = (d.diamondCount || 0) * (d.repeatCount || 1);
     return cfg.showCoins === false

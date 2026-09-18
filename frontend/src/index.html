@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ELDALY STREAM</title>
   <style>
+    .le-preview { position: relative; height: 152px; overflow: hidden; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: #070709; margin-bottom: 12px; }
     #announce-banner {
       position: fixed; top: 52px; left: 50%; transform: translateX(-50%);
       z-index: 99999; max-width: 82%;
@@ -865,77 +866,161 @@
             </div>
           </details>
 
-          <!-- ── Recent Events ── -->
-          <details class="widget-group">
+          <!-- ── LAST EVENTS ── -->
+          <details class="widget-group" open>
             <summary class="widget-group-header">
-              <div class="widget-group-icon">🕒</div>
-              <span class="widget-group-title">Recent Events (Last)</span>
-              <span class="widget-group-count">2</span>
+              <div class="widget-group-icon">⚡</div>
+              <span class="widget-group-title">LAST EVENTS</span>
+              <span class="widget-group-count">5</span>
               <div class="widget-group-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
             </summary>
             <div class="widget-group-body">
               <div class="profile-grid">
-
-                <!-- Last Follower -->
+                <!-- Last Like -->
                 <div class="glass-card profile-card">
-                  <h3 class="form-section-title">👤 Last Follow</h3>
-                  <p class="widget-desc">Displays the most recent follower.</p>
+                  <h3 class="form-section-title">❤️ Last Like</h3>
+                  <div class="le-preview"><iframe id="w-latest-like-preview" title="preview" style="width:456px;height:210px;border:0;transform:scale(0.72);transform-origin:top right;position:absolute;top:0;right:0;pointer-events:none;"></iframe></div>
                   <div class="form-row">
-                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-last-follower-title" value="Last Follow"></div>
+                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-latest-like-title" value="آخر لايك"></div>
+                    <div class="form-group">
+                      <label class="form-label">Layout</label>
+                      <select class="form-input" id="w-latest-like-layout"><option value="royal">👑 ملكي</option><option value="glass">🧊 زجاج</option><option value="neon">💡 نيون</option><option value="plain">⬜ سادة</option></select>
+                    </div>
                   </div>
+                  <div class="form-group"><label class="form-label">Description — الوصف اللي تحت الاسم</label><input type="text" class="form-input" id="w-latest-like-desc" value="" placeholder="سيبك فاضي = الوصف الافتراضي"></div>
                   <div class="form-row">
-                    <div class="form-group"><label class="form-label">Color 1</label><input type="color" class="form-input" id="w-last-follower-c1" value="#00d2ff"></div>
-                    <div class="form-group"><label class="form-label">Color 2</label><input type="color" class="form-input" id="w-last-follower-c2" value="#3a7bd5"></div>
+                    <div class="form-group"><label class="form-label">Color 1</label><input type="color" class="form-input" id="w-latest-like-c1" value="#ff3b5c"></div>
+                    <div class="form-group"><label class="form-label">Color 2</label><input type="color" class="form-input" id="w-latest-like-c2" value="#ff8c69"></div>
                   </div>
                   <div class="form-row" style="align-items: flex-end;">
-                    <div class="form-group">
-                      <label class="form-label">Style</label>
-                      <select class="form-input" id="w-last-follower-style">
-                        <option value="style-1">Style 1 (Glass Box)</option>
-                        <option value="style-2">Style 2 (Elegant Ribbon)</option>
-                        <option value="style-3">Style 3 (Minimal Text)</option>
-                      </select>
+                    <div class="form-group" style="flex:1;">
+                      <button class="btn btn-primary" id="w-latest-like-apply" style="width:100%;">Apply Settings</button>
                     </div>
-                    <div class="form-group">
-                      <button class="btn btn-primary" id="w-last-follower-apply" style="width:100%;">Apply Settings</button>
+                    <div class="form-group" style="flex:0 0 110px;">
+                      <button class="btn btn-ghost" id="w-latest-like-test" style="width:100%;">🧪 Test</button>
                     </div>
                   </div>
                   <div class="url-row">
-                    <input type="text" class="form-input" id="w-last-follower-url" readonly value="http://ELDALYSTREAM.PRO.localhost:2233/widget/label?type=last_follower&id=last-follower">
-                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-last-follower-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
+                    <input type="text" class="form-input" id="w-latest-like-url" readonly value="...">
+                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-latest-like-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
                   </div>
                 </div>
-
+                <!-- Last Follow -->
+                <div class="glass-card profile-card">
+                  <h3 class="form-section-title">👤 Last Follow</h3>
+                  <div class="le-preview"><iframe id="w-latest-follow-preview" title="preview" style="width:456px;height:210px;border:0;transform:scale(0.72);transform-origin:top right;position:absolute;top:0;right:0;pointer-events:none;"></iframe></div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-latest-follow-title" value="متابعة جديدة"></div>
+                    <div class="form-group">
+                      <label class="form-label">Layout</label>
+                      <select class="form-input" id="w-latest-follow-layout"><option value="royal">👑 ملكي</option><option value="glass">🧊 زجاج</option><option value="neon">💡 نيون</option><option value="plain">⬜ سادة</option></select>
+                    </div>
+                  </div>
+                  <div class="form-group"><label class="form-label">Description — الوصف اللي تحت الاسم</label><input type="text" class="form-input" id="w-latest-follow-desc" value="بدأ يتابعك الآن ✨" placeholder="سيبك فاضي = الوصف الافتراضي"></div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Color 1</label><input type="color" class="form-input" id="w-latest-follow-c1" value="#2dd4bf"></div>
+                    <div class="form-group"><label class="form-label">Color 2</label><input type="color" class="form-input" id="w-latest-follow-c2" value="#7bf5d9"></div>
+                  </div>
+                  <div class="form-row" style="align-items: flex-end;">
+                    <div class="form-group" style="flex:1;">
+                      <button class="btn btn-primary" id="w-latest-follow-apply" style="width:100%;">Apply Settings</button>
+                    </div>
+                    <div class="form-group" style="flex:0 0 110px;">
+                      <button class="btn btn-ghost" id="w-latest-follow-test" style="width:100%;">🧪 Test</button>
+                    </div>
+                  </div>
+                  <div class="url-row">
+                    <input type="text" class="form-input" id="w-latest-follow-url" readonly value="...">
+                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-latest-follow-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
+                  </div>
+                </div>
+                <!-- Last Join -->
+                <div class="glass-card profile-card">
+                  <h3 class="form-section-title">🚪 Last Join</h3>
+                  <div class="le-preview"><iframe id="w-latest-join-preview" title="preview" style="width:456px;height:210px;border:0;transform:scale(0.72);transform-origin:top right;position:absolute;top:0;right:0;pointer-events:none;"></iframe></div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-latest-join-title" value="دخل اللايف"></div>
+                    <div class="form-group">
+                      <label class="form-label">Layout</label>
+                      <select class="form-input" id="w-latest-join-layout"><option value="royal">👑 ملكي</option><option value="glass">🧊 زجاج</option><option value="neon">💡 نيون</option><option value="plain">⬜ سادة</option></select>
+                    </div>
+                  </div>
+                  <div class="form-group"><label class="form-label">Description — الوصف اللي تحت الاسم</label><input type="text" class="form-input" id="w-latest-join-desc" value="انضم للمعركة 🔥" placeholder="سيبك فاضي = الوصف الافتراضي"></div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Color 1</label><input type="color" class="form-input" id="w-latest-join-c1" value="#58a6ff"></div>
+                    <div class="form-group"><label class="form-label">Color 2</label><input type="color" class="form-input" id="w-latest-join-c2" value="#9cc8ff"></div>
+                  </div>
+                  <div class="form-row" style="align-items: flex-end;">
+                    <div class="form-group" style="flex:1;">
+                      <button class="btn btn-primary" id="w-latest-join-apply" style="width:100%;">Apply Settings</button>
+                    </div>
+                    <div class="form-group" style="flex:0 0 110px;">
+                      <button class="btn btn-ghost" id="w-latest-join-test" style="width:100%;">🧪 Test</button>
+                    </div>
+                  </div>
+                  <div class="url-row">
+                    <input type="text" class="form-input" id="w-latest-join-url" readonly value="...">
+                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-latest-join-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
+                  </div>
+                </div>
+                <!-- Last Share -->
+                <div class="glass-card profile-card">
+                  <h3 class="form-section-title">🔗 Last Share</h3>
+                  <div class="le-preview"><iframe id="w-latest-share-preview" title="preview" style="width:456px;height:210px;border:0;transform:scale(0.72);transform-origin:top right;position:absolute;top:0;right:0;pointer-events:none;"></iframe></div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-latest-share-title" value="شارك اللايف"></div>
+                    <div class="form-group">
+                      <label class="form-label">Layout</label>
+                      <select class="form-input" id="w-latest-share-layout"><option value="royal">👑 ملكي</option><option value="glass">🧊 زجاج</option><option value="neon">💡 نيون</option><option value="plain">⬜ سادة</option></select>
+                    </div>
+                  </div>
+                  <div class="form-group"><label class="form-label">Description — الوصف اللي تحت الاسم</label><input type="text" class="form-input" id="w-latest-share-desc" value="شارك البث مع متابعينه 📣" placeholder="سيبك فاضي = الوصف الافتراضي"></div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Color 1</label><input type="color" class="form-input" id="w-latest-share-c1" value="#ffb84d"></div>
+                    <div class="form-group"><label class="form-label">Color 2</label><input type="color" class="form-input" id="w-latest-share-c2" value="#ffd98a"></div>
+                  </div>
+                  <div class="form-row" style="align-items: flex-end;">
+                    <div class="form-group" style="flex:1;">
+                      <button class="btn btn-primary" id="w-latest-share-apply" style="width:100%;">Apply Settings</button>
+                    </div>
+                    <div class="form-group" style="flex:0 0 110px;">
+                      <button class="btn btn-ghost" id="w-latest-share-test" style="width:100%;">🧪 Test</button>
+                    </div>
+                  </div>
+                  <div class="url-row">
+                    <input type="text" class="form-input" id="w-latest-share-url" readonly value="...">
+                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-latest-share-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
+                  </div>
+                </div>
                 <!-- Last Gift -->
                 <div class="glass-card profile-card">
                   <h3 class="form-section-title">🎁 Last Gift</h3>
-                  <p class="widget-desc">Displays the most recent gift received.</p>
+                  <div class="le-preview"><iframe id="w-latest-gift-preview" title="preview" style="width:456px;height:210px;border:0;transform:scale(0.72);transform-origin:top right;position:absolute;top:0;right:0;pointer-events:none;"></iframe></div>
                   <div class="form-row">
-                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-last-gift-title" value="Last Gift"></div>
+                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-latest-gift-title" value="آخر هدية"></div>
+                    <div class="form-group">
+                      <label class="form-label">Layout</label>
+                      <select class="form-input" id="w-latest-gift-layout"><option value="royal">👑 ملكي</option><option value="glass">🧊 زجاج</option><option value="neon">💡 نيون</option><option value="plain">⬜ سادة</option></select>
+                    </div>
                   </div>
+                  <div class="form-group"><label class="form-label">Description — الوصف اللي تحت الاسم</label><input type="text" class="form-input" id="w-latest-gift-desc" value="" placeholder="سيبك فاضي = الوصف الافتراضي"></div>
                   <div class="form-row">
-                    <div class="form-group"><label class="form-label">Color 1</label><input type="color" class="form-input" id="w-last-gift-c1" value="#a855f7"></div>
-                    <div class="form-group"><label class="form-label">Color 2</label><input type="color" class="form-input" id="w-last-gift-c2" value="#ff2d55"></div>
+                    <div class="form-group"><label class="form-label">Color 1</label><input type="color" class="form-input" id="w-latest-gift-c1" value="#d4af37"></div>
+                    <div class="form-group"><label class="form-label">Color 2</label><input type="color" class="form-input" id="w-latest-gift-c2" value="#f2dc93"></div>
                   </div>
                   <div class="form-row" style="align-items: flex-end;">
-                    <div class="form-group">
-                      <label class="form-label">Style</label>
-                      <select class="form-input" id="w-last-gift-style">
-                        <option value="style-1">Style 1 (Glass Box)</option>
-                        <option value="style-2">Style 2 (Elegant Ribbon)</option>
-                        <option value="style-3">Style 3 (Minimal Text)</option>
-                      </select>
+                    <div class="form-group" style="flex:1;">
+                      <button class="btn btn-primary" id="w-latest-gift-apply" style="width:100%;">Apply Settings</button>
                     </div>
-                    <div class="form-group">
-                      <button class="btn btn-primary" id="w-last-gift-apply" style="width:100%;">Apply Settings</button>
+                    <div class="form-group" style="flex:0 0 110px;">
+                      <button class="btn btn-ghost" id="w-latest-gift-test" style="width:100%;">🧪 Test</button>
                     </div>
                   </div>
                   <div class="url-row">
-                    <input type="text" class="form-input" id="w-last-gift-url" readonly value="http://ELDALYSTREAM.PRO.localhost:2233/widget/label?type=last_gift&id=last-gift">
-                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-last-gift-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
+                    <input type="text" class="form-input" id="w-latest-gift-url" readonly value="...">
+                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-latest-gift-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
                   </div>
                 </div>
-
               </div>
             </div>
           </details>
