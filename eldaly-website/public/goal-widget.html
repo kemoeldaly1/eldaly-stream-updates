@@ -31,10 +31,10 @@ body { font-family: 'Cairo', sans-serif; }
   direction: ltr; white-space: nowrap; letter-spacing: 1px; }
 
 /* ================= 1) الزجاجة ================= */
-#shape-bottle .pct { top: 47%; left: 50%; transform: translate(-50%,-50%); font-size: 46px; }
-#shape-bottle .pill { top: 148px; right: 96px; font-size: 19px; }
+#shape-bottle .pct { top: 46%; left: 50%; transform: translate(-50%,-50%); font-size: 44px; }
+#shape-bottle .pill { top: 146px; right: 102px; font-size: 19px; }
 #shape-bottle .pill::after { bottom: -16px; right: 18px; border-left: 17px solid transparent; border-top: 17px solid var(--pill); filter: drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
-#shape-bottle .glow-val { top: 205px; right: 74px; font-size: 21px; color: var(--v-col); text-shadow: 0 1px 0 rgba(0,0,0,.9), 0 0 10px var(--c), 0 0 22px var(--c); }
+#shape-bottle .glow-val { top: 200px; right: 80px; font-size: 21px; color: var(--v-col); text-shadow: 0 1px 0 rgba(0,0,0,.9), 0 0 10px var(--c), 0 0 22px var(--c); }
 
 /* ================= 2) القلب الكرتوني ================= */
 #shape-heart .gw { animation: gwFloat 4.2s ease-in-out infinite; }
@@ -52,11 +52,11 @@ body { font-family: 'Cairo', sans-serif; }
 #shape-heartpotion .glow-val { display: none; }
 
 /* ================= 4) نوتة تيك توك ================= */
-#shape-tik .t-title { position: absolute; z-index: 20; top: 118px; left: 4px; font-family: 'Orbitron',sans-serif;
-  font-weight: 900; font-size: 26px; direction: ltr; color: var(--c);
-  text-shadow: 0 0 6px var(--c), 0 0 16px var(--cm), 0 2px 0 rgba(0,0,0,.6); white-space: nowrap; }
-#shape-tik .glow-val { top: 158px; left: 6px; font-size: 19px; color: #fff;
-  text-shadow: 0 0 8px var(--c), 0 0 18px var(--c), 0 2px 3px rgba(0,0,0,.7); }
+#shape-tik .t-title { position: absolute; z-index: 20; top: 92px; left: 4px;
+  font-family: 'Cairo', sans-serif; font-weight: 900; font-size: 24px; direction: rtl;
+  color: var(--c); text-shadow: 0 0 6px var(--cm), 0 2px 0 rgba(0,0,0,.6); white-space: nowrap; }
+#shape-tik .glow-val { top: 134px; left: 6px; font-size: 19px; color: #fff;
+  text-shadow: 0 0 8px var(--c), 0 2px 3px rgba(0,0,0,.7); }
 #shape-tik .pct { display: none; }
 </style>
 </head>
@@ -174,42 +174,44 @@ function startWaves(cfg) {
 function buildBottle() {
   const W = 520, H = 560;
   gw.style.width = W + "px"; gw.style.height = H + "px";
-  // جسم الزجاجة (رسم فيكتور أصلي): رقبة + أكتاف + جسم مستدير
-  const bodyD = "M 218 108 L 218 168 C 218 190 192 202 168 220 C 128 250 106 286 106 330 L 106 452 C 106 492 138 516 182 516 L 338 516 C 382 516 414 492 414 452 L 414 330 C 414 286 392 250 352 220 C 328 202 302 190 302 168 L 302 108 Z";
+  // جسم الزجاجة: رقبة طويلة ضيقة + أكتاف ملسا + جسم شبه أسطواني بقاع مستدير
+  const bodyD = "M 228 98 L 228 165 C 228 184 216 194 198 206 C 162 230 146 260 146 296 L 146 450 C 146 478 168 495 198 495 L 322 495 C 352 495 374 478 374 450 L 374 296 C 374 260 358 230 322 206 C 304 194 292 184 292 165 L 292 98 Z";
   const svg = el("svg", { viewBox: "0 0 " + W + " " + H }, gw);
   const defs = el("defs", {}, svg);
   const clip = el("clipPath", { id: "bottleClip" }, defs);
   el("path", { d: bodyD }, clip);
   const gGrad = el("linearGradient", { id: "liqGrad", x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
-  el("stop", { offset: "0%", "stop-color": shade(0.45) }, gGrad);
-  el("stop", { offset: "55%", "stop-color": shade(0.85) }, gGrad);
+  el("stop", { offset: "0%", "stop-color": shade(0.5) }, gGrad);
   el("stop", { offset: "100%", "stop-color": "#" + C }, gGrad);
   const bGrad = el("linearGradient", { id: "backGrad", x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
-  el("stop", { offset: "0%", "stop-color": shade(0.62) }, bGrad);
-  el("stop", { offset: "100%", "stop-color": shade(0.38) }, bGrad);
+  el("stop", { offset: "0%", "stop-color": shade(0.66) }, bGrad);
+  el("stop", { offset: "100%", "stop-color": shade(0.4) }, bGrad);
 
   // السائل (مقصوص جوه جسم الزجاجة)
   const liq = el("g", { "clip-path": "url(#bottleClip)" }, svg);
-  const back = el("path", { fill: "url(#backGrad)", opacity: 0.85 }, liq);
+  const back = el("path", { fill: "url(#backGrad)", opacity: 0.9 }, liq);
   const front = el("path", { fill: "url(#liqGrad)" }, liq);
-  const line = el("path", { fill: "none", stroke: "rgba(255,255,255,0.5)", "stroke-width": 2.5, "stroke-linecap": "round" }, liq);
+  const line = el("path", { fill: "none", stroke: "rgba(255,255,255,0.45)", "stroke-width": 2 }, liq);
   const bub = makeBubbles(liq, 9, W, H);
 
-  // الزجاج فوق السائل
-  el("path", { d: bodyD, fill: "rgba(210,230,255,0.10)", stroke: "rgba(235,245,255,0.5)", "stroke-width": 3 }, svg);
-  // لمعة جانبية
-  el("path", { d: "M 150 250 C 138 274 132 300 132 330 L 132 440", fill: "none", stroke: "rgba(255,255,255,0.55)", "stroke-width": 10, "stroke-linecap": "round", opacity: 0.5 }, svg);
-  el("path", { d: "M 236 128 L 236 162", fill: "none", stroke: "rgba(255,255,255,0.4)", "stroke-width": 6, "stroke-linecap": "round", opacity: 0.5 }, svg);
+  // الزجاج فوق السائل — حد أبيض مضيء
+  el("path", { d: bodyD, fill: "rgba(215,232,255,0.08)", stroke: "rgba(240,248,255,0.75)", "stroke-width": 3.5 }, svg);
+  // لمعة رأسية طويلة على الشمال + لمعة قصيرة على اليمين
+  el("path", { d: "M 178 252 C 166 282 160 314 160 348 L 160 430", fill: "none", stroke: "rgba(255,255,255,0.65)", "stroke-width": 11, "stroke-linecap": "round", opacity: 0.55 }, svg);
+  el("path", { d: "M 358 300 L 358 400", fill: "none", stroke: "rgba(255,255,255,0.4)", "stroke-width": 7, "stroke-linecap": "round", opacity: 0.45 }, svg);
+  el("path", { d: "M 244 122 L 244 158", fill: "none", stroke: "rgba(255,255,255,0.5)", "stroke-width": 6, "stroke-linecap": "round", opacity: 0.5 }, svg);
 
-  // الفلينة
+  // حلقة الفم
+  el("rect", { x: 220, y: 92, width: 80, height: 14, rx: 7, fill: "rgba(235,245,255,0.2)", stroke: "rgba(255,255,255,0.7)", "stroke-width": 2.5 }, svg);
+
+  // الفلينة — بسن وطرف داير
   const cork = el("g", {}, svg);
-  el("rect", { x: 230, y: 44, width: 60, height: 74, rx: 10, fill: "#c98d4f", stroke: "#8a5a2b", "stroke-width": 2 }, cork);
-  el("ellipse", { cx: 260, cy: 48, rx: 30, ry: 9, fill: "#dba568" }, cork);
-  el("path", { d: "M 240 66 h 40 M 238 84 h 44 M 242 102 h 36", stroke: "rgba(90,55,20,0.45)", "stroke-width": 2.5, "stroke-linecap": "round" }, cork);
-  el("ellipse", { cx: 252, cy: 62, rx: 3, ry: 5, fill: "rgba(90,55,20,0.5)" }, cork);
-  el("ellipse", { cx: 272, cy: 92, rx: 3, ry: 4.5, fill: "rgba(90,55,20,0.5)" }, cork);
-  // حلقة الرقبة
-  el("rect", { x: 208, y: 100, width: 104, height: 14, rx: 7, fill: "rgba(235,245,255,0.16)", stroke: "rgba(255,255,255,0.5)", "stroke-width": 2 }, svg);
+  el("path", { d: "M 234 46 C 234 40 240 36 246 36 L 274 36 C 280 36 286 40 286 46 L 286 96 L 234 96 Z", fill: "#c98d4f", stroke: "#7e5228", "stroke-width": 2.5 }, cork);
+  el("ellipse", { cx: 260, cy: 42, rx: 26, ry: 8, fill: "#dfa96c" }, cork);
+  el("path", { d: "M 241 58 h 38 M 239 72 h 42 M 241 86 h 38", stroke: "rgba(88,54,20,0.4)", "stroke-width": 2.5, "stroke-linecap": "round" }, cork);
+  el("ellipse", { cx: 251, cy: 64, rx: 2.6, ry: 4.5, fill: "rgba(88,54,20,0.5)" }, cork);
+  el("ellipse", { cx: 271, cy: 80, rx: 2.6, ry: 4, fill: "rgba(88,54,20,0.5)" }, cork);
+  el("ellipse", { cx: 265, cy: 52, rx: 2, ry: 3.5, fill: "rgba(88,54,20,0.4)" }, cork);
 
   // نصوص
   const pill = document.createElement("div");
@@ -226,50 +228,55 @@ function buildBottle() {
 
   startWaves({
     W, H, back, front, line, bub, phase: 0, speed: 1.6, amp: 7,
-    liquidY: () => 516 - (Math.max(0, Math.min(1, cur / goal))) * 380,
+    liquidY: () => 495 - (Math.max(0, Math.min(1, cur / goal))) * 285,
   });
 }
 
 /* ---------- الشكل 2: القلب الكرتوني ---------- */
 function buildHeart() {
-  const W = 340, H = 330;
+  const W = 340, H = 310;
   gw.style.width = W + "px"; gw.style.height = H + "px";
   const svg = el("svg", { viewBox: "0 0 " + W + " " + H }, gw);
   const defs = el("defs", {}, svg);
-  const g = el("radialGradient", { id: "heartG", cx: "0.35", cy: "0.28", r: "1" }, defs);
-  el("stop", { offset: "0%", "stop-color": shade(1.45) }, g);
-  el("stop", { offset: "45%", "stop-color": "#" + C }, g);
-  el("stop", { offset: "100%", "stop-color": shade(0.62) }, g);
-  const heartD = "M 170 296 C 88 240 26 190 26 118 C 26 60 70 26 118 26 C 141 26 160 37 170 52 C 180 37 199 26 222 26 C 270 26 314 60 314 118 C 314 190 252 240 170 296 Z";
+  const g = el("radialGradient", { id: "heartG", cx: "0.33", cy: "0.26", r: "1.05" }, defs);
+  el("stop", { offset: "0%", "stop-color": shade(1.55) }, g);
+  el("stop", { offset: "42%", "stop-color": "#" + C }, g);
+  el("stop", { offset: "100%", "stop-color": shade(0.55) }, g);
+  // قلب تخين ملمع
+  const heartD = "M 170 296 C 82 244 18 190 18 114 C 18 54 66 20 117 20 C 142 20 162 33 170 50 C 178 33 198 20 223 20 C 274 20 322 54 322 114 C 322 190 258 244 170 296 Z";
 
-  // توهج
-  el("path", { d: heartD, fill: "none", stroke: colA(0.55), "stroke-width": 22, "stroke-linejoin": "round", opacity: 0.5, filter: "blur(2px)" }, svg);
+  // توهج خارجي
+  el("path", { d: heartD, fill: "none", stroke: colA(0.5), "stroke-width": 26, "stroke-linejoin": "round", opacity: 0.55, filter: "blur(3px)" }, svg);
   // جسم القلب
-  el("path", { d: heartD, fill: "url(#heartG)", stroke: shade(0.55), "stroke-width": 4, "stroke-linejoin": "round" }, svg);
-  // لمعة
-  el("path", { d: "M 62 96 C 58 74 74 52 96 46 C 104 44 108 52 102 58 C 86 66 76 82 78 98 C 78 106 64 106 62 96 Z", fill: "rgba(255,255,255,0.85)" }, svg);
-  el("ellipse", { cx: 92, cy: 44, rx: 10, ry: 6, fill: "rgba(255,255,255,0.6)", transform: "rotate(-18 92 44)" }, svg);
+  el("path", { d: heartD, fill: "url(#heartG)", stroke: shade(0.5), "stroke-width": 4, "stroke-linejoin": "round" }, svg);
+  // لمعة كبيرة
+  el("path", { d: "M 58 100 C 52 74 70 48 96 40 C 106 37 112 47 104 54 C 84 64 72 82 74 102 C 74 112 60 112 58 100 Z", fill: "rgba(255,255,255,0.9)" }, svg);
+  el("ellipse", { cx: 96, cy: 42, rx: 12, ry: 6.5, fill: "rgba(255,255,255,0.65)", transform: "rotate(-20 96 42)" }, svg);
+  el("ellipse", { cx: 262, cy: 56, rx: 8, ry: 4.5, fill: "rgba(255,255,255,0.45)", transform: "rotate(24 262 56)" }, svg);
 
-  // الوش: عيون + ابتسامة + خدود
+  // الوش: عيون لامعة + ابتسامة مفتوحة + خدود
   const face = el("g", {}, svg);
-  el("ellipse", { cx: 122, cy: 130, rx: 17, ry: 21, fill: "#3a1220" }, face);
-  el("ellipse", { cx: 218, cy: 130, rx: 17, ry: 21, fill: "#3a1220" }, face);
-  el("circle", { cx: 117, cy: 122, r: 6, fill: "#fff" }, face);
-  el("circle", { cx: 213, cy: 122, r: 6, fill: "#fff" }, face);
-  el("path", { d: "M 140 168 C 152 186 188 186 200 168 C 196 196 144 196 140 168 Z", fill: "#5c1626", stroke: "#3a1220", "stroke-width": 3, "stroke-linejoin": "round" }, face);
-  el("path", { d: "M 152 184 C 160 193 180 193 188 184 C 182 176 158 176 152 184 Z", fill: "#ff7d94" }, face);
-  el("ellipse", { cx: 88, cy: 158, rx: 13, ry: 8, fill: "#ff8fa3", opacity: 0.75 }, face);
-  el("ellipse", { cx: 252, cy: 158, rx: 13, ry: 8, fill: "#ff8fa3", opacity: 0.75 }, face);
+  el("ellipse", { cx: 120, cy: 128, rx: 18, ry: 22, fill: "#38101f" }, face);
+  el("ellipse", { cx: 220, cy: 128, rx: 18, ry: 22, fill: "#38101f" }, face);
+  el("circle", { cx: 114, cy: 119, r: 6.5, fill: "#fff" }, face);
+  el("circle", { cx: 214, cy: 119, r: 6.5, fill: "#fff" }, face);
+  el("circle", { cx: 125, cy: 134, r: 3, fill: "rgba(255,255,255,0.75)" }, face);
+  el("circle", { cx: 225, cy: 134, r: 3, fill: "rgba(255,255,255,0.75)" }, face);
+  el("path", { d: "M 140 164 C 152 184 188 184 200 164 C 197 194 143 194 140 164 Z", fill: "#5c1626", stroke: "#38101f", "stroke-width": 3, "stroke-linejoin": "round" }, face);
+  el("path", { d: "M 153 182 C 161 192 179 192 187 182 C 180 173 160 173 153 182 Z", fill: "#ff8298" }, face);
+  el("ellipse", { cx: 86, cy: 156, rx: 14, ry: 9, fill: "#ff97ab", opacity: 0.8 }, face);
+  el("ellipse", { cx: 254, cy: 156, rx: 14, ry: 9, fill: "#ff97ab", opacity: 0.8 }, face);
 
-  // التاج الذهبي
-  const crown = el("g", { transform: "translate(170,10) rotate(6)" }, svg);
-  el("path", { d: "M -34 22 L -40 -12 L -18 4 L 0 -18 L 18 4 L 40 -12 L 34 22 Z", fill: "#ffc531", stroke: "#d99a12", "stroke-width": 3, "stroke-linejoin": "round" }, crown);
-  el("rect", { x: -36, y: 20, width: 72, height: 12, rx: 5, fill: "#ffd764", stroke: "#d99a12", "stroke-width": 2.5 }, crown);
-  el("circle", { cx: 0, cy: 8, r: 4.5, fill: "#ff4d6d", stroke: "#d99a12", "stroke-width": 1.5 }, crown);
-  el("circle", { cx: 40, cy: -14, r: 4, fill: "#fff", opacity: 0.9 }, crown);
+  // التاج الدهبي — مايل شوية
+  const crown = el("g", { transform: "translate(168,8) rotate(9)" }, svg);
+  el("path", { d: "M -38 24 L -45 -14 L -20 4 L 0 -20 L 20 4 L 45 -14 L 38 24 Z", fill: "#ffc531", stroke: "#d3940f", "stroke-width": 3, "stroke-linejoin": "round" }, crown);
+  el("rect", { x: -40, y: 22, width: 80, height: 14, rx: 6, fill: "#ffd764", stroke: "#d3940f", "stroke-width": 2.5 }, crown);
+  el("circle", { cx: 0, cy: 9, r: 5, fill: "#ff4d6d", stroke: "#d3940f", "stroke-width": 1.5 }, crown);
+  el("circle", { cx: -30, cy: 9, r: 3.5, fill: "#4dc3ff", stroke: "#d3940f", "stroke-width": 1.5 }, crown);
+  el("circle", { cx: 45, cy: -16, r: 4.5, fill: "#fff", opacity: 0.95 }, crown);
 
   // لمّعات حوالين
-  const sparkPts = [[28, 40, 13], [308, 66, 11], [40, 220, 10], [300, 210, 12], [180, 8, 9]];
+  const sparkPts = [[22, 34, 14], [318, 60, 12], [30, 214, 11], [312, 200, 13], [196, 2, 9], [268, 12, 8]];
   for (const [sx, sy, ss] of sparkPts) {
     const sp = el("path", { class: "spark", d: sparkD(ss), fill: "#ffe9a8", transform: "translate(" + sx + "," + sy + ")" }, svg);
     sp.style.animationDelay = (Math.random() * 2).toFixed(2) + "s";
@@ -290,43 +297,52 @@ function buildHeartPotion() {
   gw.style.width = W + "px"; gw.style.height = H + "px";
   const svg = el("svg", { viewBox: "0 0 " + W + " " + H }, gw);
   const defs = el("defs", {}, svg);
-  // قلب زجاجة: جسم القلب + فوهة فوق
-  const innerD = "M 200 428 C 116 372 52 316 52 232 C 52 170 100 132 152 132 C 174 132 192 141 200 156 C 208 141 226 132 248 132 C 300 132 348 170 348 232 C 348 316 284 372 200 428 Z";
-  const glassD = "M 200 440 C 112 382 42 322 42 232 C 42 164 94 122 152 122 C 174 122 192 131 200 146 C 208 131 226 122 248 122 C 306 122 358 164 358 232 C 358 322 288 382 200 440 Z";
+  // قلب زجاجة عريض — فصوص دايرية ونقطة مدببة تحت
+  const innerD = "M 200 428 C 120 378 52 316 52 230 C 52 158 106 118 158 118 C 180 118 194 128 200 142 C 206 128 220 118 242 118 C 294 118 348 158 348 230 C 348 316 280 378 200 428 Z";
+  const glassD = "M 200 440 C 116 388 42 322 42 230 C 42 152 100 108 158 108 C 182 108 196 118 200 132 C 204 118 218 108 242 108 C 300 108 358 152 358 230 C 358 322 284 388 200 440 Z";
   const clip = el("clipPath", { id: "hpClip" }, defs);
   el("path", { d: innerD }, clip);
   const gGrad = el("linearGradient", { id: "hpGrad", x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
-  el("stop", { offset: "0%", "stop-color": shade(0.55) }, gGrad);
-  el("stop", { offset: "100%", "stop-color": shade(1.15) }, gGrad);
+  el("stop", { offset: "0%", "stop-color": shade(0.6) }, gGrad);
+  el("stop", { offset: "100%", "stop-color": shade(1.2) }, gGrad);
 
   const liq = el("g", { "clip-path": "url(#hpClip)" }, svg);
-  const back = el("path", { fill: shade(0.45), opacity: 0.8 }, liq);
+  const back = el("path", { fill: shade(0.48), opacity: 0.8 }, liq);
   const front = el("path", { fill: "url(#hpGrad)" }, liq);
   const line = el("path", { fill: "none", stroke: "rgba(255,255,255,0.55)", "stroke-width": 2.5 }, liq);
 
-  // عيون بتسبح جوه السايل
+  // عيون بتسبح جوه السايل — كبيرة لامعة
   const eyes = [];
   for (let i = 0; i < 5; i++) {
+    const r = 11 + Math.random() * 5;
     const gE = el("g", { opacity: 0 }, liq);
-    el("circle", { r: 9 + Math.random() * 5, fill: "#fff" }, gE);
-    const iris = el("circle", { r: 4.5, fill: shade(0.6), cx: 0, cy: 0 }, gE);
-    el("circle", { r: 2.2, fill: "#141420" }, iris);
-    el("circle", { r: 1.6, fill: "#fff", cx: -1.5, cy: -1.5 }, gE);
+    el("circle", { r: r, fill: "#fdfbf5" }, gE);
+    el("circle", { r: r * 0.42, fill: shade(0.55), cx: r * 0.15, cy: 0 }, gE);
+    el("circle", { r: r * 0.22, fill: "#17141f", cx: r * 0.2, cy: 0 }, gE);
+    el("circle", { r: r * 0.14, fill: "#fff", cx: -r * 0.25, cy: -r * 0.3 }, gE);
+    el("circle", { r: r * 0.08, fill: "rgba(255,255,255,0.8)", cx: r * 0.4, cy: r * 0.25 }, gE);
     eyes.push({ g: gE, x: 0.2 + Math.random() * 0.6, off: Math.random(), v: 0.05 + Math.random() * 0.07 });
   }
 
-  // الزجاج فوق
-  el("path", { d: glassD, fill: "rgba(235,215,255,0.10)", stroke: "rgba(250,240,255,0.55)", "stroke-width": 3.5, "stroke-linejoin": "round" }, svg);
-  el("path", { d: "M 86 232 C 82 268 92 302 114 330", fill: "none", stroke: "rgba(255,255,255,0.5)", "stroke-width": 9, "stroke-linecap": "round", opacity: 0.45 }, svg);
-  el("path", { d: "M 130 160 C 120 168 110 180 104 194", fill: "none", stroke: "rgba(255,255,255,0.55)", "stroke-width": 7, "stroke-linecap": "round", opacity: 0.5 }, svg);
+  // الزجاج فوق — حد أبيض قوي
+  el("path", { d: glassD, fill: "rgba(240,225,255,0.09)", stroke: "rgba(252,246,255,0.8)", "stroke-width": 4, "stroke-linejoin": "round" }, svg);
+  el("path", { d: "M 84 230 C 80 268 92 306 116 336", fill: "none", stroke: "rgba(255,255,255,0.6)", "stroke-width": 10, "stroke-linecap": "round", opacity: 0.5 }, svg);
+  el("path", { d: "M 128 158 C 116 168 106 182 100 198", fill: "none", stroke: "rgba(255,255,255,0.6)", "stroke-width": 8, "stroke-linecap": "round", opacity: 0.5 }, svg);
 
-  // الفلينة + الحبل
-  el("path", { d: "M 168 66 L 232 66 L 222 122 L 178 122 Z", fill: "#c98d4f", stroke: "#8a5a2b", "stroke-width": 2.5 }, svg);
-  el("ellipse", { cx: 200, cy: 66, rx: 32, ry: 10, fill: "#dba568", stroke: "#8a5a2b", "stroke-width": 2 }, svg);
-  el("path", { d: "M 160 128 C 180 146 220 146 240 128", fill: "none", stroke: "#b5793a", "stroke-width": 8, "stroke-linecap": "round" }, svg);
-  el("path", { d: "M 162 136 C 182 154 218 154 238 136", fill: "none", stroke: "#96602c", "stroke-width": 8, "stroke-linecap": "round", opacity: 0.85 }, svg);
-  el("circle", { cx: 244, cy: 148, r: 7, fill: "#b5793a", stroke: "#7c4c1e", "stroke-width": 2 }, svg);
-  el("path", { d: "M 248 154 C 258 172 252 186 240 196", fill: "none", stroke: "#b5793a", "stroke-width": 6, "stroke-linecap": "round" }, svg);
+  // عنق قصير + فلينة فوق فتحة القلب
+  el("path", { d: "M 176 74 L 224 74 L 218 126 L 182 126 Z", fill: "rgba(240,225,255,0.12)", stroke: "rgba(252,246,255,0.7)", "stroke-width": 3 }, svg);
+  el("path", { d: "M 172 44 C 172 36 178 32 186 32 L 214 32 C 222 32 228 36 228 44 L 228 82 L 172 82 Z", fill: "#c98d4f", stroke: "#7e5228", "stroke-width": 2.5 }, svg);
+  el("ellipse", { cx: 200, cy: 39, rx: 28, ry: 8, fill: "#dfa96c" }, svg);
+  el("path", { d: "M 181 52 h 38 M 179 66 h 42", stroke: "rgba(88,54,20,0.4)", "stroke-width": 2.5, "stroke-linecap": "round" }, svg);
+
+  // حبل ملفوف حوالين العنق + تاق متدلي
+  el("path", { d: "M 170 104 C 186 122 214 122 230 104", fill: "none", stroke: "#b5793a", "stroke-width": 8, "stroke-linecap": "round" }, svg);
+  el("path", { d: "M 172 113 C 188 130 212 130 228 113", fill: "none", stroke: "#96602c", "stroke-width": 8, "stroke-linecap": "round", opacity: 0.9 }, svg);
+  el("path", { d: "M 232 116 C 248 128 256 140 254 152", fill: "none", stroke: "#b5793a", "stroke-width": 5, "stroke-linecap": "round" }, svg);
+  const tag = el("g", { transform: "translate(262,172) rotate(18)" }, svg);
+  el("rect", { x: -22, y: -16, width: 44, height: 34, rx: 6, fill: "#e8d5ae", stroke: "#a5824a", "stroke-width": 2.5 }, tag);
+  el("circle", { cx: -13, cy: -8, r: 3, fill: "#8a6a38" }, tag);
+  el("path", { d: "M -12 4 h 26 M -12 11 h 18", stroke: "rgba(120,90,45,0.55)", "stroke-width": 3, "stroke-linecap": "round" }, tag);
 
   // نصوص
   const p = document.createElement("div");
@@ -341,10 +357,10 @@ function buildHeartPotion() {
   startWaves({
     W, H, back, front, line, phase: 2, speed: 1.4, amp: 6,
     bub: { arr: [] },
-    liquidY: () => 428 - (Math.max(0, Math.min(1, cur / goal))) * 280,
-    eyes, eyeBase: { W: 400, top: 150, bottom: 428 },
+    liquidY: () => 428 - (Math.max(0, Math.min(1, cur / goal))) * 268,
+    eyes,
   });
-  // حركة العيون — نفس اللوب بس معالجة منفصلة بسيطة
+  // حركة العيون
   let last = performance.now();
   (function eyeFrame(t) {
     const dt = Math.min(0.05, (t - last) / 1000); last = t;
@@ -352,8 +368,8 @@ function buildHeartPotion() {
     for (const e of eyes) {
       e.off += dt * e.v;
       if (e.off > 1) { e.off = 0; e.x = 0.2 + Math.random() * 0.6; }
-      const yy = 428 - e.off * (428 - Math.max(yb, 160));
-      e.g.setAttribute("transform", "translate(" + (40 + e.x * 320 + Math.sin(t / 500 + e.off * 9) * 6) + "," + yy + ")");
+      const yy = 428 - e.off * (428 - Math.max(yb, 180));
+      e.g.setAttribute("transform", "translate(" + (60 + e.x * 280 + Math.sin(t / 500 + e.off * 9) * 6) + "," + yy + ")");
       e.g.setAttribute("opacity", e.off < 0.1 ? e.off / 0.1 : Math.max(0, 1 - (e.off - 0.55) / 0.45));
     }
     requestAnimationFrame(eyeFrame);
@@ -362,52 +378,65 @@ function buildHeartPotion() {
 
 /* ---------- الشكل 4: نوتة تيك توك ---------- */
 function buildTik() {
-  const W = 380, H = 520;
+  const W = 440, H = 560;
   gw.style.width = W + "px"; gw.style.height = H + "px";
   const svg = el("svg", { viewBox: "0 0 " + W + " " + H }, gw);
   const defs = el("defs", {}, svg);
-  // نوتة موسيقية زجاجية: رأس بيضاوي تحت + ساق مستقيمة + لفّة على اليمين
-  const headD = "M 180 508 C 108 508 52 464 52 400 C 52 336 108 292 180 292 C 252 292 308 336 308 400 C 308 464 252 508 180 508 Z";
-  const headOuter = "M 180 520 C 100 520 40 472 40 400 C 40 328 100 280 180 280 C 260 280 320 328 320 400 C 320 472 260 520 180 520 Z";
-  const stemD = "M 272 420 L 272 92 Q 272 82 282 82 L 302 82 Q 312 82 312 92 L 312 420 Z";
-  const flagD = "M 312 96 C 342 106 360 130 354 162 C 350 182 336 196 318 202 C 332 184 334 162 324 144 C 318 132 314 118 312 106 Z";
+  // نوتة تيك توك مايلة: رأس بيضاوي كبير تحت + ساق سميكة + لفّة فوق — كلها مايلة 12 درجة
+  // والسايل مش بيتمايل (الجاذبية أفقية) — القص نفسه هو اللي مايل
+  const ROT = "rotate(12 200 330)";
+  const headD = "M 210 492 C 136 492 78 444 78 378 C 78 312 136 264 210 264 C 284 264 342 312 342 378 C 342 444 284 492 210 492 Z";
+  const headOuter = "M 210 504 C 128 504 66 452 66 378 C 66 304 128 252 210 252 C 292 252 354 304 354 378 C 354 452 292 504 210 504 Z";
+  const stemD = "M 288 292 L 288 78 Q 288 66 300 66 L 322 66 Q 334 66 334 78 L 334 292 Z";
+  const flagD = "M 334 80 C 374 90 396 118 392 154 C 389 182 372 204 348 212 C 364 190 366 164 354 142 C 346 126 338 108 334 94 Z";
   const clip = el("clipPath", { id: "tikClip" }, defs);
-  el("path", { d: headD }, clip);
-  el("path", { d: stemD }, clip);
+  el("path", { d: headD, transform: ROT }, clip);
+  el("path", { d: stemD, transform: ROT }, clip);
   const gGrad = el("linearGradient", { id: "tikGrad", x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
-  el("stop", { offset: "0%", "stop-color": shade(1.25) }, gGrad);
+  el("stop", { offset: "0%", "stop-color": shade(1.3) }, gGrad);
   el("stop", { offset: "100%", "stop-color": shade(0.5) }, gGrad);
 
-  // توهج خارجي
-  el("path", { d: headOuter, fill: colA(0.4), stroke: "none", filter: "blur(14px)", opacity: 0.8 }, svg);
-
+  // السايل — أفقي جوه القص المايل
   const liq = el("g", { "clip-path": "url(#tikClip)" }, svg);
-  const back = el("path", { fill: shade(0.42), opacity: 0.85 }, liq);
+  const back = el("path", { fill: shade(0.44), opacity: 0.85 }, liq);
   const front = el("path", { fill: "url(#tikGrad)" }, liq);
-  const line = el("path", { fill: "none", stroke: "rgba(255,255,255,0.6)", "stroke-width": 2.5 }, liq);
+  const line = el("path", { fill: "none", stroke: "rgba(255,255,255,0.7)", "stroke-width": 2.5 }, liq);
   const bub = makeBubbles(liq, 8, W, H);
 
-  // زجاج
-  el("path", { d: headOuter, fill: "rgba(220,245,255,0.09)", stroke: "rgba(240,252,255,0.55)", "stroke-width": 3.5 }, svg);
-  el("path", { d: stemD, fill: "rgba(220,245,255,0.09)", stroke: "rgba(240,252,255,0.55)", "stroke-width": 3, "stroke-linejoin": "round" }, svg);
-  el("path", { d: flagD, fill: colA(0.18), stroke: "rgba(240,252,255,0.5)", "stroke-width": 3, "stroke-linejoin": "round" }, svg);
-  el("path", { d: "M 82 380 C 78 420 98 458 136 478", fill: "none", stroke: "rgba(255,255,255,0.5)", "stroke-width": 10, "stroke-linecap": "round", opacity: 0.5 }, svg);
+  // توهج الخطوط حوالين النوتة — فلتر جاوس سليم (فلتر CSS على جروب SVG بيبوظ الطبقة)
+  const filt = el("filter", { id: "tikGlow", x: "-50%", y: "-50%", width: "200%", height: "200%" }, defs);
+  el("feGaussianBlur", { stdDeviation: 5 }, filt);
+  const glowG = el("g", { transform: ROT, fill: "none", stroke: colA(0.55), "stroke-width": 8, filter: "url(#tikGlow)", opacity: 0.55 }, svg);
+  el("path", { d: headOuter }, glowG);
+  el("path", { d: stemD }, glowG);
+  el("path", { d: flagD }, glowG);
 
-  // فلينة فوق الساق
-  el("rect", { x: 268, y: 24, width: 48, height: 62, rx: 9, fill: "#c98d4f", stroke: "#8a5a2b", "stroke-width": 2.5 }, svg);
-  el("ellipse", { cx: 292, cy: 28, rx: 24, ry: 8, fill: "#dba568" }, svg);
-  el("path", { d: "M 277 46 h 30 M 275 62 h 34", stroke: "rgba(90,55,20,0.45)", "stroke-width": 2.5, "stroke-linecap": "round" }, svg);
+  // زجاج النوتة فوق السايل
+  const glassG = el("g", { transform: ROT }, svg);
+  el("path", { d: headOuter, fill: "rgba(225,246,255,0.05)", stroke: "rgba(244,253,255,0.8)", "stroke-width": 4 }, glassG);
+  el("path", { d: stemD, fill: "rgba(225,246,255,0.05)", stroke: "rgba(244,253,255,0.75)", "stroke-width": 3.5, "stroke-linejoin": "round" }, glassG);
+  el("path", { d: flagD, fill: colA(0.14), stroke: "rgba(244,253,255,0.65)", "stroke-width": 3.5, "stroke-linejoin": "round" }, glassG);
+  // لمعة جوه الرأس
+  el("path", { d: "M 128 356 C 124 398 146 438 186 458", fill: "none", stroke: "rgba(255,255,255,0.55)", "stroke-width": 11, "stroke-linecap": "round", opacity: 0.5 }, glassG);
+  el("path", { d: "M 300 120 L 300 250", fill: "none", stroke: "rgba(255,255,255,0.45)", "stroke-width": 7, "stroke-linecap": "round", opacity: 0.5 }, glassG);
+
+  // فلينة فوق الساق — جوه المجموعة المايلة
+  el("path", { d: "M 282 20 C 282 12 288 8 296 8 L 330 8 C 338 8 344 12 344 20 L 344 70 L 282 70 Z", fill: "#c98d4f", stroke: "#7e5228", "stroke-width": 2.5 }, glassG);
+  el("ellipse", { cx: 313, cy: 15, rx: 30, ry: 8, fill: "#dfa96c" }, glassG);
+  el("path", { d: "M 292 32 h 42 M 290 48 h 46", stroke: "rgba(88,54,20,0.4)", "stroke-width": 2.5, "stroke-linecap": "round" }, glassG);
 
   // نصوص
   const t = document.createElement("div");
   t.className = "t-title"; t.id = "pill"; t.textContent = LABEL;
+  t.style.textShadow = "0 2px 0 rgba(0,0,0,.55), 0 0 12px " + colA(0.45);
   const v = document.createElement("div");
   v.className = "glow-val"; v.id = "val";
+  v.style.textShadow = "0 2px 0 rgba(0,0,0,.6), 0 0 10px " + colA(0.5);
   gw.appendChild(t); gw.appendChild(v);
 
   startWaves({
     W, H, back, front, line, bub, phase: 1, speed: 1.5, amp: 6,
-    liquidY: () => 520 - (Math.max(0, Math.min(1, cur / goal))) * 230,
+    liquidY: () => 488 - (Math.max(0, Math.min(1, cur / goal))) * 195,
   });
 }
 
