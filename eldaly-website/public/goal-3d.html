@@ -15,12 +15,12 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   position: absolute; z-index: 15; font-family: 'Orbitron', sans-serif; font-weight: 900;
   letter-spacing: .02em; line-height: 1; direction: ltr; white-space: nowrap;
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 0 rgba(0,0,0,.55)) drop-shadow(0 4px 12px rgba(0,0,0,.55));
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.6)) drop-shadow(0 5px 14px rgba(0,0,0,.65));
 }
 .pill {
   position: absolute; z-index: 20; white-space: nowrap; font-weight: 900; color: #fff;
   padding: 5px 14px; border-radius: 999px; font-size: 19px; text-shadow: 0 1px 2px rgba(0,0,0,.5);
-  box-shadow: 0 6px 22px rgba(0,0,0,.45);
+  box-shadow: 0 6px 22px rgba(0,0,0,.5);
 }
 .glow-val { position: absolute; z-index: 20; font-family: 'Orbitron', sans-serif; font-weight: 800;
   direction: ltr; white-space: nowrap; letter-spacing: 1px; font-size: 20px; color: #fff; }
@@ -30,26 +30,37 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   border-left: 15px solid transparent; border-top: 15px solid var(--pill); filter: drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
 .shape-bottle .glow-val { top: 170px; right: 95px; color: var(--v-col);
   text-shadow: 0 1px 0 rgba(0,0,0,.9), 0 0 10px var(--c), 0 0 22px var(--c); }
-.shape-flask .pct { top: 52%; left: 50%; transform: translate(-50%,-50%); font-size: 40px; }
+.shape-flask .pct { top: 60%; left: 50%; transform: translate(-50%,-50%); font-size: 40px; }
 .shape-flask .pill { top: 26px; left: 20px; font-size: 17px; }
 .shape-heart .pct { display: none; }
 .shape-heart .pill { left: 50%; bottom: -16px; transform: translateX(-50%); font-family: 'Orbitron',sans-serif;
   font-size: 19px; direction: ltr; letter-spacing: 1px; padding: 6px 30px;
   background: linear-gradient(180deg,#ffb020,#f97316); border: 2.5px solid #ffedc2;
   box-shadow: 0 0 16px rgba(255,200,90,.85), 0 0 34px rgba(255,160,40,.5), 0 6px 16px rgba(0,0,0,.45); }
-.shape-tik .t-title { position: absolute; z-index: 20; top: 74px; left: 4px;
+.shape-tik .t-title { position: absolute; z-index: 20; top: 60px; left: 4px;
   font-family: 'Cairo', sans-serif; font-weight: 900; font-size: 24px; direction: rtl;
-  color: var(--c); white-space: nowrap; }
-.shape-tik .glow-val { top: 114px; left: 6px; }
+  color: var(--c); white-space: nowrap; text-shadow: 0 2px 0 rgba(0,0,0,.55), 0 0 12px var(--cm); }
+.shape-tik .glow-val { top: 102px; left: 6px; }
+.shape-tik .pct { display: none; }
 #fallback { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
-  color: #fff; font-weight: 800; text-align: center; padding: 20px; }
+  color: #fff; font-weight: 800; text-align: center; padding: 20px; z-index: 50; }
 </style>
 </head>
 <body>
 <div id="hud"></div>
-<div id="fallback">المتصفح مش بيدعم WebGL — الويدجت 3D محتاج دعم WebGL</div>
-<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
-<script>
+<div id="fallback">جاري تحميل محرك الـ 3D… لو الرسالة فضلت فالمتصفح مش بيدعم WebGL المتقدم</div>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
 /* إعداد الويدجت — على الباك اند __INITIAL_CONFIG__ بتتعوض بكونفج الحساب */
 let CONFIG = {};
 try { CONFIG = __INITIAL_CONFIG__; } catch (e) {}
@@ -96,10 +107,6 @@ function fit() {
 }
 window.addEventListener("resize", fit); fit();
 
-if (!window.THREE) {
-  document.getElementById("fallback").style.display = "flex";
-} else {
-
 /* ============ مشهد ثلاثي الأبعاد ============ */
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setClearColor(0x000000, 0);
@@ -107,7 +114,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.12;
+renderer.toneMappingExposure = 1.0;
 renderer.localClippingEnabled = true;
 document.body.appendChild(renderer.domElement);
 
@@ -119,57 +126,18 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-/* بيئة استوديو انعكاسات — حوائط بألواح مضيئة دافية/باردة */
-function buildEnv() {
-  const envScene = new THREE.Scene();
-  const cvs = document.createElement("canvas"); cvs.width = 16; cvs.height = 256;
-  const ctx = cvs.getContext("2d");
-  const gr = ctx.createLinearGradient(0, 0, 0, 256);
-  gr.addColorStop(0, "#2a3040"); gr.addColorStop(0.5, "#12151d"); gr.addColorStop(1, "#05060a");
-  ctx.fillStyle = gr; ctx.fillRect(0, 0, 16, 256);
-  const domeTex = new THREE.CanvasTexture(cvs);
-  domeTex.colorSpace = THREE.SRGBColorSpace;
-  envScene.add(new THREE.Mesh(
-    new THREE.SphereGeometry(20, 16, 16),
-    new THREE.MeshBasicMaterial({ map: domeTex, side: THREE.BackSide })
-  ));
-  function box(w, h, x, y, z, ry, rx, col, inten) {
-    const m = new THREE.Mesh(
-      new THREE.PlaneGeometry(w, h),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color(col).multiplyScalar(inten) })
-    );
-    m.position.set(x, y, z); m.rotation.y = ry; m.rotation.x = rx;
-    envScene.add(m);
-  }
-  // سوفت بوكس علوي عريض + جانبي أبيض + خلفي بارد + شريط ملوّن رفيع (بيعمل هايلايت رأسي)
-  box(8, 3, 0, 8, 1, 0, Math.PI / 2, 0xfff2e0, 7.0);
-  box(4, 7, -8, 2, 3, Math.PI / 2, 0, 0xffffff, 5.5);
-  box(3, 5, 7, 1, -4, -Math.PI / 2.2, 0, 0xbcd2f2, 3.0);
-  box(0.7, 9, 6.5, 2, 4, -Math.PI / 2, 0, 0xffffff, 6.0);
-  box(5, 2, 0, -7, 3, 0, -Math.PI / 2, colN(1.3), 2.2);
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const tex = pmrem.fromScene(envScene, 0.03).texture;
-  pmrem.dispose();
-  return tex;
-}
-scene.environment = buildEnv();
+/* بيئة استوديو فوتوريال — نفس بيئة رندر البرودكت */
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+pmrem.dispose();
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x20242e, 0.55));
-const key = new THREE.DirectionalLight(0xffffff, 2.4);
-key.position.set(4, 7, 6);
+/* إضاءة مساعدة خفيفة — البيئة هي الأساس */
+scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x1a1d26, 0.35));
+const key = new THREE.DirectionalLight(0xfff4e5, 1.1);
+key.position.set(4, 8, 5);
 scene.add(key);
-const rimCol = new THREE.PointLight(colN(1.3), 90, 40);
-rimCol.position.set(-5, 3, -4);
-scene.add(rimCol);
-const rim2 = new THREE.PointLight(0xffffff, 110, 40);
-rim2.position.set(5, 4, -5);
-scene.add(rim2);
-const fill = new THREE.DirectionalLight(0xdfe8ff, 0.7);
-fill.position.set(-3, 2, 5);
-scene.add(fill);
 
-/* مواد مشتركة */
-/* زجاج حقيقي: transmission بيعدي ويتكسر — القصاوة بتتحسب من سماكة المادة */
+/* خامات */
 function noiseTex(rep) {
   const c = document.createElement("canvas"); c.width = c.height = 128;
   const x = c.getContext("2d");
@@ -184,38 +152,57 @@ function noiseTex(rep) {
   return t;
 }
 const corkBump = noiseTex(3);
+
+/* زجاج فيزيائي — انكسار ومرور ضوء حقيقي */
 function glassMat(extra) {
   return new THREE.MeshPhysicalMaterial(Object.assign({
-    color: 0xffffff, metalness: 0, roughness: 0.03,
-    transmission: 1, thickness: 0.55, ior: 1.5,
-    attenuationColor: new THREE.Color(0xeaf4ff), attenuationDistance: 3.5,
-    envMapIntensity: 1.2, clearcoat: 0.6, clearcoatRoughness: 0.04,
+    color: 0xffffff, metalness: 0, roughness: 0.015,
+    transmission: 1, thickness: 0.6, ior: 1.52,
+    attenuationColor: new THREE.Color(0xdfeaf2), attenuationDistance: 4,
+    envMapIntensity: 1, clearcoat: 0.4, clearcoatRoughness: 0.03,
     specularIntensity: 1,
     side: THREE.FrontSide,
   }, extra || {}));
 }
 function liquidMat(extra) {
   return new THREE.MeshPhysicalMaterial(Object.assign({
-    color: colN(1), metalness: 0, roughness: 0.22,
-    clearcoat: 0.9, clearcoatRoughness: 0.15,
-    envMapIntensity: 0.8, specularIntensity: 0.8,
+    color: colN(1), metalness: 0, roughness: 0.18,
+    clearcoat: 1, clearcoatRoughness: 0.1,
+    envMapIntensity: 0.9, specularIntensity: 0.9,
     clippingPlanes: [clipPlane], side: THREE.FrontSide,
   }, extra || {}));
 }
-const corkMat = new THREE.MeshStandardMaterial({ color: 0xc98d4f, roughness: 0.9, metalness: 0, bumpMap: corkBump, bumpScale: 0.6 });
-const corkTopMat = new THREE.MeshStandardMaterial({ color: 0xdfa96c, roughness: 0.85, metalness: 0, bumpMap: corkBump, bumpScale: 0.5 });
+const corkMat = new THREE.MeshStandardMaterial({ color: 0xc08046, roughness: 0.92, metalness: 0, bumpMap: corkBump, bumpScale: 0.8 });
+const corkTopMat = new THREE.MeshStandardMaterial({ color: 0xd9a264, roughness: 0.85, metalness: 0, bumpMap: corkBump, bumpScale: 0.6 });
+
+/* ظل ناعم تحت الجسم — بيثبت اللفة على الأرض */
+function groundShadow(size, opacity) {
+  const c = document.createElement("canvas"); c.width = c.height = 128;
+  const x = c.getContext("2d");
+  const g = x.createRadialGradient(64, 64, 4, 64, 64, 62);
+  g.addColorStop(0, "rgba(0,0,0," + opacity + ")");
+  g.addColorStop(0.7, "rgba(0,0,0," + (opacity * 0.45) + ")");
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false })
+  );
+  m.rotation.x = -Math.PI / 2;
+  return m;
+}
 
 /* فقاعات بتطلع جوه السايل */
 const bubbles = [];
 function addBubbles(count, bounds) {
-  const g = new THREE.SphereGeometry(1, 10, 10);
+  const g = new THREE.SphereGeometry(1, 12, 12);
   for (let i = 0; i < count; i++) {
     const m = new THREE.Mesh(g, new THREE.MeshPhysicalMaterial({
-      color: 0xffffff, transparent: true, opacity: 0.45, roughness: 0.05,
-      envMapIntensity: 1.2, depthWrite: false,
+      color: 0xffffff, transparent: true, opacity: 0.5, roughness: 0.05,
+      envMapIntensity: 1.4, depthWrite: false,
     }));
     const b = {
-      m, r: 0.028 + Math.random() * 0.05,
+      m, r: 0.026 + Math.random() * 0.05,
       x: bounds.x(), z: (Math.random() - 0.5) * (bounds.z || 1.2),
       y: bounds.y0 + Math.random() * (bounds.y1 - bounds.y0),
       v: 0.25 + Math.random() * 0.4, w: 0.5 + Math.random() * 1.5,
@@ -230,7 +217,6 @@ function addBubbles(count, bounds) {
 /* مستوى قص السايل */
 const clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), -10);
 
-/* تحديث الفقاعات كل فريم */
 function tickBubbles(dt, t) {
   for (const b of bubbles) {
     b.y += b.v * dt;
@@ -248,11 +234,11 @@ function tickBubbles(dt, t) {
 
 /* HUD */
 const el = (tag, id, txt) => {
-  const d = document.createElement(tag === "pill" ? "div" : "div");
+  const d = document.createElement("div");
   d.className = tag; if (id) d.id = id; if (txt) d.textContent = txt;
   hud.appendChild(d); return d;
 };
-const pctEl = shape === "tik" ? null : el("pct", "pct");
+const pctEl = shape === "tik" || shape === "heart" ? null : el("pct", "pct");
 pctEl && (pctEl.style.backgroundImage = "linear-gradient(180deg,#fff 0%,#" + C + " 92%)");
 const valEl = el("glow-val", "val");
 let pillEl = null;
@@ -276,7 +262,6 @@ const V2 = (x, y) => new THREE.Vector2(x, y);
 
 /* ----- 1) الزجاجة ----- */
 function buildBottle() {
-  camera.position.set(0, 2.4, 10.6); camera.lookAt(0, 2.3, 0);
   const pts = [
     V2(0.02, 0.03), V2(1.02, 0.03), V2(1.26, 0.10), V2(1.38, 0.34), V2(1.42, 0.8),
     V2(1.42, 1.6), V2(1.34, 2.08), V2(1.02, 2.52), V2(0.66, 2.92), V2(0.46, 3.28),
@@ -292,22 +277,22 @@ function buildBottle() {
     }
     return pts[pts.length - 1].x;
   };
-  const glass = new THREE.Mesh(new THREE.LatheGeometry(pts, 72), glassMat());
+  const glass = new THREE.Mesh(new THREE.LatheGeometry(pts, 96), glassMat({ thickness: 0.5 }));
   const innerPts = pts.map(p => V2(Math.max(0.02, p.x * 0.9), p.y));
-  const liqGeo = new THREE.LatheGeometry(innerPts, 64);
-  const liquid = new THREE.Mesh(liqGeo, liquidMat());
+  const liquid = new THREE.Mesh(new THREE.LatheGeometry(innerPts, 72), liquidMat());
   const surface = new THREE.Mesh(
     new THREE.CircleGeometry(1, 64),
-    new THREE.MeshPhysicalMaterial({ color: colN(1.25), roughness: 0.1, transparent: true, opacity: 0.96, envMapIntensity: 0.8 })
+    new THREE.MeshPhysicalMaterial({ color: colN(1.3), roughness: 0.06, envMapIntensity: 1.2 })
   );
   surface.rotation.x = -Math.PI / 2;
-  const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.41, 0.78, 28), corkMat);
+  const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.41, 0.78, 36), corkMat);
   cork.position.y = 4.85;
-  const corkCap = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.06, 28), corkTopMat);
+  const corkCap = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.06, 36), corkTopMat);
   corkCap.position.y = 5.24;
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.05, 10, 40), glassMat());
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.05, 12, 48), glassMat({ thickness: 0.15 }));
   rim.rotation.x = Math.PI / 2; rim.position.y = 4.44;
   rig.group.add(glass, liquid, surface, cork, corkCap, rim);
+  const sh = groundShadow(5.4, 0.42); sh.position.y = -0.02; rig.group.add(sh);
   addBubbles(10, { x: () => (Math.random() - 0.5) * 1.9, z: 1.6, y0: 0.2, y1: 3 });
   const BASE = 0.06, TOP = 4.1;
   rig.surfaceTick = (t) => {
@@ -317,10 +302,14 @@ function buildBottle() {
     const r = Math.max(0.05, profileR(h) * 0.9);
     surface.scale.set(r * (1 + Math.sin(t * 2.6) * 0.008), r * (1 - Math.sin(t * 2.6) * 0.008), 1);
   };
+  rig.float = (t) => {
+    rig.group.position.y = Math.sin(t * 1.0) * 0.06;
+    rig.group.rotation.y = Math.sin(t * 0.45) * 0.1;
+  };
   camera.position.set(0, 2.4, 10.6); camera.lookAt(0, 2.3, 0);
 }
 
-/* ----- 2) القلب الكرتوني ----- */
+/* ----- 2) القلب ----- */
 function heartShape(scale) {
   const s = new THREE.Shape();
   s.moveTo(0, -1.6 * scale);
@@ -331,45 +320,44 @@ function heartShape(scale) {
   return s;
 }
 function buildHeart() {
-  camera.position.set(0, 0.15, 10.4); camera.lookAt(0, 0.1, 0);
   const geo = new THREE.ExtrudeGeometry(heartShape(0.94), {
-    depth: 0.8, bevelEnabled: true, bevelThickness: 0.52, bevelSize: 0.5, bevelSegments: 12, curveSegments: 44,
+    depth: 0.8, bevelEnabled: true, bevelThickness: 0.55, bevelSize: 0.54, bevelSegments: 16, curveSegments: 48,
   });
   geo.center();
   const heart = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({
-    color: colN(1), roughness: 0.16, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.14, envMapIntensity: 1.15,
+    color: colN(1), roughness: 0.12, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.06, envMapIntensity: 1.1,
   }));
   rig.group.add(heart);
-  const zf = 0.38 + 0.52 + 0.03;
-  const dark = new THREE.MeshStandardMaterial({ color: 0x2e0d18, roughness: 0.3 });
+  const zf = 0.4 + 0.55 + 0.03;
+  const dark = new THREE.MeshStandardMaterial({ color: 0x2e0d18, roughness: 0.25 });
   for (const sx of [-1, 1]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 20), dark);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.17, 24, 24), dark);
     eye.scale.set(1, 1.28, 0.55); eye.position.set(0.6 * sx, 0.3, zf); rig.group.add(eye);
     const hl = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 12),
       new THREE.MeshBasicMaterial({ color: 0xffffff }));
     hl.position.set(0.6 * sx - 0.06 * sx, 0.44, zf + 0.1); rig.group.add(hl);
     const blush = new THREE.Mesh(new THREE.CircleGeometry(0.17, 24),
       new THREE.MeshBasicMaterial({ color: 0xff97ab, transparent: true, opacity: 0.55 }));
-    blush.position.set(1.08 * sx, -0.02, zf - 0.02); rig.group.add(blush);
+    blush.position.set(1.08 * sx, -0.02, zf - 0.05); rig.group.add(blush);
   }
-  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.075, 12, 28, Math.PI),
-    new THREE.MeshStandardMaterial({ color: 0x4a1420, roughness: 0.35 }));
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.075, 14, 32, Math.PI),
+    new THREE.MeshStandardMaterial({ color: 0x4a1420, roughness: 0.3 }));
   smile.position.set(0, 0.1, zf); smile.rotation.z = Math.PI; rig.group.add(smile);
-  const tongue = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 16),
-    new THREE.MeshStandardMaterial({ color: 0xff8298, roughness: 0.4 }));
+  const tongue = new THREE.Mesh(new THREE.SphereGeometry(0.13, 18, 18),
+    new THREE.MeshStandardMaterial({ color: 0xff8298, roughness: 0.35 }));
   tongue.scale.set(1.25, 0.7, 0.5); tongue.position.set(0, -0.02, zf + 0.02); rig.group.add(tongue);
-  // التاج
+  // التاج الدهبي
   const cs = new THREE.Shape();
   cs.moveTo(-0.72, 0); cs.lineTo(-0.82, 0.6); cs.lineTo(-0.4, 0.26); cs.lineTo(0, 0.68);
   cs.lineTo(0.4, 0.26); cs.lineTo(0.82, 0.6); cs.lineTo(0.72, 0); cs.closePath();
   const crownGeo = new THREE.ExtrudeGeometry(cs, { depth: 0.16, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 3 });
-  const gold = new THREE.MeshPhysicalMaterial({ color: 0xffc531, metalness: 0.75, roughness: 0.28, envMapIntensity: 1.3 });
+  const gold = new THREE.MeshPhysicalMaterial({ color: 0xffc531, metalness: 0.85, roughness: 0.22, envMapIntensity: 1.4 });
   const crown = new THREE.Mesh(crownGeo, gold);
   crown.position.set(0.08, 1.92, 0.12); crown.rotation.z = -0.16;
   const band = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.2, 0.26), gold);
   band.position.set(0.08, 1.86, 0.12); band.rotation.z = -0.16;
-  const gem = new THREE.Mesh(new THREE.SphereGeometry(0.07, 14, 14),
-    new THREE.MeshPhysicalMaterial({ color: 0xff4d6d, roughness: 0.15, clearcoat: 0 }));
+  const gem = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16),
+    new THREE.MeshPhysicalMaterial({ color: 0xff4d6d, roughness: 0.1, clearcoat: 0.8 }));
   gem.position.set(0.08, 1.94, 0.3);
   rig.group.add(crown, band, gem);
   // لمّعات
@@ -381,8 +369,9 @@ function buildHeart() {
     rig.sparkles.push({ m: sp, ph: Math.random() * 6 });
     rig.group.add(sp);
   }
+  const sh = groundShadow(6.4, 0.3); sh.position.y = -2.35; rig.group.add(sh);
   rig.float = (t) => {
-    rig.group.position.y = Math.sin(t * 1.05) * 0.13;
+    rig.group.position.y = Math.sin(t * 1.05) * 0.12;
     rig.group.rotation.y = Math.sin(t * 0.55) * 0.1;
     rig.group.rotation.z = Math.sin(t * 0.8) * 0.03;
     for (const s of rig.sparkles) {
@@ -391,60 +380,58 @@ function buildHeart() {
       s.m.scale.setScalar(k); s.m.material.opacity = 0.35 + 0.55 * k;
     }
   };
-  rig.group.position.y = 0;
   camera.position.set(0, 0.15, 10.4); camera.lookAt(0, 0.1, 0);
 }
 
 /* ----- 3) قلب الزجاجة ----- */
 function buildFlask() {
-  camera.position.set(0, 0.4, 8.6); camera.lookAt(0, 0.35, 0);
   const s = heartShape(1.06);
   const geo = new THREE.ExtrudeGeometry(s, {
-    depth: 0.85, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.48, bevelSegments: 12, curveSegments: 44,
+    depth: 0.85, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.48, bevelSegments: 14, curveSegments: 48,
   });
   geo.center();
-  const glass = new THREE.Mesh(geo, glassMat({ thickness: 0.8, attenuationColor: new THREE.Color(0xf2e6ff), attenuationDistance: 2.5 }));
+  const glass = new THREE.Mesh(geo, glassMat({ thickness: 0.9, attenuationColor: new THREE.Color(0xf0e4ff), attenuationDistance: 2.5 }));
   const liqGeo = new THREE.ExtrudeGeometry(s, {
-    depth: 0.62, bevelEnabled: true, bevelThickness: 0.38, bevelSize: 0.36, bevelSegments: 10, curveSegments: 44,
+    depth: 0.62, bevelEnabled: true, bevelThickness: 0.38, bevelSize: 0.36, bevelSegments: 12, curveSegments: 48,
   });
   liqGeo.center();
   const liquid = new THREE.Mesh(liqGeo, liquidMat());
   // سطح السايل — قرص بيضاوي مقاسه بيتغير مع ارتفاع السايل
-  const surface = new THREE.Mesh(new THREE.CircleGeometry(1, 48),
-    new THREE.MeshPhysicalMaterial({ color: colN(1.25), roughness: 0.12, transparent: true, opacity: 0.96, envMapIntensity: 0.7, side: THREE.DoubleSide }));
+  const surface = new THREE.Mesh(new THREE.CircleGeometry(1, 56),
+    new THREE.MeshPhysicalMaterial({ color: colN(1.3), roughness: 0.08, envMapIntensity: 1.1 }));
   surface.rotation.x = -Math.PI / 2;
   // عنق + فلينة + حبل + تاق
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.55, 24), glassMat());
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.55, 28), glassMat({ thickness: 0.2 }));
   neck.position.set(0, 1.62, 0);
-  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.055, 10, 36), glassMat());
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.055, 12, 40), glassMat({ thickness: 0.1 }));
   lip.rotation.x = Math.PI / 2; lip.position.set(0, 1.9, 0);
-  const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.31, 0.6, 24), corkMat);
+  const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.31, 0.6, 28), corkMat);
   cork.position.set(0, 2.18, 0);
-  const corkCap = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.05, 24), corkTopMat);
+  const corkCap = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.05, 28), corkTopMat);
   corkCap.position.set(0, 2.48, 0);
   const rope = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.045, 10, 40),
-    new THREE.MeshStandardMaterial({ color: 0xb5793a, roughness: 0.8 }));
+    new THREE.MeshStandardMaterial({ color: 0xb5793a, roughness: 0.85 }));
   rope.rotation.x = Math.PI / 2; rope.position.set(0, 1.48, 0);
   const string = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.42, 8),
-    new THREE.MeshStandardMaterial({ color: 0xb5793a, roughness: 0.8 }));
+    new THREE.MeshStandardMaterial({ color: 0xb5793a, roughness: 0.85 }));
   string.position.set(0.5, 1.3, 0); string.rotation.z = 0.75;
   const tag = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.3, 0.045),
-    new THREE.MeshStandardMaterial({ color: 0xe8d5ae, roughness: 0.7 }));
+    new THREE.MeshStandardMaterial({ color: 0xe8d5ae, roughness: 0.75 }));
   tag.position.set(0.68, 1.02, 0); tag.rotation.z = 0.22;
   rig.group.add(glass, liquid, surface, neck, lip, cork, corkCap, rope, string, tag);
-  rig.tag = tag;
+  const sh = groundShadow(6.6, 0.32); sh.position.y = -2.42; rig.group.add(sh);
   addBubbles(5, { x: () => (Math.random() - 0.5) * 1.5, z: 0.5, y0: -1.15, y1: 0.3 });
-  // عيون بتسبح
+  // عيون بتسبح في السايل
   rig.eyes = [];
   for (let i = 0; i < 4; i++) {
     const g = new THREE.Group();
     const r = 0.11 + Math.random() * 0.05;
-    g.add(new THREE.Mesh(new THREE.SphereGeometry(r, 18, 18),
-      new THREE.MeshPhysicalMaterial({ color: 0xfdfbf5, roughness: 0.25, clearcoat: 0.8 })));
-    const iris = new THREE.Mesh(new THREE.SphereGeometry(r * 0.45, 12, 12),
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(r, 20, 20),
+      new THREE.MeshPhysicalMaterial({ color: 0xfdfbf5, roughness: 0.2, clearcoat: 0.6 })));
+    const iris = new THREE.Mesh(new THREE.SphereGeometry(r * 0.45, 14, 14),
       new THREE.MeshStandardMaterial({ color: colN(0.55), roughness: 0.3 }));
     iris.position.z = r * 0.72; g.add(iris);
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(r * 0.22, 10, 10),
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(r * 0.22, 12, 12),
       new THREE.MeshBasicMaterial({ color: 0x17141f }));
     pupil.position.z = r * 0.95; g.add(pupil);
     g.position.set((Math.random() - 0.5) * 1.3, -1 + Math.random() * 0.8, 0.62);
@@ -456,14 +443,15 @@ function buildFlask() {
     const h = BASE + (TOP - BASE) * Math.max(0, Math.min(1, shown / goal));
     clipPlane.constant = h;
     surface.position.y = h + Math.sin(t * 2.1) * 0.02;
-    surface.scale.setScalar(1 + Math.sin(t * 2.4) * 0.01);
+    const rx = 1.55 * Math.sqrt(Math.max(0.03, 1 - Math.pow((h - 0.1) / 2.1, 2))) * 0.92;
+    surface.scale.set(rx * (1 + Math.sin(t * 2.4) * 0.01), rx * (1 - Math.sin(t * 2.4) * 0.01), 0.72);
     for (const e of rig.eyes) {
       e.g.position.y += e.v * 0.016;
       if (e.g.position.y > h - 0.18) e.g.position.y = -1.2;
       e.g.position.x = Math.sin(t * 0.9 + e.ph) * 0.25 + (e.ph > 3 ? 0.35 : -0.35);
       e.g.visible = e.g.position.y < h - 0.05;
     }
-    rig.tag.rotation.z = 0.2 + Math.sin(t * 1.4) * 0.08;
+    rig.tag.rotation.z = 0.22 + Math.sin(t * 1.4) * 0.08;
   };
   rig.float = (t) => {
     rig.group.position.y = Math.sin(t * 1.0) * 0.1;
@@ -474,27 +462,24 @@ function buildFlask() {
 
 /* ----- 4) نوتة تيك توك ----- */
 function buildTik() {
-  camera.position.set(-0.4, 1.1, 12.6); camera.lookAt(0.5, 1.0, 0);
   const group = new THREE.Group();
   group.rotation.z = 0.21;
   rig.group.add(group);
-  // رأس النوتة
   const headShape = new THREE.Shape();
   headShape.absellipse(0, 0, 1.62, 1.42, 0, Math.PI * 2, false, 0);
   const headGeo = new THREE.ExtrudeGeometry(headShape, {
-    depth: 0.85, bevelEnabled: true, bevelThickness: 0.42, bevelSize: 0.4, bevelSegments: 12, curveSegments: 48,
+    depth: 0.85, bevelEnabled: true, bevelThickness: 0.42, bevelSize: 0.4, bevelSegments: 14, curveSegments: 56,
   });
   headGeo.center();
-  const head = new THREE.Mesh(headGeo, glassMat());
-  // الساق
+  const head = new THREE.Mesh(headGeo, glassMat({ thickness: 0.8, attenuationColor: new THREE.Color(0xd8f2fb), attenuationDistance: 2.2 }));
   const stemShape = new THREE.Shape();
   stemShape.moveTo(-0.26, -0.3); stemShape.lineTo(-0.26, 2.9); stemShape.quadraticCurveTo(-0.26, 3.14, 0, 3.14);
   stemShape.lineTo(0.28, 3.14); stemShape.quadraticCurveTo(0.52, 3.14, 0.52, 2.9); stemShape.lineTo(0.52, -0.3); stemShape.closePath();
   const stemGeo = new THREE.ExtrudeGeometry(stemShape, {
-    depth: 0.7, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.28, bevelSegments: 8, curveSegments: 24,
+    depth: 0.7, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.28, bevelSegments: 10, curveSegments: 24,
   });
   stemGeo.center();
-  const stem = new THREE.Mesh(stemGeo, glassMat());
+  const stem = new THREE.Mesh(stemGeo, glassMat({ thickness: 0.6 }));
   stem.position.set(1.25, 1.55, 0);
   // اللفّة
   const flagShape = new THREE.Shape();
@@ -504,31 +489,27 @@ function buildTik() {
   flagShape.bezierCurveTo(0.3, -0.62, 0.26, -0.8, 0, -0.9);
   flagShape.closePath();
   const flagGeo = new THREE.ExtrudeGeometry(flagShape, {
-    depth: 0.4, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.18, bevelSegments: 6, curveSegments: 24,
+    depth: 0.4, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.18, bevelSegments: 8, curveSegments: 28,
   });
   flagGeo.center();
   const flag = new THREE.Mesh(flagGeo, glassMat({ thickness: 0.3 }));
   flag.position.set(2.15, 2.5, 0);
-  // السايل — جوه الرأس والساق
+  // السايل
   const liqGeo = new THREE.ExtrudeGeometry(headShape, {
-    depth: 0.62, bevelEnabled: true, bevelThickness: 0.32, bevelSize: 0.3, bevelSegments: 10, curveSegments: 48,
+    depth: 0.62, bevelEnabled: true, bevelThickness: 0.32, bevelSize: 0.3, bevelSegments: 12, curveSegments: 56,
   });
   liqGeo.center();
   const liquid = new THREE.Mesh(liqGeo, liquidMat());
-  liquid.position.set(0, 0, 0);
-  const surface = new THREE.Mesh(new THREE.CircleGeometry(1, 48),
-    new THREE.MeshPhysicalMaterial({ color: colN(1.25), roughness: 0.12, transparent: true, opacity: 0.95, envMapIntensity: 0.7, side: THREE.DoubleSide }));
+  const surface = new THREE.Mesh(new THREE.CircleGeometry(1, 56),
+    new THREE.MeshPhysicalMaterial({ color: colN(1.3), roughness: 0.08, envMapIntensity: 1.1 }));
   surface.rotation.x = -Math.PI / 2;
   // فلينة فوق الساق
-  const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 0.62, 24), corkMat);
+  const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 0.62, 28), corkMat);
   cork.position.set(1.25, 3.65, 0);
-  const corkCap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 24), corkTopMat);
+  const corkCap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 28), corkTopMat);
   corkCap.position.set(1.25, 3.96, 0);
   group.add(head, stem, flag, liquid, surface, cork, corkCap);
-  // إضاءة داخلية من السايل
-  const glow = new THREE.PointLight(colN(1.2), 9, 8);
-  glow.position.set(0, -0.3, 0.6);
-  group.add(glow);
+  const sh = groundShadow(7.0, 0.32); sh.position.y = -2.3; rig.group.add(sh);
   addBubbles(7, { x: () => (Math.random() - 0.5) * 2.0, z: 0.6, y0: -1.05, y1: 0.2 });
   const BASE = -1.35, TOP = 0.75;
   rig.surfaceTick = (t) => {
@@ -538,7 +519,6 @@ function buildTik() {
     const r = Math.max(0.05, 1.48 * Math.sqrt(Math.max(0.02, 1 - Math.pow(h / 1.42, 2))) * 0.86);
     surface.scale.set(r, r * 0.92, 1);
     surface.position.x = 0;
-    glow.intensity = 7 + Math.sin(t * 2) * 2;
   };
   rig.float = (t) => {
     group.position.y = Math.sin(t * 1.0) * 0.1;
@@ -550,7 +530,7 @@ function buildTik() {
 const BUILDERS = { bottle: buildBottle, heart: buildHeart, flask: buildFlask, tik: buildTik };
 (BUILDERS[shape] || buildBottle)();
 renderHUD();
-window.__dbg = { scene, renderer };
+window.__threeReady = true;
 
 /* ديمو دائم — أول stats حقيقية بتعديها */
 let gotReal = false;
@@ -592,8 +572,12 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-
-}
+</script>
+<script>
+/* لو الـ module فشل في التحميل (نتيجة/متصفح قديم) */
+setTimeout(function () {
+  if (!window.__threeReady) document.getElementById("fallback").style.display = "flex";
+}, 8000);
 </script>
 </body>
 </html>
