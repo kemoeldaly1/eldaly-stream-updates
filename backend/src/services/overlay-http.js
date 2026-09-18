@@ -327,8 +327,19 @@ class OverlayHttpService {
       const ext = path.extname(rel).toLowerCase();
       const root = path.resolve(this.widgetsDir);
       if (!ext || ext === ".html") {
-        const name = (ext === ".html" ? rel.slice(0, -5) : rel);
+        let name = (ext === ".html" ? rel.slice(0, -5) : rel);
         if (!/^[A-Za-z0-9_-]+$/.test(name)) return res.status(404).end("Not found");
+        // أسماء قديمة من لينكات العملاء القديمة — بتتحول للأسماء الجديدة
+        const WIDGET_ALIASES = {
+          "top-liker": "top-likers",
+          "top-gifter": "top-gifters",
+          "last-like": "latest-like",
+          "last-follow": "latest-follow",
+          "last-join": "latest-join",
+          "last-share": "latest-share",
+          "last-gift": "latest-gift",
+        };
+        if (WIDGET_ALIASES[name]) name = WIDGET_ALIASES[name];
         const filePath = path.join(root, name + ".html");
         if (!filePath.startsWith(root + path.sep)) return res.status(404).end("Not found");
         let html = null;
