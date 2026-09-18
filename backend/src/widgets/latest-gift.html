@@ -141,7 +141,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: transparen
 </head>
 <body>
 <div class="lew2 lew2--royal" id="host">
-  <div class="lew2-wait"><div class="big">🎁</div>في انتظار أول آخر هدية...</div>
+  <div style="display:none"></div>
 </div>
 <script>
 const PAGE_ID = 'latest-gift';
@@ -215,6 +215,7 @@ function fb(name) {
 }
 window.__fb = fb;
 applyAccent();
+renderEvent({ user: "سارة أحمد", nickname: "سارة أحمد", giftName: "Rose", repeatCount: 10, diamondCount: 1 });
 
 evtSource.onmessage = (e) => {
   let m = null;
