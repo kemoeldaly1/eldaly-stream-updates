@@ -2412,13 +2412,15 @@ async function applyWidgetConfig(p194, p195) {
     title: document.getElementById("w-" + p194 + "-title")?.value || "",
     c1: document.getElementById("w-" + p194 + "-c1")?.value || "#000000",
     c2: document.getElementById("w-" + p194 + "-c2")?.value || "#ffffff",
-    style: document.getElementById("w-" + p194 + "-style")?.value || "style-1",
     action: document.getElementById("w-" + p194 + "-action")?.value || "",
     behavior: document.getElementById("w-" + p194 + "-behavior")?.value || "none"
   };
-  // حقول الويدجتات الجديدة (التصنيفات): الشكل + الصور
+  // التصنيفات: الشكل بيقرا من السيلكت الجديد — ومش بنكتب style خالص
+  // عشان متمسحش الـ layout المحفوظ
   const layoutEl = document.getElementById("w-" + p194 + "-layout");
   if (layoutEl) vO5.layout = layoutEl.value;
+  const styleEl = document.getElementById("w-" + p194 + "-style");
+  if (styleEl) vO5.style = styleEl.value;
   const avaEl = document.getElementById("w-" + p194 + "-ava");
   if (avaEl) vO5.showAvatars = avaEl.checked;
   const descEl = document.getElementById("w-" + p194 + "-desc");
@@ -2831,10 +2833,7 @@ async function loadWidgetConfigs() {
       if (v247) {
         v247.value = getResult5.c2 || v242.def.c2;
       }
-      const v248 = document.getElementById("w-" + v242.prefix + "-style");
-      if (v248) {
-        v248.value = getResult5.style || "style-1";
-      }
+
       const descField = document.getElementById("w-" + v242.prefix + "-desc");
       if (descField) {
         descField.value = getResult5.desc !== undefined ? getResult5.desc : "";
