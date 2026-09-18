@@ -817,10 +817,12 @@ function processLocalTTSQueue() {
     const audio = new Audio(v45.audioBase64 ? "data:audio/mp3;base64," + v45.audioBase64 : v45.url);
     localTtsCurrent = audio;
     let vLN1 = 1;
-    if (v45.config && v45.config.volume !== undefined) {
-      vLN1 = v45.config.volume;
-    } else if (v45.volume !== undefined) {
-      vLN1 = v45.volume;
+    const vCV = v45.config && v45.config.volume !== undefined ? v45.config.volume : v45.volume;
+    if (typeof vCV === "number") {
+      vLN1 = Math.max(0, Math.min(1, vCV));
+    } else if (typeof vCV === "string") {
+      const n = parseFloat(vCV.replace("%", ""));
+      if (!isNaN(n)) vLN1 = Math.max(0, Math.min(1, 1 + n / 100));
     }
     audio.volume = vLN1;
     audio.onended = () => {
