@@ -125,6 +125,17 @@ class EventRunner extends EventEmitter {
 
     ts.on("like", (data) => {
       this.globalStats.likes += data.likeCount || 1;
+      // تشخيص مؤقت: أول 40 حدث لايك خام — نعرف من اللوج شكل البيانات
+      // الحقيقي (likeCount دفعة؟ تراكمي؟ والمستخدم موجود؟) ونظبط العدّ عليه
+      this._likeDiag = this._likeDiag || 0;
+      if (this._likeDiag < 40) {
+        this._likeDiag++;
+        console.log(
+          `[LikeDiag ${this._likeDiag}] user=${data.uniqueId || data.nickname || "MISSING"}`
+          + ` likeCount=${JSON.stringify(data.likeCount)} totalLikeCount=${JSON.stringify(data.totalLikeCount)}`
+          + ` hasUserObj=${!!data.user}`,
+        );
+      }
       const userKey = data.uniqueId || data.nickname || "anonymous";
       if (!this.globalStats._likers[userKey]) {
         this.globalStats._likers[userKey] = {
@@ -204,6 +215,17 @@ class EventRunner extends EventEmitter {
     });
 
     ts.on("gift", (data) => {
+      // تشخيص مؤقت: أول 25 هدية خام — نفس الهدف
+      this._giftDiag = this._giftDiag || 0;
+      if (this._giftDiag < 25) {
+        this._giftDiag++;
+        console.log(
+          `[GiftDiag ${this._giftDiag}] user=${data.uniqueId || data.nickname || "MISSING"}`
+          + ` gift=${data.giftName} repeat=${JSON.stringify(data.repeatCount)} streakEnd=${JSON.stringify(data.repeatEnd)}`
+          + ` diamonds=${JSON.stringify(data.diamondCount)} type=${JSON.stringify(data.giftType)}`
+          + ` coins=${(data.diamondCount || 0) * (data.repeatCount || 1)}`,
+        );
+      }
       this.globalStats.gifts += data.repeatCount || 1;
       const coinValue = (data.diamondCount || 0) * (data.repeatCount || 1);
       this.globalStats.totalCoins += coinValue;
