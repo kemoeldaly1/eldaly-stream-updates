@@ -212,9 +212,8 @@ function infoHtml(d) {
 
 function renderEvent(d) {
   const name = d.nickname || d.user || "Viewer";
-  const ava = (d.avatar || d.profilePictureUrl)
-    ? '<img src="' + esc(d.avatar || d.profilePictureUrl) + '" alt="' + esc(name) + '" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null;this.src=window.__fb(this.alt)">'
-    : window.__fb(name);
+  const avaSrc = esc(d.avatar || d.profilePictureUrl || '');
+  const ava = '<img src="' + (avaSrc || window.__fb(name)) + '" alt="' + esc(name) + '" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null;this.src=window.__fb(this.alt)">';
   host.innerHTML =
     '<div class="lew2-card">'
     + '<div class="lew2-copy">'
