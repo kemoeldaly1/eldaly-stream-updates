@@ -1839,8 +1839,15 @@ async function setWidgetPreview(widgetId) {
     const frame = document.getElementById("w-" + widgetId + "-preview");
     if (!frame || !url) return;
     if (typeof api.widget.fetch !== "function") { frame.src = url; return; }
-    const html = await api.widget.fetch(url);
-    if (html) frame.srcdoc = html;
+    let html = await api.widget.fetch(url);
+    if (!html) return;
+    // المعاينة srcdoc — مفيش location.host جواها، فبنثبت دومين الأوفرلاي
+    // في كود السوكيت بتاع الصفحة عشان البيانات اللحظية تشتغل جوه المعاينة
+    const origin = new URL(url).origin;
+    html = html.split("(location.protocol==='https:'?'wss://':'ws://')+location.host").join('"wss://overlay.eldalystream.com"');
+    html = html.split("location.host").join('"overlay.eldalystream.com"');
+    html = html.replace("<head>", '<head><base href="' + origin + '/">');
+    frame.srcdoc = html;
   } catch (err) {}
 }
 
