@@ -175,7 +175,7 @@ const CONFIG = __INITIAL_CONFIG__;
 const evtSource = new EventSource('/widgets/stream');
 
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let cfg = Object.assign({ theme: "royal", title: "", c1: '${ev.c1}', c2: '${ev.c2}', showCoins: true }, CONFIG || {});
+let cfg = Object.assign({ layout: "royal", theme: "royal", title: "", c1: '${ev.c1}', c2: '${ev.c2}', showCoins: true }, CONFIG || {});
 
 const host = document.getElementById("host");
 
@@ -213,7 +213,7 @@ function infoHtml(d) {
 function renderEvent(d) {
   const name = d.nickname || d.user || "Viewer";
   const ava = (d.avatar || d.profilePictureUrl)
-    ? '<img src="' + esc(d.avatar || d.profilePictureUrl) + '" alt="' + esc(name) + '" onerror="this.onerror=null;this.src=window.__fb(this.alt)">'
+    ? '<img src="' + esc(d.avatar || d.profilePictureUrl) + '" alt="' + esc(name) + '" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null;this.src=window.__fb(this.alt)">'
     : window.__fb(name);
   host.innerHTML =
     '<div class="lew2-card">'
@@ -224,7 +224,7 @@ function renderEvent(d) {
     + '</div>'
     + '<div class="lew2-ava"><div class="glow"></div>' + ringsHtml(cfg.c1 || '${ev.c1}', cfg.c2 || '${ev.c2}') + ava + sparkles() + '</div>'
     + '</div>';
-  host.className = 'lew2 lew2--' + (cfg.theme || 'royal');
+  host.className = 'lew2 lew2--' + (cfg.layout || cfg.theme || 'royal');
   applyAccent();
 }
 
