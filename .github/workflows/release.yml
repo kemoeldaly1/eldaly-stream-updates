@@ -58,7 +58,7 @@ jobs:
             for ($w = 1; $w -le 15; $w++) {
               Start-Sleep -Seconds 5
               gh release view $env:GITHUB_REF_NAME 2>$null
-              if ($LASTEXITCODE -eq 0) { $ready = $true; Write-Host "Release visible after $((w*5))s"; break }
+              if ($LASTEXITCODE -eq 0) { $ready = $true; $secs = $w * 5; Write-Host ("Release visible after " + $secs + "s"); break }
             }
             if (-not $ready) { Write-Error "Release not visible after 75s"; exit 1 }
           }
