@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>ELDALY STREAM — TikTok Goal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+body { font-family: 'Cairo', sans-serif; display: flex; align-items: center; justify-content: center; }
+
+.goal-card {
+  position: relative; width: 340px; height: 460px;
+  border-radius: 24px; overflow: hidden;
+  background: linear-gradient(165deg, rgba(14,11,24,0.96), rgba(10,8,18,0.92) 60%);
+  border: 1.5px solid rgba(212,175,55,0.35);
+  box-shadow: 0 20px 70px rgba(0,0,0,0.7), 0 0 50px rgba(212,175,55,0.08);
+  animation: cardIn .7s cubic-bezier(.34,1.4,.64,1) both;
+}
+@keyframes cardIn { from { opacity: 0; transform: translateY(24px) scale(.94); } to { opacity: 1; transform: none; } }
+
+.goal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px; }
+.goal-title { font-size: 14px; font-weight: 900; color: #f2dc93; text-shadow: 0 0 14px rgba(212,175,55,0.35); }
+.goal-pct { font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 900; color: #d4af37; direction: ltr; }
+
+/* ===== الزجاجة ===== */
+.bottle-zone {
+  position: relative; width: 100%; height: 310px;
+  display: flex; align-items: flex-end; justify-content: center;
+  overflow: hidden;
+}
+
+/* SVG الزجاجة الزجاجية */
+.tt-bottle-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* السائل */
+.liq-fill {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+  background: linear-gradient(180deg,
+    rgba(37,244,238,0.22) 0%,
+    rgba(25,160,233,0.20) 45%,
+    rgba(14,100,190,0.30) 100%);
+  transition: height 1.2s cubic-bezier(.22,1,.36,1);
+  clip-path: url(#bottleClip);
+}
+.liq-fill .wave { position: absolute; top: -7px; left: -50%; width: 200%; height: 14px;
+  background: radial-gradient(ellipse 32px 11px at 50% 100%, rgba(37,244,238,0.3), transparent 68%);
+  animation: liqWave 2.6s ease-in-out infinite; }
+@keyframes liqWave { 0%,100% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
+
+/* فقاعات */
+.bub { position: absolute; border-radius: 50%; z-index: 3; pointer-events: none;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.5), rgba(255,255,255,0.08));
+  animation: bubUp linear infinite; }
+@keyframes bubUp { 0% { transform: translateY(0) scale(1); opacity: 0; } 15% { opacity: .6; } 85% { opacity: .4; } 100% { transform: translateY(-160px) scale(.3); opacity: 0; } }
+
+/* شعار تيك توك */
+.tt-logo { position: absolute; z-index: 5; left: 50%; top: 44%; transform: translate(-50%,-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; }
+.tt-layers { position: relative; width: 56px; height: 56px; }
+.tt-layers svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tt-layers .cyan { filter: drop-shadow(-2px -2px 0 rgba(37,244,238,0.7)); }
+.tt-layers .red { filter: drop-shadow(2px 2px 0 rgba(254,44,85,0.7)); }
+.tt-text { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 9.5px;
+  color: rgba(255,255,255,0.35); letter-spacing: 2px; }
+
+/* شريط التقدم */
+.prog-bar { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  width: 72%; height: 7px; border-radius: 6px; background: rgba(255,255,255,0.07); overflow: hidden; z-index: 6; }
+.prog-bar i { display: block; height: 100%; border-radius: 6px;
+  background: linear-gradient(90deg, #fe2c55, #25f4ee);
+  box-shadow: 0 0 12px rgba(37,244,238,0.4); transition: width .8s ease; }
+
+/* عداد */
+.count-badge { position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 6; background: linear-gradient(135deg, #fe2c55, #25f4ee);
+  color: #fff; font-family: 'Orbitron', sans-serif; font-weight: 900;
+  font-size: 13px; padding: 4px 15px; border-radius: 100px; direction: ltr;
+  box-shadow: 0 4px 18px rgba(254,44,85,0.4); white-space: nowrap; }
+
+/* الهدف */
+.goal-target { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+  z-index: 5; font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.4); direction: ltr; }
+
+/* زجاجة SVG */
+.bottle-glass { fill: rgba(8,8,14,0.80); stroke: rgba(255,255,255,0.12); stroke-width: 1.5; }
+.bottle-shine { fill: rgba(255,255,255,0.05); opacity: 0.5; }
+.bottle-rim { fill: none; stroke: rgba(255,255,255,0.25); stroke-width: 1.8; }
+</style>
+</head>
+<body>
+<div class="goal-card">
+  <div class="goal-head">
+    <span class="goal-title" id="g-title">🎯 هدف التيك توك</span>
+    <span class="goal-pct" id="g-pct">0%</span>
+  </div>
+  <div class="bottle-zone">
+    <!-- SVG زجاجة زجاجية -->
+    <svg class="tt-bottle-svg" viewBox="0 0 300 300" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <linearGradient id="liqGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#25f4ee" stop-opacity="0.25"/>
+          <stop offset="0.4" stop-color="#1a9de0" stop-opacity="0.18"/>
+          <stop offset="1" stop-color="#0e6bc0" stop-opacity="0.28"/>
+        </linearGradient>
+        <clipPath id="bottleClip">
+          <path d="M100 55 Q100 35 125 30 L125 18 Q125 8 150 8 L175 8 Q200 8 200 18 L200 30 Q225 35 225 55 L225 230 Q225 272 175 275 L150 275 Q100 272 100 230 Z"/>
+        </clipPath>
+      </defs>
+      <!-- جسم الزجاجة -->
+      <path d="M100 55 Q100 35 125 30 L125 18 Q125 8 150 8 L175 8 Q200 8 200 18 L200 30 Q225 35 225 55 L225 230 Q225 272 175 275 L150 275 Q100 272 100 230 Z"
+        fill="rgba(8,8,14,0.80)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+      <!-- لمعة زجاج -->
+      <path d="M112 60 Q112 42 130 36 L130 28 Q130 20 140 20 L140 18 Q140 14 148 14 L165 14 Q172 14 172 20 L172 28 Q190 34 190 52 L190 210 Q190 255 165 260 Q140 255 122 200 Z" fill="rgba(255,255,255,0.04)" opacity="0.5"/>
+      <!-- حلقة الفم -->
+      <rect x="122" y="4" width="76" height="10" rx="5" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.8"/>
+      <!-- السائل -->
+      <g clip-path="url(#bottleClip)">
+        <rect id="liquid" x="95" y="300" width="135" height="300" fill="url(#liqGrad)"/>
+        <rect id="liqShine" x="95" y="300" width="135" height="300" fill="rgba(255,255,255,0.04)"/>
+      </g>
+    </svg>
+    <!-- شعار تيك توك -->
+    <div class="tt-logo">
+      <div class="tt-note-wrap">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path class="cyan" d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z" fill="#25f4ee" transform="translate(-1.3,-1.3)"/>
+          <path class="red" d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z" fill="#fe2c55" transform="translate(1.3,1.3)"/>
+          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z" fill="#ffffff"/>
+        </svg>
+      </div>
+      <div class="tt-text">TIKTOK</div>
+    </div>
+    <!-- شريط التقدم -->
+    <div class="prog-bar"><i id="prog-fill" style="width:0%"></i></div>
+    <!-- عداد -->
+    <div class="count-badge" id="counter">0 / 100</div>
+    <!-- الهدف -->
+    <div class="goal-target">🎯 الهدف: <span id="target-text">100</span></div>
+  </div>
+</div>
+<script>
+const params = new URLSearchParams(location.search);
+const goal = parseInt(params.get("goal")) || 100;
+let cur = 0;
+const fmt = n => Number(n).toLocaleString("en-US");
+const liquid = document.getElementById("liquid");
+const prog = document.getElementById("prog-fill");
+const counter = document.getElementById("counter");
+const pctEl = document.getElementById("g-pct");
+
+function setProgress(val) {
+  cur = Math.min(val, goal);
+  const pct = Math.round((cur / goal) * 100);
+  pctEl.textContent = pct + "%";
+  counter.textContent = fmt(cur) + " / " + fmt(goal);
+  prog.style.width = pct + "%";
+  const zoneH = document.querySelector(".bottle-zone").offsetHeight;
+  const h = (cur / goal) * (zoneH - 40);
+  liquid.setAttribute("y", String(zoneH - h));
+  liquid.setAttribute("height", String(h));
+}
+
+setInterval(() => {
+  const zone = document.querySelector(".bottle-zone");
+  if (!zone || zone.querySelectorAll(".bub").length > 6) return;
+  const b = document.createElement("div");
+  b.className = "bub";
+  const sz = 3 + Math.random() * 5;
+  b.style.cssText = "width:" + sz + "px;height:" + sz + "px;left:" + (30 + Math.random() * 40) + "%;bottom:15%;animation-duration:" + (2 + Math.random() * 2) + "s";
+  zone.appendChild(b);
+  setTimeout(() => b.remove(), 3200);
+}, 1400);
+
+window.addEventListener("message", (e) => {
+  if (e.data && e.data.type === "progress") setProgress(e.data.value);
+});
+</script>
+</body>
+</html>
