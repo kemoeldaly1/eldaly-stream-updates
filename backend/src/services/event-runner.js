@@ -113,7 +113,8 @@ class EventRunner extends EventEmitter {
     ts.removeAllListeners();
 
     ts.on("disconnected", () => {
-      this.stopTTS();
+      // نقفل الطابور الحالي بس — من غير كتم طويل (الإعادة التلقائية للمكتبة بترجع)
+      this._ttsPending = 0;
       this.emit("connection-status", { status: "disconnected" });
       if (this._liveHeartbeat) {
         clearInterval(this._liveHeartbeat);
