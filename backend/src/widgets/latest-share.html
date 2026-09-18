@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-/* ═══════════ ELDALY LATEST-EVENT CARD — تصميم خاص © ELDALY STREAM ═══════════ */
+/* ═════ ELDALY PREMIUM EVENT CARD — تصميم خاص © ELDALY STREAM ═════ */
 .lew2, .lew2 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
 .lew2 {
@@ -15,63 +15,128 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: transparen
   font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; direction: rtl;
   color: #ece9e1; --a1: #ffb84d; --a2: #ffd98a;
 }
+
+/* ===== اللوحة الرئيسية ===== */
 .lew2-card {
-  position: relative; display: flex; align-items: center; gap: 16px;
-  padding: 18px 22px; border-radius: 18px;
-  background: linear-gradient(140deg, rgba(20,17,26,0.92), rgba(10,10,16,0.88));
-  border: 1px solid rgba(255,255,255,0.09);
-  box-shadow: 0 18px 60px rgba(0,0,0,0.55), inset 0 1px rgba(255,255,255,0.06);
-  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
-  animation: lew2In .6s cubic-bezier(.34,1.4,.64,1) both;
+  position: relative;
+  display: flex; align-items: center; gap: 26px;
+  padding: 26px 34px;
+  border-radius: 26px;
+  background:
+    radial-gradient(120% 140% at 85% -10%, color-mix(in srgb, var(--a1) 16%, transparent), transparent 55%),
+    linear-gradient(150deg, rgba(24,20,32,0.96), rgba(9,9,14,0.94));
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow:
+    0 24px 80px rgba(0,0,0,0.65),
+    0 0 46px color-mix(in srgb, var(--a1) 22%, transparent),
+    inset 0 1px rgba(255,255,255,0.08);
+  overflow: hidden;
+  animation: lew2In .7s cubic-bezier(.34,1.45,.64,1) both;
 }
-@keyframes lew2In { from { opacity: 0; transform: translateY(22px) scale(.92); } to { opacity: 1; transform: none; } }
+/* الحد الذهبي المتدرج حول اللوحة */
+.lew2-card::before {
+  content: ''; position: absolute; inset: 0; border-radius: 26px; padding: 1.5px; z-index: 3;
+  background: linear-gradient(140deg, var(--a2), rgba(255,255,255,0.14) 35%, rgba(255,255,255,0.05) 60%, var(--a1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none;
+}
+/* اللمعة اللي بتعد على اللوحة */
+.lew2-card::after {
+  content: ''; position: absolute; top: -30%; bottom: -30%; width: 60px; z-index: 3;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+  transform: translateX(-220%) skewX(-16deg);
+  animation: lew2Sweep 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes lew2Sweep {
+  0%, 62% { transform: translateX(-220%) skewX(-16deg); }
+  85%, 100% { transform: translateX(720%) skewX(-16deg); }
+}
+@keyframes lew2In { from { opacity: 0; transform: translateY(26px) scale(.9); } to { opacity: 1; transform: none; } }
 @keyframes lew2Spin { to { transform: rotate(360deg); } }
-@keyframes lew2Float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-@keyframes lew2Pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+@keyframes lew2SpinR { to { transform: rotate(-360deg); } }
+@keyframes lew2Float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes lew2Pulse { 0%,100% { opacity: .45; transform: scale(1); } 50% { opacity: .85; transform: scale(1.05); } }
+@keyframes lew2Twinkle { 0%,100% { opacity: 0; transform: scale(.4) rotate(0deg); } 50% { opacity: 1; transform: scale(1) rotate(90deg); } }
+@keyframes lew2NameIn { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@keyframes lew2LabelIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
 
-/* الأفاتار — إطار مستدير الزوايا + حلقتا قوس دوّارتان بتصميمنا */
-.lew2-ava { position: relative; flex: 0 0 92px; width: 92px; height: 92px; }
-.lew2-ava img {
-  position: absolute; inset: 9px; width: 74px; height: 74px;
-  object-fit: cover; border-radius: 22px 8px 22px 8px; z-index: 2;
-  border: 2px solid var(--a1);
-}
-.lew2-ava svg.ring { position: absolute; inset: 0; width: 100%; height: 100%; animation: lew2Spin 6s linear infinite; }
-.lew2-ava svg.ring.rev { animation-direction: reverse; animation-duration: 9s; }
-.lew2-ava .glow { position: absolute; inset: -7px; border-radius: 50%; z-index: 0;
-  background: radial-gradient(circle, var(--a1) 0%, transparent 62%); opacity: .3;
-  animation: lew2Pulse 2.4s ease-in-out infinite; }
-
-/* النصوص */
-.lew2-copy { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+/* ===== النصوص ===== */
+.lew2-copy { display: flex; flex-direction: column; gap: 7px; min-width: 0; position: relative; z-index: 2; }
 .lew2-label {
-  align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
-  background: #0b0b10; border: 1px solid var(--a1);
-  color: var(--a2); font-size: 11px; font-weight: 900; letter-spacing: 2px;
-  padding: 3px 12px; border-radius: 100px; text-transform: uppercase;
-  box-shadow: 0 0 12px rgba(212,175,55,0.14);
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(6,6,10,0.85); border: 1.5px solid var(--a1);
+  color: var(--a2); font-size: 12.5px; font-weight: 900; letter-spacing: 2.5px;
+  padding: 5px 16px; border-radius: 100px; text-transform: uppercase;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--a1) 35%, transparent);
+  animation: lew2LabelIn .5s .15s ease both;
 }
 .lew2-name {
-  font-size: 27px; font-weight: 900; color: #fff; line-height: 1.15;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;
-  text-shadow: 0 2px 14px rgba(0,0,0,0.75);
+  font-size: 46px; font-weight: 900; line-height: 1.12;
+  background: linear-gradient(180deg, #ffffff 15%, #f4f1e8 55%, var(--a2) 115%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 3px 14px rgba(0,0,0,0.8)) drop-shadow(0 0 26px color-mix(in srgb, var(--a1) 30%, transparent));
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px;
+  animation: lew2NameIn .5s .25s cubic-bezier(.22,1,.36,1) both;
 }
-.lew2-info { font-size: 13px; font-weight: 700; color: var(--a2); direction: ltr; text-align: right; }
+.lew2-info {
+  font-size: 15.5px; font-weight: 800; direction: ltr; text-align: right;
+  color: var(--a2); letter-spacing: .5px;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+  animation: lew2NameIn .5s .35s ease both;
+}
 .lew2-info b { color: #fff; }
 
-/* حالات خاصة بالأشكال */
-.lew2--glass .lew2-card { background: rgba(255,255,255,0.06); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.16); }
-.lew2--glass .lew2-ava img { border-radius: 50%; }
-.lew2--neon .lew2-card { background: rgba(6,8,16,0.72); border: 1.5px solid var(--a1); border-radius: 24px;
-  box-shadow: 0 0 26px rgba(212,175,55,0.22), inset 0 0 18px rgba(212,175,55,0.05); }
-.lew2--neon .lew2-name { text-shadow: 0 0 14px var(--a1); }
-.lew2--plain .lew2-card { background: transparent; border: none; box-shadow: none; clip-path: none; }
-.lew2--plain .lew2-ava svg.ring { animation-duration: 10s; }
+/* ===== ميدالية الأفاتار ===== */
+.lew2-ava {
+  position: relative; flex: 0 0 128px; width: 128px; height: 128px; z-index: 2;
+  animation: lew2Float 3.4s ease-in-out infinite;
+}
+.lew2-ava .glow {
+  position: absolute; inset: -14px; border-radius: 50%; z-index: 0;
+  background: radial-gradient(circle, var(--a1) 0%, transparent 64%);
+  opacity: .38; animation: lew2Pulse 2.6s ease-in-out infinite;
+  filter: blur(2px);
+}
+.lew2-ava img {
+  position: absolute; inset: 13px; width: 102px; height: 102px; z-index: 2;
+  object-fit: cover; border-radius: 50%;
+  border: 3px solid var(--a1);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.55), 0 0 30px color-mix(in srgb, var(--a1) 45%, transparent),
+              inset 0 0 18px rgba(0,0,0,0.35);
+}
+.lew2-ava svg.ringA { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
+  animation: lew2Spin 7s linear infinite; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--a1) 55%, transparent)); }
+.lew2-ava svg.ringB { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
+  animation: lew2SpinR 11s linear infinite; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--a2) 45%, transparent)); }
+/* الشرارات المتلألئة حوالين الميدالية */
+.lew2-ava .spk { position: absolute; z-index: 3; color: var(--a2); font-size: 13px;
+  text-shadow: 0 0 8px var(--a1); animation: lew2Twinkle 2.2s ease-in-out infinite; pointer-events: none; }
+.lew2-ava .spk.k1 { top: -6px; right: 4%; animation-delay: 0s; }
+.lew2-ava .spk.k2 { bottom: 2px; left: -4%; animation-delay: .7s; font-size: 10px; }
+.lew2-ava .spk.k3 { top: 38%; right: -10px; animation-delay: 1.3s; font-size: 9px; }
 
-/* حالة الانتظار */
-.lew2-wait { display: flex; flex-direction: column; align-items: center; gap: 8px;
-  color: #6d6960; font-weight: 700; font-size: 13px; text-align: center; padding: 30px; }
-.lew2-wait .big { font-size: 26px; animation: lew2Float 2.6s ease-in-out infinite; }
+/* ===== الثيمات ===== */
+.lew2--glass .lew2-card {
+  background: rgba(255,255,255,0.07); backdrop-filter: blur(16px);
+  border: none;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.5), inset 0 1px rgba(255,255,255,0.14);
+}
+.lew2--neon .lew2-card {
+  background: rgba(5,7,14,0.8);
+  border: 1.5px solid var(--a1); border-radius: 30px;
+  box-shadow: 0 0 42px color-mix(in srgb, var(--a1) 35%, transparent),
+              inset 0 0 30px color-mix(in srgb, var(--a1) 8%, transparent);
+}
+.lew2--neon .lew2-name { text-shadow: 0 0 18px var(--a1); }
+.lew2--plain .lew2-card { background: transparent; border: none; box-shadow: none; }
+.lew2--plain .lew2-card::before, .lew2--plain .lew2-card::after { display: none; }
+
+/* ===== حالة الانتظار ===== */
+.lew2-wait { display: flex; flex-direction: column; align-items: center; gap: 10px;
+  color: #6d6960; font-weight: 700; font-size: 13px; text-align: center; padding: 34px; }
+.lew2-wait .big { font-size: 30px; animation: lew2Float 2.6s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -89,16 +154,24 @@ let cfg = Object.assign({ theme: "royal", title: "", c1: '#ffb84d', c2: '#ffd98a
 
 const host = document.getElementById("host");
 
-// حلقة القوسين — مساراتنا الخاصة (أقواس مفتوحة بتلف حول الأفاتار)
-function ringSvg(c1, c2) {
-  return '<svg class="ring" viewBox="0 0 100 100" fill="none">'
-    + '<circle cx="50" cy="50" r="46" stroke="' + c1 + '" stroke-width="2.5" stroke-dasharray="52 237" stroke-linecap="round"/>'
-    + '<circle cx="50" cy="50" r="46" stroke="' + c2 + '" stroke-width="2.5" stroke-dasharray="30 259" stroke-linecap="round" transform="rotate(120 50 50)"/>'
-    + '<circle cx="50" cy="50" r="46" stroke="' + c1 + '" stroke-width="1.2" stroke-dasharray="8 281" stroke-linecap="round" opacity="0.7" transform="rotate(240 50 50)"/>'
+// حلقة ميدالية فخمة: أقواس متدرجة + مسمارات معينية — مساراتنا الخاصة
+function ringsHtml(c1, c2) {
+  return '<svg class="ringA" viewBox="0 0 120 120" fill="none">'
+    + '<defs><linearGradient id="gA' + PAGE_ID + '" x1="0" y1="0" x2="1" y2="1">'
+    + '<stop offset="0" stop-color="' + c2 + '"/><stop offset="1" stop-color="' + c1 + '"/></linearGradient></defs>'
+    + '<circle cx="60" cy="60" r="56" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>'
+    + '<circle cx="60" cy="60" r="56" stroke="url(#gA' + PAGE_ID + ')" stroke-width="3" stroke-dasharray="74 278" stroke-linecap="round"/>'
+    + '<circle cx="60" cy="60" r="56" stroke="' + c2 + '" stroke-width="2" stroke-dasharray="34 318" stroke-linecap="round" transform="rotate(150 60 60)" opacity="0.85"/>'
+    + '<rect x="56.5" y="1.5" width="7" height="7" transform="rotate(45 60 5)" fill="' + c1 + '"/>'
+    + '<rect x="111.5" y="56.5" width="7" height="7" transform="rotate(45 115 60)" fill="' + c2 + '" opacity="0.9"/>'
     + '</svg>'
-    + '<svg class="ring rev" viewBox="0 0 100 100" fill="none">'
-    + '<circle cx="50" cy="50" r="41" stroke="' + c2 + '" stroke-width="1.4" stroke-dasharray="18 240" stroke-linecap="round" opacity="0.8"/>'
+    + '<svg class="ringB" viewBox="0 0 120 120" fill="none">'
+    + '<circle cx="60" cy="60" r="49" stroke="' + c2 + '" stroke-width="1.4" stroke-dasharray="22 286" stroke-linecap="round" opacity="0.9"/>'
+    + '<circle cx="60" cy="60" r="49" stroke="' + c1 + '" stroke-width="1" stroke-dasharray="10 298" stroke-linecap="round" opacity="0.7" transform="rotate(180 60 60)"/>'
     + '</svg>';
+}
+function sparkles() {
+  return '<span class="spk k1">✦</span><span class="spk k2">✦</span><span class="spk k3">✧</span>';
 }
 
 function infoHtml(d) {
@@ -114,19 +187,20 @@ function infoHtml(d) {
 
 function renderEvent(d) {
   const name = d.nickname || d.user || "Viewer";
-  const ava = d.avatar || d.profilePictureUrl
+  const ava = (d.avatar || d.profilePictureUrl)
     ? '<img src="' + esc(d.avatar || d.profilePictureUrl) + '" alt="' + esc(name) + '" onerror="this.onerror=null;this.src=window.__fb(this.alt)">'
     : window.__fb(name);
   host.innerHTML =
     '<div class="lew2-card">'
     + '<div class="lew2-copy">'
-    + '<span class="lew2-label">' + '🔗' + ' ' + (cfg.title || 'شارك اللايف') + '</span>'
+    + '<span class="lew2-label">' + '🔗' + ' ' + esc(cfg.title || 'شارك اللايف') + '</span>'
     + '<div class="lew2-name">' + esc(name) + '</div>'
     + infoHtml(d)
     + '</div>'
-    + '<div class="lew2-ava"><div class="glow"></div>' + ringSvg(cfg.c1 || '#ffb84d', cfg.c2 || '#ffd98a') + ava + '</div>'
+    + '<div class="lew2-ava"><div class="glow"></div>' + ringsHtml(cfg.c1 || '#ffb84d', cfg.c2 || '#ffd98a') + ava + sparkles() + '</div>'
     + '</div>';
   host.className = 'lew2 lew2--' + (cfg.theme || 'royal');
+  applyAccent();
 }
 
 function applyConfig(c) {
@@ -136,9 +210,6 @@ function applyConfig(c) {
 function applyAccent() {
   host.style.setProperty('--a1', cfg.c1 || '#ffb84d');
   host.style.setProperty('--a2', cfg.c2 || '#ffd98a');
-  // لو مفيش حدث معروض نحدث الألوان على حالة الانتظار برضه
-  const lbl = host.querySelector('.lew2-label');
-  if (lbl) lbl.style.borderColor = cfg.c1 || '#ffb84d';
 }
 function fb(name) {
   return "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="#1c1526"/><text x="60" y="82" font-size="52" text-anchor="middle" fill="#d4af37" font-family="Arial">' + esc(String(name || "?").trim()[0] || "?") + '</text></svg>');
