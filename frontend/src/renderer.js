@@ -1835,7 +1835,7 @@ loadOverlayUrls();
 // (بتوكن الحساب) وبتتعرض srcdoc — والسوكيت جواها بيوصل لحظياً
 async function setWidgetPreview(widgetId) {
   try {
-    const url = await api.overlay.getWidgetUrl(widgetId, "id=" + widgetId);
+    const url = await api.overlay.getWidgetUrl(widgetId, "id=" + widgetId + "&preview=1");
     const urlInput = document.getElementById("w-" + widgetId + "-url");
     if (urlInput && url) urlInput.value = url;
     const frame = document.getElementById("w-" + widgetId + "-preview");

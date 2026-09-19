@@ -185,7 +185,7 @@ let NAME_VAL = params.get("name")  || CONFIG.name  || CONFIG.streamerName || "EL
 let AVATAR_URL = params.get("avatar") || CONFIG.avatar || CONFIG.streamerAvatar || "";
 let SOUND_URL = params.get("sound") || CONFIG.sound || "";
 let VOL = Math.max(0, Math.min(1, parseFloat(params.get("vol") || CONFIG.vol || "0.6") || 0.6));
-const MUTED = params.get("mute") === "1";
+const MUTED = params.get("mute") === "1" || params.get("preview") === "1";
 const FONT = (params.get("font") || CONFIG.font || "lalezar").toLowerCase();
 const FONT_STACKS = {
   lalezar: "'Lalezar', 'Cairo', sans-serif",
