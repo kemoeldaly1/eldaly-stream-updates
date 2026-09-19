@@ -330,7 +330,7 @@ setTimeout(fit, 60); fit();
 /* صوت الفولو — نغمة افتراضية أو ملف صوت مخصص */
 let audioCtx = null;
 function playDing() {
-  if (!SOUND_ON || MUTED) return;
+  if (!SOUND_ON) return;
   if (SOUND_URL) {
     try { const a = new Audio(SOUND_URL); a.volume = VOL; a.play().catch(function(){}); } catch (e) {}
     return;
