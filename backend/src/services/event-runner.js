@@ -12,6 +12,14 @@ class EventRunner extends EventEmitter {
     this.tiktokService = tiktokService;
     this.licenseService = licenseService;
 
+    // بيانات صاحب اللايف (اسم/صورة/متابعين): حفظ + بث لحظي للويدجتات
+    try {
+      this.tiktokService.on("tiktok:streamer", (info) => {
+        try { this.store.set("streamer_info", info); } catch (e) {}
+        try { this.overlayServer.broadcastEvent("streamer-profile", info); } catch (e) {}
+      });
+    } catch (e) {}
+
     this.ttsTempDir = path.join(process.cwd(), "temp_tts");
     this._ensureTtsDir();
 

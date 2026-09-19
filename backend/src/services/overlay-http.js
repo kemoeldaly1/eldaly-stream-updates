@@ -389,11 +389,15 @@ async function getTikTokProfile(username) {
           const ts = ctx.eventRunner && ctx.eventRunner.tiktokService;
           const streamerUser = (ts && ts.username) || "";
           if (widgetId === "follower-card" && streamerUser) {
-            // الأولوية لمعلومات الاتصال الحي (room info) — الأدق والأسرع
-            if (ts.streamerInfo && (ts.streamerInfo.nickname || ts.streamerInfo.avatar)) {
-              config.streamerName = ts.streamerInfo.nickname;
-              if (ts.streamerInfo.avatar) config.streamerAvatar = ts.streamerInfo.avatar;
-              if (ts.streamerInfo.followers) config.streamerFollowers = ts.streamerInfo.followers;
+            // الأولوية: 1) بيانات الاتصال الحي 2) المحفوظة 3) الويب
+            const stored = (ctx.store && ctx.store.get && ctx.store.get("streamer_info")) || null;
+            const info = (ts.streamerInfo && (ts.streamerInfo.nickname || ts.streamerInfo.avatar))
+              ? ts.streamerInfo
+              : (stored && (stored.nickname || stored.avatar)) ? stored : null;
+            if (info) {
+              config.streamerName = info.nickname || streamerUser;
+              if (info.avatar) config.streamerAvatar = info.avatar;
+              if (info.followers) config.streamerFollowers = info.followers;
             } else {
               const prof = await getTikTokProfile(streamerUser);
               if (prof) {

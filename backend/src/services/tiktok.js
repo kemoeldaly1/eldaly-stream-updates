@@ -131,20 +131,25 @@ class TikTokService extends EventEmitter {
           this._imgUrl(roomData.roomInfo?.owner?.avatarThumb) ||
           "";
         // بيانات صاحب اللايف للويدجتات: اسم + صورة + متابعين حقيقيين من room info
+        const followersRaw =
+          (owner.followInfo && owner.followInfo.followerCount) ||
+          (owner.follow_info && owner.follow_info.follower_count) ||
+          owner.followerCount ||
+          (owner.stats && (owner.stats.followerCount || owner.stats.follower_count)) ||
+          0;
         this.streamerInfo = {
           nickname:
             owner.nickname ||
+            owner.nickName ||
             owner.displayId ||
             owner.uniqueId ||
             this.username,
           avatar: ownerAvatar,
-          followers:
-            (owner.followInfo && owner.followInfo.followerCount) ||
-            owner.followerCount ||
-            0
+          followers: Number(followersRaw) || 0
         };
+        this.emit("tiktok:streamer", this.streamerInfo);
         console.log(
-          `[TikTok] Streamer: @${this.username} — ${this.streamerInfo.nickname} — ${this.streamerInfo.followers} followers`
+          `[TikTok] Streamer: @${this.username} — ${this.streamerInfo.nickname} — ${this.streamerInfo.followers} followers — avatar: ${this.streamerInfo.avatar ? "ok" : "missing"}`
         );
         return {
           roomId: roomData.roomId,
