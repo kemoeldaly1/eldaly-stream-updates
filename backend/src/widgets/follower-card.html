@@ -186,6 +186,7 @@ let AVATAR_URL = params.get("avatar") || CONFIG.avatar || CONFIG.streamerAvatar 
 let SOUND_URL = params.get("sound") || CONFIG.sound || "";
 let VOL = Math.max(0, Math.min(1, parseFloat(params.get("vol") || CONFIG.vol || "0.6") || 0.6));
 const MUTED = params.get("mute") === "1";
+let SOUND_ON = !(CONFIG.soundOn === false || CONFIG.soundOn === "false" || CONFIG.soundOn === 0 || CONFIG.soundOn === "0");
 
 const TYPES = {
   follows:  { label: "Total Followers", statsKey: "followers" },
@@ -273,6 +274,7 @@ function applyLive(cfg) {
   if (typeof cfg.sound === "string") SOUND_URL = cfg.sound.trim();
   if (cfg.vol !== undefined) VOL = Math.max(0, Math.min(1, Number(cfg.vol) || 0));
   if (typeof cfg.color === "string" && cfg.color) { ACCENT = cfg.color; applyAccent(); }
+  if (cfg.soundOn !== undefined) SOUND_ON = !(cfg.soundOn === false || cfg.soundOn === "false" || Number(cfg.soundOn) === 0);
   if (typeof cfg.shape === "string" && cfg.shape) {
     const cls = "shape-" + cfg.shape.toLowerCase();
     if (document.body.className !== cls) {
@@ -297,7 +299,7 @@ setTimeout(fit, 60); fit();
 /* صوت الفولو — نغمة افتراضية أو ملف صوت مخصص */
 let audioCtx = null;
 function playDing() {
-  if (MUTED) return;
+  if (!SOUND_ON || MUTED) return;
   if (SOUND_URL) {
     try { const a = new Audio(SOUND_URL); a.volume = VOL; a.play().catch(function(){}); } catch (e) {}
     return;
@@ -356,6 +358,9 @@ if (evtSource) {
       }
     } else if (m.type === "config" && m.id === PAGE_ID && m.config) {
       applyLive(m.config);
+    } else if (m.type === "streamer-profile" && m.data) {
+      BASE_FOLLOWERS = Number(m.data.followers) || BASE_FOLLOWERS;
+      applyLive({ name: m.data.nickname, avatar: m.data.avatar });
     } else if (m.type === "test") {
       cur += 1;
     }

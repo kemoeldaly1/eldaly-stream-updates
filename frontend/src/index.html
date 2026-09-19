@@ -1212,7 +1212,7 @@
           <details class="widget-group" open>
             <summary class="widget-group-header">
               <div class="widget-group-icon">👥</div>
-              <span class="widget-group-title">كرت المتابعين — Followers Card</span>
+              <span class="widget-group-title">Followers Card</span>
               <span class="widget-group-count">1</span>
               <div class="widget-group-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
             </summary>
@@ -1222,7 +1222,6 @@
                 <!-- Follower Card -->
                 <div class="glass-card profile-card" id="card-follower">
                   <h3 class="form-section-title">👥 كرت المتابعين — Followers Card</h3>
-                  <p class="widget-desc">يعرض صورة الحساب واسم اللايف وإجمالي المتابعين — وكل فولو جديد: صوت + عداد يعدّي بحركة + بادج. الكرت جوه مجموعة نضيف معاها ويدجتس تانية بعدين.</p>
                   <div class="le-preview"><iframe id="w-follower-card-preview" title="preview" style="width:100%;height:430px;border:0;position:relative;"></iframe></div>
                   <div class="divider" style="margin:14px 0;"></div>
                   <div class="form-row">
@@ -1242,7 +1241,13 @@
                       <label class="form-label">Follow Sound Volume: <span id="w-follower-vol-val">60%</span></label>
                       <input type="range" class="form-input" id="w-follower-vol" min="0" max="100" value="60" style="width:100%;padding:0;">
                     </div>
-                    <div class="form-group"><label class="form-label">Custom Sound (URL)</label><input type="text" class="form-input" id="w-follower-sound" placeholder="اختياري — mp3 الخاص بيك"></div>
+                    <div class="form-group">
+                      <label class="form-label">Follow Sound</label>
+                      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:2px">
+                        <input type="checkbox" id="w-follower-soundon" checked style="width:20px;height:20px;accent-color:#d4af37;cursor:pointer">
+                        <span style="font-weight:800;font-size:14px;color:var(--text-primary,#fff)">🔔 ON</span>
+                      </label>
+                    </div>
                   </div>
                   <div class="form-row" style="align-items: flex-end;">
                     <div class="form-group">

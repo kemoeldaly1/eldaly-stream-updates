@@ -2660,7 +2660,7 @@ document.getElementById("w-follower-apply")?.addEventListener("click", async () 
     shape: document.getElementById("w-follower-shape").value,
     color: document.getElementById("w-follower-color").value,
     vol: (parseInt(document.getElementById("w-follower-vol").value) || 60) / 100,
-    sound: document.getElementById("w-follower-sound").value.trim()
+    soundOn: document.getElementById("w-follower-soundon").checked
   };
   await api.widget.setConfig("follower-card", cfg);
   btn.textContent = "Applied!";
@@ -3040,8 +3040,8 @@ async function loadWidgetConfigs() {
       const volLbl = document.getElementById("w-follower-vol-val");
       if (volLbl) volLbl.textContent = vF14("w-follower-vol").value + "%";
     }
-    if (vF14("w-follower-sound")) {
-      vF14("w-follower-sound").value = getConfigResult7.sound || "";
+    if (vF14("w-follower-soundon")) {
+      vF14("w-follower-soundon").checked = !(getConfigResult7.soundOn === false || getConfigResult7.soundOn === "false");
     }
     await api.widget.setConfig("follower-card", getConfigResult7);
   }
