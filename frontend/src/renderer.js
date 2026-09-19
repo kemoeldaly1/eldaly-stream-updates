@@ -1835,13 +1835,15 @@ loadOverlayUrls();
 // (بتوكن الحساب) وبتتعرض srcdoc — والسوكيت جواها بيوصل لحظياً
 async function setWidgetPreview(widgetId) {
   try {
-    const url = await api.overlay.getWidgetUrl(widgetId, "id=" + widgetId + "&preview=1");
+    const url = await api.overlay.getWidgetUrl(widgetId, "id=" + widgetId);
     const urlInput = document.getElementById("w-" + widgetId + "-url");
     if (urlInput && url) urlInput.value = url;
     const frame = document.getElementById("w-" + widgetId + "-preview");
     if (!frame || !url) return;
+    // المعاينة صامتة — الصوت في الأوفرلاي فقط
+    const previewUrl = url + "&preview=1";
     if (typeof api.widget.fetch !== "function") { frame.src = url; return; }
-    let html = await api.widget.fetch(url);
+    let html = await api.widget.fetch(previewUrl);
     if (!html) return;
     // المعاينة srcdoc — مفيش location.host جواها، فبنثبت دومين الأوفرلاي
     // في كود السوكيت بتاع الصفحة عشان البيانات اللحظية تشتغل جوه المعاينة
