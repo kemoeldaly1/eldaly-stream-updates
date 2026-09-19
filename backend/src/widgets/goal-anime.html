@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>ELDALY STREAM — Goal Anime</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Orbitron:wght@700;800;900&family=M+PLUS+Rounded+1c:wght@800;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+body { font-family: 'Cairo', 'M PLUS Rounded 1c', sans-serif; }
+canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#hud { position: fixed; left: 50%; top: 50%; width: 640px; height: 640px; transform-origin: center center; pointer-events: none; z-index: 5; }
+.pct {
+  position: absolute; z-index: 15; font-family: 'Orbitron', sans-serif; font-weight: 900;
+  letter-spacing: .02em; line-height: 1; direction: ltr; white-space: nowrap;
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 3px 0 rgba(26,16,48,.9)) drop-shadow(0 6px 0 rgba(26,16,48,.35));
+}
+.pill {
+  position: absolute; z-index: 20; white-space: nowrap; font-weight: 900; color: #fff;
+  padding: 6px 16px; border-radius: 999px; font-size: 19px;
+  border: 3px solid #1a1030;
+  box-shadow: 0 4px 0 #1a1030, 0 8px 20px rgba(0,0,0,.4);
+  text-shadow: 0 1px 0 rgba(0,0,0,.35);
+}
+.glow-val { position: absolute; z-index: 20; font-family: 'Orbitron', sans-serif; font-weight: 800;
+  direction: ltr; white-space: nowrap; letter-spacing: 1px; font-size: 21px; color: #fff;
+  text-shadow: 0 3px 0 #1a1030, 0 0 14px var(--cm); }
+.shape-bottle .pct { top: 45%; left: 50%; transform: translate(-50%,-50%) rotate(-4deg); font-size: 46px; }
+.shape-bottle .pill { top: 128px; right: 108px; transform: rotate(-3deg); }
+.shape-bottle .pill::after { content: ""; position: absolute; bottom: -15px; right: 18px;
+  border-left: 15px solid transparent; border-top: 15px solid var(--pill); filter: drop-shadow(0 3px 0 rgba(26,16,48,.7)); }
+.shape-bottle .glow-val { top: 176px; right: 96px; }
+.shape-flask .pct { top: 56%; left: 51%; transform: translate(-50%,-50%) rotate(-3deg); font-size: 42px; }
+.shape-flask .pill { top: 24px; left: 16px; font-size: 17px; transform: rotate(-2deg); }
+.shape-heart .pct { display: none; }
+.shape-heart .pill { left: 50%; bottom: -18px; transform: translateX(-50%); font-family: 'Orbitron',sans-serif;
+  font-size: 20px; direction: ltr; letter-spacing: 1px; padding: 7px 32px;
+  background: linear-gradient(180deg,#ffd24a,#ff9d1c); border: 3px solid #1a1030;
+  box-shadow: 0 5px 0 #1a1030, 0 0 22px rgba(255,190,60,.8); }
+.shape-tik .t-title { position: absolute; z-index: 20; top: 56px; left: 4px;
+  font-family: 'Cairo', sans-serif; font-weight: 900; font-size: 25px; direction: rtl;
+  color: var(--c); white-space: nowrap;
+  text-shadow: 0 3px 0 #1a1030, 0 0 16px var(--cm); }
+.shape-tik .glow-val { top: 100px; left: 6px; }
+.shape-tik .pct { display: none; }
+#fallback { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; text-align: center; padding: 20px; z-index: 50; }
+</style>
+</head>
+<body>
+<div id="hud"></div>
+<div id="fallback">المتصفح مش بيدعم WebGL</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+<script>
+/* إعداد الويدجت — على الباك اند __INITIAL_CONFIG__ بتتعوض بكونفج الحساب */
+let CONFIG = {};
+try { CONFIG = __INITIAL_CONFIG__; } catch (e) {}
+
+const params = new URLSearchParams(location.search);
+const PAGE_ID = params.get("id") || "goal-anime";
+const shape  = (params.get("shape")  || CONFIG.shape  || "bottle").toLowerCase();
+const type   = (params.get("type")   || CONFIG.type   || "likes").toLowerCase();
+const goal   = parseInt(params.get("goal") || params.get("target") || CONFIG.target || 100) || 100;
+const titleOverride = params.get("title") || CONFIG.title || "";
+
+const TYPES = {
+  likes:    { label: "لايكات",    statsKey: "likes",      emoji: "💖" },
+  follows:  { label: "متابعين",   statsKey: "followers",  emoji: "✨" },
+  coins:    { label: "كوينز",     statsKey: "totalCoins", emoji: "🌟" },
+  gifts:    { label: "هدايا",     statsKey: "gifts",      emoji: "🎁" },
+  shares:   { label: "مشاركات",   statsKey: "shares",     emoji: "🍥" },
+};
+const T = TYPES[type] || TYPES.likes;
+const LABEL = titleOverride || (T.emoji + " هدف " + T.label);
+
+const DEF_COL = { bottle: "#ff5d7e", heart: "#ff4d88", flask: "#c05cff", tik: "#22c8f0" };
+const C = (params.get("color") || CONFIG.color || DEF_COL[shape] || "#ff5d7e").replace("#", "");
+function rgb(hex) { return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)]; }
+function shade(f) { const [r,g,b] = rgb(C); const m = v => Math.max(0, Math.min(255, Math.round(v * f))); return "rgb(" + m(r) + "," + m(g) + "," + m(b) + ")"; }
+function colA(a) { const [r,g,b] = rgb(C); return "rgba(" + r + "," + g + "," + b + "," + a + ")"; }
+function colN(f) { const [r,g,b] = rgb(C); const m = v => Math.max(0, Math.min(255, Math.round(v * f))); return (m(r) << 16) | (m(g) << 8) | m(b); }
+
+document.documentElement.style.setProperty("--c", "#" + C);
+document.documentElement.style.setProperty("--cm", colA(0.7));
+document.documentElement.style.setProperty("--pill", shade(0.85));
+
+let cur = Math.round(goal * 0.42);
+let shown = cur;
+function fmt(n) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+
+const hud = document.getElementById("hud");
+hud.className = "shape-" + shape;
+
+function fit() {
+  const s = Math.min(window.innerWidth / 640, window.innerHeight / 640) * 0.96;
+  hud.style.transform = "translate(-50%,-50%) scale(" + s.toFixed(3) + ")";
+}
+window.addEventListener("resize", fit); fit();
+
+if (!window.THREE) {
+  document.getElementById("fallback").style.display = "flex";
+} else {
+
+/* ============ مشهد أنمي ============ */
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setClearColor(0x000000, 0);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.localClippingEnabled = true;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* إضاءة أنمي: رئيسية قوية + إضاءة ملونة خفيفة */
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.6);
+keyLight.position.set(3, 6, 7);
+scene.add(keyLight);
+const fillLight = new THREE.DirectionalLight(colN(1.35), 0.9);
+fillLight.position.set(-4, 1, 4);
+scene.add(fillLight);
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+
+/* سلم ألوان السيل شيدنج — 3 درجات */
+const toonGrad = (() => {
+  const c = new Uint8Array([90, 170, 255]);
+  const t = new THREE.DataTexture(c, c.length, 1, THREE.RedFormat);
+  t.needsUpdate = true;
+  return t;
+})();
+function toonMat(color, extra) {
+  return new THREE.MeshToonMaterial(Object.assign({ color: color, gradientMap: toonGrad }, extra || {}));
+}
+const INK = 0x1a1030;
+
+/* خط الحبر الأنمي — غلاف مقلوب */
+function outlineMesh(geo, thick) {
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide }));
+  m.scale.multiplyScalar(1 + (thick || 0.035));
+  return m;
+}
+
+/* خامات */
+function noiseTex(rep) {
+  const c = document.createElement("canvas"); c.width = c.height = 128;
+  const x = c.getContext("2d");
+  const img = x.createImageData(128, 128);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = 110 + (Math.random() * 90 | 0);
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255;
+  }
+  x.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep);
+  return t;
+}
+const corkBump = noiseTex(3);
+const corkMat = new THREE.MeshToonMaterial({ color: 0xd08b4a, gradientMap: toonGrad, bumpMap: corkBump, bumpScale: 0.7 });
+
+/* سبرايتات زخرفة — نجوم وقلوب وبتلات */
+function starTex(color) {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const x = c.getContext("2d");
+  x.translate(32, 32);
+  x.fillStyle = color;
+  x.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const r = i % 2 === 0 ? 30 : 12;
+    const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+    x[i === 0 ? "moveTo" : "lineTo"](Math.cos(a) * r, Math.sin(a) * r);
+  }
+  x.closePath(); x.fill();
+  return new THREE.CanvasTexture(c);
+}
+function heartTex(color) {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const x = c.getContext("2d");
+  x.translate(32, 34);
+  x.scale(1, 1);
+  x.fillStyle = color;
+  x.beginPath();
+  x.moveTo(0, 20);
+  x.bezierCurveTo(-26, 2, -26, -16, -13, -20);
+  x.bezierCurveTo(-5, -22, 0, -16, 0, -10);
+  x.bezierCurveTo(0, -16, 5, -22, 13, -20);
+  x.bezierCurveTo(26, -16, 26, 2, 0, 20);
+  x.fill();
+  return new THREE.CanvasTexture(c);
+}
+const decorSprites = [];
+function addDecor(tex, count, spread, yMin, yMax, size, z) {
+  for (let i = 0; i < count; i++) {
+    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+    const s = size * (0.7 + Math.random() * 0.6);
+    m.scale.set(s, s, 1);
+    const d = {
+      m, x: (Math.random() - 0.5) * spread, y: yMin + Math.random() * (yMax - yMin),
+      ph: Math.random() * 6.28, sp: 0.4 + Math.random() * 0.7, base: s,
+    };
+    m.position.set(d.x, d.y, z);
+    decorSprites.push(d);
+    scene.add(m);
+  }
+}
+function tickDecor(t) {
+  for (const d of decorSprites) {
+    d.m.position.y = d.y + Math.sin(t * d.sp + d.ph) * 0.28;
+    d.m.position.x = d.x + Math.cos(t * d.sp * 0.8 + d.ph) * 0.14;
+    const k = 0.6 + 0.4 * Math.sin(t * 1.8 + d.ph);
+    const s = d.base * (0.75 + 0.35 * k);
+    d.m.scale.set(s, s, 1);
+    d.m.material.opacity = 0.5 + 0.5 * k;
+    d.m.material.rotation = Math.sin(t * d.sp + d.ph) * 0.3;
+  }
+}
+
+/* مستوى قص السايل */
+const clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), -10);
+
+/* HUD */
+const el = (tag, id, txt) => {
+  const d = document.createElement("div");
+  d.className = tag; if (id) d.id = id; if (txt) d.textContent = txt;
+  hud.appendChild(d); return d;
+};
+const pctEl = shape === "tik" || shape === "heart" ? null : el("pct", "pct");
+pctEl && (pctEl.style.backgroundImage = "linear-gradient(180deg,#fff 0%,#" + C + " 90%)");
+const valEl = el("glow-val", "val");
+let pillEl = null;
+if (shape !== "heart") {
+  pillEl = shape === "tik" ? el("t-title", "pill", LABEL) : el("pill", "pill", LABEL);
+  if (shape !== "tik") pillEl.style.background = "linear-gradient(135deg," + shade(1.15) + " 0%,#" + C + " 100%)";
+}
+const heartPill = shape === "heart" ? el("pill", "val") : null;
+
+function renderHUD() {
+  const p = Math.max(0, Math.min(100, Math.round((cur / goal) * 100)));
+  if (pctEl) pctEl.textContent = p + "%";
+  const txt = fmt(shown) + " / " + fmt(goal);
+  if (shape === "heart") heartPill.textContent = txt; else valEl.textContent = txt;
+}
+
+/* ============ الأشكال ============ */
+const rig = { group: new THREE.Group(), surfaceTick: null };
+scene.add(rig.group);
+const V2 = (x, y) => new THREE.Vector2(x, y);
+
+/* ظل كرتوني بيضاوي تحت الجسم */
+function toonShadow(size) {
+  const c = document.createElement("canvas"); c.width = 128; c.height = 64;
+  const x = c.getContext("2d");
+  const g = x.createRadialGradient(64, 32, 4, 64, 32, 60);
+  g.addColorStop(0, "rgba(26,16,48,0.5)");
+  g.addColorStop(1, "rgba(26,16,48,0)");
+  x.scale(1, 0.5);
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size / 2),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false })
+  );
+  m.rotation.x = -Math.PI / 2;
+  return m;
+}
+
+/* ----- 1) الزجاجة ----- */
+function buildBottle() {
+  const pts = [
+    V2(0.02, 0.03), V2(1.02, 0.03), V2(1.26, 0.10), V2(1.38, 0.34), V2(1.42, 0.8),
+    V2(1.42, 1.6), V2(1.34, 2.08), V2(1.02, 2.52), V2(0.66, 2.92), V2(0.46, 3.28),
+    V2(0.40, 3.55), V2(0.38, 4.15), V2(0.47, 4.28), V2(0.48, 4.44), V2(0.40, 4.52),
+  ];
+  const profileR = (y) => {
+    for (let i = 1; i < pts.length; i++) {
+      if (y <= pts[i].y) {
+        const a = pts[i - 1], b = pts[i];
+        const k = (y - a.y) / Math.max(1e-6, b.y - a.y);
+        return a.x + (b.x - a.x) * k;
+      }
+    }
+    return pts[pts.length - 1].x;
+  };
+  const geo = new THREE.LatheGeometry(pts, 72);
+  // زجاج أنمي — شبه شفاف بلون فاتح
+  const glass = new THREE.Mesh(geo, toonMat(0xeaf6ff, { transparent: true, opacity: 0.42 }));
+  glass.add(outlineMesh(geo, 0.03));
+  const innerPts = pts.map(p => V2(Math.max(0.02, p.x * 0.9), p.y));
+  const liqGeo = new THREE.LatheGeometry(innerPts, 64);
+  const liquid = new THREE.Mesh(liqGeo, toonMat(colN(1), { clippingPlanes: [clipPlane] }));
+  const surface = new THREE.Mesh(new THREE.CircleGeometry(1, 56), toonMat(colN(1.35)));
+  surface.rotation.x = -Math.PI / 2;
+  const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.41, 0.78, 28), corkMat);
+  cork.position.y = 4.85;
+  cork.add(outlineMesh(new THREE.CylinderGeometry(0.34, 0.41, 0.78, 28), 0.06));
+  const corkCap = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.08, 28), toonMat(0xe8ae74));
+  corkCap.position.y = 5.26;
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.07, 10, 40), toonMat(0xd6ecff));
+  rim.rotation.x = Math.PI / 2; rim.position.y = 4.44;
+  rig.group.add(glass, liquid, surface, cork, corkCap, rim);
+  const sh = toonShadow(5.6); sh.position.y = -0.05; rig.group.add(sh);
+  addDecor(starTex("#ffd24a"), 5, 6.4, 0.5, 4.6, 0.42, -1.4);
+  addDecor(heartTex("#ff9db8"), 4, 6.8, 0.4, 4.8, 0.34, -1.6);
+  const BASE = 0.06, TOP = 4.1;
+  rig.surfaceTick = (t) => {
+    const h = BASE + (TOP - BASE) * Math.max(0, Math.min(1, shown / goal));
+    clipPlane.constant = h;
+    surface.position.y = h + Math.sin(t * 2.2) * 0.02;
+    const r = Math.max(0.05, profileR(h) * 0.9);
+    surface.scale.set(r, r, 1);
+  };
+  rig.float = (t) => {
+    rig.group.position.y = Math.sin(t * 1.1) * 0.08;
+    rig.group.rotation.y = Math.sin(t * 0.5) * 0.12;
+  };
+  camera.position.set(0, 2.4, 10.4); camera.lookAt(0, 2.3, 0);
+}
+
+/* ----- 2) القلب ----- */
+function heartShape(scale) {
+  const s = new THREE.Shape();
+  s.moveTo(0, -1.6 * scale);
+  s.bezierCurveTo(-1.95 * scale, -0.42 * scale, -1.8 * scale, 1.02 * scale, -1.06 * scale, 1.38 * scale);
+  s.bezierCurveTo(-0.46 * scale, 1.68 * scale, -0.06 * scale, 1.38 * scale, 0, 0.96 * scale);
+  s.bezierCurveTo(0.06 * scale, 1.38 * scale, 0.46 * scale, 1.68 * scale, 1.06 * scale, 1.38 * scale);
+  s.bezierCurveTo(1.8 * scale, 1.02 * scale, 1.95 * scale, -0.42 * scale, 0, -1.6 * scale);
+  return s;
+}
+function buildHeart() {
+  const geo = new THREE.ExtrudeGeometry(heartShape(0.94), {
+    depth: 0.75, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.5, bevelSegments: 10, curveSegments: 40,
+  });
+  geo.center();
+  const heart = new THREE.Mesh(geo, toonMat(colN(1.08)));
+  heart.add(outlineMesh(geo, 0.03));
+  rig.group.add(heart);
+  const zf = 0.38 + 0.5 + 0.03;
+  // عيون أنمي كبيرة لامعة
+  for (const sx of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.185, 24, 24), toonMat(0x241226));
+    eye.scale.set(1, 1.35, 0.5); eye.position.set(0.62 * sx, 0.32, zf); rig.group.add(eye);
+    const hl1 = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    hl1.position.set(0.62 * sx - 0.07 * sx, 0.48, zf + 0.06); rig.group.add(hl1);
+    const hl2 = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffb8cd }));
+    hl2.position.set(0.62 * sx + 0.05 * sx, 0.2, zf + 0.08); rig.group.add(hl2);
+    const blush = new THREE.Mesh(new THREE.CircleGeometry(0.19, 20),
+      new THREE.MeshBasicMaterial({ color: 0xff8fb0, transparent: true, opacity: 0.75 }));
+    blush.position.set(1.12 * sx, -0.04, zf - 0.04); rig.group.add(blush);
+  }
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.08, 10, 24, Math.PI), toonMat(0x241226));
+  smile.position.set(0, 0.12, zf); smile.rotation.z = Math.PI; rig.group.add(smile);
+  const tongue = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), toonMat(0xff7d9d));
+  tongue.scale.set(1.3, 0.72, 0.5); tongue.position.set(0, 0.0, zf + 0.03); rig.group.add(tongue);
+  // تاج
+  const cs = new THREE.Shape();
+  cs.moveTo(-0.72, 0); cs.lineTo(-0.82, 0.6); cs.lineTo(-0.4, 0.26); cs.lineTo(0, 0.68);
+  cs.lineTo(0.4, 0.26); cs.lineTo(0.82, 0.6); cs.lineTo(0.72, 0); cs.closePath();
+  const crownGeo = new THREE.ExtrudeGeometry(cs, { depth: 0.16, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2 });
+  const crown = new THREE.Mesh(crownGeo, toonMat(0xffd24a));
+  crown.position.set(0.08, 1.95, 0.12); crown.rotation.z = -0.16;
+  crown.add(outlineMesh(crownGeo, 0.05));
+  const band = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.2, 0.28), toonMat(0xffc02e));
+  band.position.set(0.08, 1.88, 0.12); band.rotation.z = -0.16;
+  const gem = new THREE.Mesh(new THREE.SphereGeometry(0.075, 14, 14), toonMat(0xff4d88));
+  gem.position.set(0.08, 1.97, 0.3);
+  rig.group.add(crown, band, gem);
+  const sh = toonShadow(6.6); sh.position.y = -2.38; rig.group.add(sh);
+  addDecor(starTex("#ffe08a"), 6, 7.4, -1.6, 3.2, 0.4, -1.2);
+  addDecor(heartTex("#ffb0c8"), 5, 7.8, -1.8, 3.4, 0.3, -1.4);
+  rig.float = (t) => {
+    rig.group.position.y = Math.sin(t * 1.15) * 0.13;
+    rig.group.rotation.y = Math.sin(t * 0.6) * 0.12;
+    rig.group.rotation.z = Math.sin(t * 0.85) * 0.04;
+  };
+  camera.position.set(0, 0.15, 10.4); camera.lookAt(0, 0.1, 0);
+}
+
+/* ----- 3) قلب الزجاجة ----- */
+function buildFlask() {
+  const s = heartShape(1.06);
+  const geo = new THREE.ExtrudeGeometry(s, {
+    depth: 0.85, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.48, bevelSegments: 10, curveSegments: 40,
+  });
+  geo.center();
+  const glass = new THREE.Mesh(geo, toonMat(0xf3e8ff, { transparent: true, opacity: 0.45 }));
+  glass.add(outlineMesh(geo, 0.028));
+  const liqGeo = new THREE.ExtrudeGeometry(s, {
+    depth: 0.62, bevelEnabled: true, bevelThickness: 0.38, bevelSize: 0.36, bevelSegments: 8, curveSegments: 40,
+  });
+  liqGeo.center();
+  const liquid = new THREE.Mesh(liqGeo, toonMat(colN(1), { clippingPlanes: [clipPlane] }));
+  const surface = new THREE.Mesh(new THREE.CircleGeometry(1, 48), toonMat(colN(1.35)));
+  surface.rotation.x = -Math.PI / 2;
+  // عنق + فلينة + حبل + تاق
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.55, 24), toonMat(0xf3e8ff, { transparent: true, opacity: 0.45 }));
+  neck.position.set(0, 1.62, 0);
+  neck.add(outlineMesh(new THREE.CylinderGeometry(0.3, 0.3, 0.55, 24), 0.06));
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.06, 10, 36), toonMat(0xe2d2ff));
+  lip.rotation.x = Math.PI / 2; lip.position.set(0, 1.9, 0);
+  const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.31, 0.6, 24), corkMat);
+  cork.position.set(0, 2.18, 0);
+  cork.add(outlineMesh(new THREE.CylinderGeometry(0.25, 0.31, 0.6, 24), 0.07));
+  const corkCap = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.06, 24), toonMat(0xe8ae74));
+  corkCap.position.set(0, 2.5, 0);
+  const rope = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.05, 10, 36), toonMat(0xc98a48));
+  rope.rotation.x = Math.PI / 2; rope.position.set(0, 1.48, 0);
+  const string = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.42, 8), toonMat(0xc98a48));
+  string.position.set(0.5, 1.3, 0); string.rotation.z = 0.75;
+  const tag = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.3, 0.05), toonMat(0xffe9c9));
+  tag.position.set(0.68, 1.02, 0); tag.rotation.z = 0.22;
+  tag.add(outlineMesh(new THREE.BoxGeometry(0.46, 0.3, 0.05), 0.09));
+  rig.group.add(glass, liquid, surface, neck, lip, cork, corkCap, rope, string, tag);
+  rig.tag = tag;
+  const sh = toonShadow(6.8); sh.position.y = -2.45; rig.group.add(sh);
+  addDecor(starTex("#e6c8ff"), 5, 7.0, -1.4, 3.6, 0.38, -1.4);
+  addDecor(heartTex("#ffb0e8"), 4, 7.4, -1.6, 3.8, 0.3, -1.6);
+  // عيون أنمي بتسبح
+  rig.eyes = [];
+  for (let i = 0; i < 4; i++) {
+    const g = new THREE.Group();
+    const r = 0.12 + Math.random() * 0.05;
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(r, 20, 20), toonMat(0xffffff)));
+    const iris = new THREE.Mesh(new THREE.SphereGeometry(r * 0.48, 14, 14), toonMat(0x7a2ea0));
+    iris.position.z = r * 0.7; g.add(iris);
+    const hl = new THREE.Mesh(new THREE.SphereGeometry(r * 0.18, 10, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    hl.position.set(-r * 0.2, r * 0.25, r * 0.9); g.add(hl);
+    g.position.set((Math.random() - 0.5) * 1.3, -1 + Math.random() * 0.8, 0.62);
+    rig.eyes.push({ g, v: 0.25 + Math.random() * 0.3, ph: Math.random() * 6 });
+    rig.group.add(g);
+  }
+  const BASE = -1.55, TOP = 1.1;
+  rig.surfaceTick = (t) => {
+    const h = BASE + (TOP - BASE) * Math.max(0, Math.min(1, shown / goal));
+    clipPlane.constant = h;
+    surface.position.y = h + Math.sin(t * 2.1) * 0.025;
+    const rx = 1.55 * Math.sqrt(Math.max(0.03, 1 - Math.pow((h - 0.1) / 2.1, 2))) * 0.92;
+    surface.scale.set(rx, rx, 0.72);
+    for (const e of rig.eyes) {
+      e.g.position.y += e.v * 0.016;
+      if (e.g.position.y > h - 0.18) e.g.position.y = -1.2;
+      e.g.position.x = Math.sin(t * 0.9 + e.ph) * 0.25 + (e.ph > 3 ? 0.35 : -0.35);
+      e.g.visible = e.g.position.y < h - 0.05;
+    }
+    rig.tag.rotation.z = 0.22 + Math.sin(t * 1.5) * 0.1;
+  };
+  rig.float = (t) => {
+    rig.group.position.y = Math.sin(t * 1.0) * 0.1;
+    rig.group.rotation.y = Math.sin(t * 0.55) * 0.13;
+  };
+  camera.position.set(0, 0.4, 8.6); camera.lookAt(0, 0.35, 0);
+}
+
+/* ----- 4) نوتة تيك توك ----- */
+function buildTik() {
+  const group = new THREE.Group();
+  group.rotation.z = 0.21;
+  rig.group.add(group);
+  const headShape = new THREE.Shape();
+  headShape.absellipse(0, 0, 1.62, 1.42, 0, Math.PI * 2, false, 0);
+  const headGeo = new THREE.ExtrudeGeometry(headShape, {
+    depth: 0.85, bevelEnabled: true, bevelThickness: 0.42, bevelSize: 0.4, bevelSegments: 10, curveSegments: 48,
+  });
+  headGeo.center();
+  const head = new THREE.Mesh(headGeo, toonMat(0xe4f7ff, { transparent: true, opacity: 0.45 }));
+  head.add(outlineMesh(headGeo, 0.026));
+  const stemShape = new THREE.Shape();
+  stemShape.moveTo(-0.26, -0.3); stemShape.lineTo(-0.26, 2.9); stemShape.quadraticCurveTo(-0.26, 3.14, 0, 3.14);
+  stemShape.lineTo(0.28, 3.14); stemShape.quadraticCurveTo(0.52, 3.14, 0.52, 2.9); stemShape.lineTo(0.52, -0.3); stemShape.closePath();
+  const stemGeo = new THREE.ExtrudeGeometry(stemShape, {
+    depth: 0.7, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.28, bevelSegments: 8, curveSegments: 24,
+  });
+  stemGeo.center();
+  const stem = new THREE.Mesh(stemGeo, toonMat(0xe4f7ff, { transparent: true, opacity: 0.45 }));
+  stem.position.set(1.25, 1.55, 0);
+  stem.add(outlineMesh(stemGeo, 0.035));
+  const flagShape = new THREE.Shape();
+  flagShape.moveTo(0, 0.22);
+  flagShape.bezierCurveTo(0.8, 0.1, 1.1, -0.45, 0.9, -1.05);
+  flagShape.bezierCurveTo(0.78, -0.62, 0.52, -0.35, 0.16, -0.28);
+  flagShape.bezierCurveTo(0.3, -0.62, 0.26, -0.8, 0, -0.9);
+  flagShape.closePath();
+  const flagGeo = new THREE.ExtrudeGeometry(flagShape, {
+    depth: 0.4, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.18, bevelSegments: 6, curveSegments: 24,
+  });
+  flagGeo.center();
+  const flag = new THREE.Mesh(flagGeo, toonMat(colN(1.15)));
+  flag.position.set(2.15, 2.5, 0);
+  flag.add(outlineMesh(flagGeo, 0.04));
+  const liqGeo = new THREE.ExtrudeGeometry(headShape, {
+    depth: 0.62, bevelEnabled: true, bevelThickness: 0.32, bevelSize: 0.3, bevelSegments: 8, curveSegments: 48,
+  });
+  liqGeo.center();
+  const liquid = new THREE.Mesh(liqGeo, toonMat(colN(1), { clippingPlanes: [clipPlane] }));
+  const surface = new THREE.Mesh(new THREE.CircleGeometry(1, 48), toonMat(colN(1.35)));
+  surface.rotation.x = -Math.PI / 2;
+  const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 0.62, 24), corkMat);
+  cork.position.set(1.25, 3.65, 0);
+  cork.add(outlineMesh(new THREE.CylinderGeometry(0.3, 0.36, 0.62, 24), 0.07));
+  const corkCap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.06, 24), toonMat(0xe8ae74));
+  corkCap.position.set(1.25, 3.98, 0);
+  group.add(head, stem, flag, liquid, surface, cork, corkCap);
+  const sh = toonShadow(7.2); sh.position.y = -2.32; rig.group.add(sh);
+  addDecor(starTex("#8fe0ff"), 6, 8.0, -1.4, 4.4, 0.4, -1.5);
+  addDecor(heartTex("#8fd4ff"), 4, 8.4, -1.6, 4.6, 0.3, -1.7);
+  const BASE = -1.35, TOP = 0.75;
+  rig.surfaceTick = (t) => {
+    const h = BASE + (TOP - BASE) * Math.max(0, Math.min(1, shown / goal));
+    clipPlane.constant = h;
+    surface.position.y = h + Math.sin(t * 2.2) * 0.02;
+    const r = Math.max(0.05, 1.48 * Math.sqrt(Math.max(0.02, 1 - Math.pow(h / 1.42, 2))) * 0.86);
+    surface.scale.set(r, r, 1);
+    surface.position.x = 0;
+  };
+  rig.float = (t) => {
+    group.position.y = Math.sin(t * 1.05) * 0.11;
+    group.rotation.z = 0.21 + Math.sin(t * 0.75) * 0.025;
+  };
+  camera.position.set(-0.4, 1.1, 12.6); camera.lookAt(0.5, 1.0, 0);
+}
+
+const BUILDERS = { bottle: buildBottle, heart: buildHeart, flask: buildFlask, tik: buildTik };
+(BUILDERS[shape] || buildBottle)();
+renderHUD();
+window.__animeReady = true;
+
+/* ديمو دائم — أول stats حقيقية بتعديها */
+let gotReal = false;
+setInterval(function () {
+  if (gotReal) return;
+  const drift = (Math.random() - 0.42) * goal * 0.05;
+  cur = Math.max(goal * 0.15, Math.min(goal, cur + drift));
+}, 2200);
+
+/* بيانات لايف */
+let evtSource = null;
+try { evtSource = new EventSource('/widgets/stream'); } catch (e) {}
+if (evtSource) {
+  evtSource.onmessage = (e) => {
+    let m = null;
+    try { m = JSON.parse(e.data); } catch (_) { return; }
+    if (m.type === "stats" && m.stats) {
+      const v = m.stats[T.statsKey];
+      if (v !== undefined) { cur = Math.max(0, Number(v) || 0); gotReal = true; }
+    } else if (m.type === "config" && m.id === PAGE_ID && m.config) {
+      location.reload();
+    } else if (m.type === "test") {
+      cur = Math.min(goal, cur + Math.round(goal * 0.12));
+    }
+  };
+}
+
+/* اللوب */
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const t = now / 1000;
+  shown += (cur - shown) * Math.min(1, dt * 3.2);
+  renderHUD();
+  if (rig.surfaceTick) rig.surfaceTick(t);
+  if (rig.float) rig.float(t);
+  tickDecor(t);
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+}
+</script>
+</body>
+</html>

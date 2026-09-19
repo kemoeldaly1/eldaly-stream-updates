@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>ELDALY STREAM — Goal 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Lemon&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
@@ -12,35 +12,45 @@ body { font-family: 'Cairo', sans-serif; }
 canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 #hud { position: fixed; left: 50%; top: 50%; width: 640px; height: 640px; transform-origin: center center; pointer-events: none; z-index: 5; }
 .pct {
-  position: absolute; z-index: 15; font-family: 'Orbitron', sans-serif; font-weight: 900;
+  position: absolute; z-index: 15; font-family: 'Lemon', 'Cairo', serif; font-weight: 400;
   letter-spacing: .02em; line-height: 1; direction: ltr; white-space: nowrap;
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 0 rgba(0,0,0,.6)) drop-shadow(0 5px 14px rgba(0,0,0,.65));
 }
 .pill {
-  position: absolute; z-index: 20; white-space: nowrap; font-weight: 900; color: #fff;
-  padding: 5px 14px; border-radius: 999px; font-size: 19px; text-shadow: 0 1px 2px rgba(0,0,0,.5);
+  position: absolute; z-index: 20; white-space: nowrap; font-weight: 400; color: #fff;
+  font-family: 'Lemon', 'Cairo', serif;
+  padding: 4px 13px; border-radius: 999px; font-size: 20px; text-shadow: 0 1px 2px rgba(0,0,0,.5);
   box-shadow: 0 6px 22px rgba(0,0,0,.5);
 }
-.glow-val { position: absolute; z-index: 20; font-family: 'Orbitron', sans-serif; font-weight: 800;
-  direction: ltr; white-space: nowrap; letter-spacing: 1px; font-size: 20px; color: #fff; }
-.shape-bottle .pct { top: 46%; left: 50%; transform: translate(-50%,-50%); font-size: 44px; }
-.shape-bottle .pill { top: 120px; right: 110px; }
+.pill::after { content: ""; position: absolute; width: 0; height: 0; }
+.glow-val { position: absolute; z-index: 20; font-family: 'Lemon', 'Cairo', serif; font-weight: 400;
+  direction: ltr; white-space: nowrap; letter-spacing: .5px; font-size: 21px; color: #fff; }
+.shape-bottle .pct { top: 46%; left: 50%; transform: translate(-45%,-50%); font-size: 42px; }
+.shape-bottle .pill { top: 148px; right: 104px; }
 .shape-bottle .pill::after { content: ""; position: absolute; bottom: -15px; right: 18px;
   border-left: 15px solid transparent; border-top: 15px solid var(--pill); filter: drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
-.shape-bottle .glow-val { top: 170px; right: 95px; color: var(--v-col);
+.shape-bottle .glow-val { top: 196px; right: 94px; color: var(--v-col);
   text-shadow: 0 1px 0 rgba(0,0,0,.9), 0 0 10px var(--c), 0 0 22px var(--c); }
-.shape-flask .pct { top: 60%; left: 50%; transform: translate(-50%,-50%); font-size: 40px; }
-.shape-flask .pill { top: 26px; left: 20px; font-size: 17px; }
+.shape-flask .pct { top: 58%; left: 50%; transform: translate(-50%,-50%); font-size: 40px; }
+.shape-flask .pill { top: auto; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 19px;
+  direction: ltr; padding: 5px 22px;
+  background: linear-gradient(180deg, #e23a3a, #9c1414);
+  border: 3px solid #f7e6c8;
+  box-shadow: 0 0 18px rgba(226,58,58,.55), 0 6px 18px rgba(0,0,0,.5); }
+.shape-flask .pill::after { display: none; }
+.shape-flask .pill .sep { opacity: .65; margin: 0 10px; }
 .shape-heart .pct { display: none; }
-.shape-heart .pill { left: 50%; bottom: -16px; transform: translateX(-50%); font-family: 'Orbitron',sans-serif;
-  font-size: 19px; direction: ltr; letter-spacing: 1px; padding: 6px 30px;
-  background: linear-gradient(180deg,#ffb020,#f97316); border: 2.5px solid #ffedc2;
-  box-shadow: 0 0 16px rgba(255,200,90,.85), 0 0 34px rgba(255,160,40,.5), 0 6px 16px rgba(0,0,0,.45); }
-.shape-tik .t-title { position: absolute; z-index: 20; top: 60px; left: 4px;
-  font-family: 'Cairo', sans-serif; font-weight: 900; font-size: 24px; direction: rtl;
-  color: var(--c); white-space: nowrap; text-shadow: 0 2px 0 rgba(0,0,0,.55), 0 0 12px var(--cm); }
-.shape-tik .glow-val { top: 102px; left: 6px; }
+.shape-heart .pill { left: 50%; bottom: -14px; transform: translateX(-50%); font-family: Arial, sans-serif;
+  font-size: 20px; font-weight: 700; direction: ltr; letter-spacing: .5px; padding: 4px 26px;
+  background: #d4522d; border: 2px solid #ffe5a5;
+  box-shadow: 0 0 12px rgba(255,255,255,.85), 0 4px 14px rgba(0,0,0,.4); }
+.shape-tik .t-title { position: absolute; z-index: 20; top: 56px; left: 4px;
+  font-family: 'Lemon', 'Cairo', serif; font-size: 26px; direction: ltr; white-space: nowrap;
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.55)) drop-shadow(0 0 14px var(--cm)); }
+.shape-tik .glow-val { top: 98px; left: 6px; color: var(--v-col);
+  text-shadow: 0 1px 0 rgba(0,0,0,.85), 0 0 12px var(--c); }
 .shape-tik .pct { display: none; }
 #fallback { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
   color: #fff; font-weight: 800; text-align: center; padding: 20px; z-index: 50; }
@@ -73,16 +83,17 @@ const goal   = parseInt(params.get("goal") || params.get("target") || CONFIG.tar
 const titleOverride = params.get("title") || CONFIG.title || "";
 
 const TYPES = {
-  likes:    { label: "لايكات",    statsKey: "likes",      emoji: "❤️" },
-  follows:  { label: "متابعين",   statsKey: "followers",  emoji: "👥" },
-  coins:    { label: "كوينز",     statsKey: "totalCoins", emoji: "🪙" },
-  gifts:    { label: "هدايا",     statsKey: "gifts",      emoji: "🎁" },
-  shares:   { label: "مشاركات",   statsKey: "shares",     emoji: "🔁" },
+  likes:    { label: "Like Goal",   statsKey: "likes",      emoji: "❤️" },
+  follows:  { label: "Follow Goal", statsKey: "followers",  emoji: "👥" },
+  coins:    { label: "Gift Goal",   statsKey: "totalCoins", emoji: "🪙" },
+  gifts:    { label: "Gift Goal",   statsKey: "gifts",      emoji: "🎁" },
+  shares:   { label: "Share Goal",  statsKey: "shares",     emoji: "🔁" },
 };
 const T = TYPES[type] || TYPES.likes;
-const LABEL = titleOverride || (T.emoji + " هدف " + T.label);
+const LABEL = titleOverride || T.label;
 
-const DEF_COL = { bottle: "#f43f5e", heart: "#ff4d6d", flask: "#d946ef", tik: "#06b6d4" };
+/* الألوان — قريبة من الهوية المرجعية مع لمسة تغيير بسيطة */
+const DEF_COL = { bottle: "#ff1f1f", heart: "#ee4a78", flask: "#f25fc0", tik: "#0a84ff" };
 const C = (params.get("color") || CONFIG.color || DEF_COL[shape] || "#f43f5e").replace("#", "");
 function rgb(hex) { return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)]; }
 function shade(f) { const [r,g,b] = rgb(C); const m = v => Math.max(0, Math.min(255, Math.round(v * f))); return "rgb(" + m(r) + "," + m(g) + "," + m(b) + ")"; }
@@ -240,19 +251,33 @@ const el = (tag, id, txt) => {
 };
 const pctEl = shape === "tik" || shape === "heart" ? null : el("pct", "pct");
 pctEl && (pctEl.style.backgroundImage = "linear-gradient(180deg,#fff 0%,#" + C + " 92%)");
-const valEl = el("glow-val", "val");
 let pillEl = null;
-if (shape !== "heart") {
-  pillEl = shape === "tik" ? el("t-title", "pill", LABEL) : el("pill", "pill", LABEL);
-  if (shape !== "tik") pillEl.style.background = "linear-gradient(135deg," + shade(0.8) + " 0%,#" + C + " 100%)";
+if (shape === "flask") {
+  // بادج أحمر تحت الجرعة: "♥ Like Goal | 100 / 100"
+  pillEl = el("pill", "pill");
+  const lab = document.createElement("span");
+  lab.textContent = "❤ " + LABEL;
+  const sep = document.createElement("span");
+  sep.className = "sep"; sep.textContent = "|";
+  const vspan = document.createElement("span");
+  vspan.id = "val"; vspan.textContent = "0 / " + fmt(goal);
+  pillEl.appendChild(lab); pillEl.appendChild(sep); pillEl.appendChild(vspan);
+} else if (shape === "tik") {
+  pillEl = el("t-title", "pill", LABEL);
+  pillEl.style.backgroundImage = "linear-gradient(180deg,#9fd0ff 0%,#" + C + " 55%,#0a54b0 100%)";
+} else if (shape !== "heart") {
+  pillEl = el("pill", "pill", LABEL);
+  pillEl.style.background = "linear-gradient(135deg," + shade(0.8) + " 0%,#" + C + " 100%)";
 }
 const heartPill = shape === "heart" ? el("pill", "val") : null;
+if (shape === "bottle" || shape === "tik") el("glow-val", "val");
 
 function renderHUD() {
   const p = Math.max(0, Math.min(100, Math.round((cur / goal) * 100)));
   if (pctEl) pctEl.textContent = p + "%";
   const txt = fmt(shown) + " / " + fmt(goal);
-  if (shape === "heart") heartPill.textContent = txt; else valEl.textContent = txt;
+  const valNode = document.getElementById("val");
+  if (valNode) valNode.textContent = txt;
 }
 
 /* ============ الأشكال ============ */
