@@ -2657,8 +2657,6 @@ document.getElementById("w-follower-apply")?.addEventListener("click", async () 
   const old = btn.textContent;
   btn.textContent = "Applying...";
   const cfg = {
-    name: document.getElementById("w-follower-name").value || "ELDALY STREAM",
-    avatar: document.getElementById("w-follower-avatar").value.trim(),
     shape: document.getElementById("w-follower-shape").value,
     color: document.getElementById("w-follower-color").value,
     vol: (parseInt(document.getElementById("w-follower-vol").value) || 60) / 100,
@@ -3031,12 +3029,6 @@ async function loadWidgetConfigs() {
   const getConfigResult7 = await api.widget.getConfig("follower-card");
   if (getConfigResult7) {
     const vF14 = p207 => document.getElementById(p207);
-    if (vF14("w-follower-name")) {
-      vF14("w-follower-name").value = getConfigResult7.name || "ELDALY STREAM";
-    }
-    if (vF14("w-follower-avatar")) {
-      vF14("w-follower-avatar").value = getConfigResult7.avatar || "";
-    }
     if (vF14("w-follower-shape")) {
       vF14("w-follower-shape").value = getConfigResult7.shape || "classic";
     }
