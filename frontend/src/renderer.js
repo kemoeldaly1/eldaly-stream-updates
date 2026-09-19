@@ -2662,6 +2662,7 @@ document.getElementById("w-follower-apply")?.addEventListener("click", async () 
     shape: document.getElementById("w-follower-shape").value,
     font: document.getElementById("w-follower-font").value,
     color: document.getElementById("w-follower-color").value,
+    badge: document.getElementById("w-follower-badge").value,
     vol: (parseInt(document.getElementById("w-follower-vol").value) || 60) / 100,
     soundOn: document.getElementById("w-follower-soundon").checked
   };
@@ -3040,6 +3041,9 @@ async function loadWidgetConfigs() {
     }
     if (vF14("w-follower-color")) {
       vF14("w-follower-color").value = getConfigResult7.color || "#d4af37";
+    }
+    if (vF14("w-follower-badge")) {
+      vF14("w-follower-badge").value = getConfigResult7.badge || "#d4af37";
     }
     if (vF14("w-follower-vol")) {
       vF14("w-follower-vol").value = Math.round((getConfigResult7.vol !== undefined ? getConfigResult7.vol : 0.6) * 100);
