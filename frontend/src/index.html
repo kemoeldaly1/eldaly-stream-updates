@@ -1208,61 +1208,55 @@
             </div>
           </details>
 
-          <!-- ── Alerts ── -->
-          <details class="widget-group">
+          <!-- ── Follower Card ── -->
+          <details class="widget-group" open>
             <summary class="widget-group-header">
-              <div class="widget-group-icon">🔔</div>
-              <span class="widget-group-title">Alert Widgets</span>
-              <span class="widget-group-count">2</span>
+              <div class="widget-group-icon">👥</div>
+              <span class="widget-group-title">كرت المتابعين — Followers Card</span>
+              <span class="widget-group-count">1</span>
               <div class="widget-group-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
             </summary>
             <div class="widget-group-body">
               <div class="profile-grid">
 
-                <!-- Last Liker Alert -->
-                <div class="glass-card profile-card" id="card-last-liker">
-                  <h3 class="form-section-title">❤️ Last Liker Alert</h3>
-                  <p class="widget-desc">Cyberpunk-style alert with hexagonal avatar, rotating rings, and flying hearts. Shows each new liker with stunning effects!</p>
+                <!-- Follower Card -->
+                <div class="glass-card profile-card" id="card-follower">
+                  <h3 class="form-section-title">👥 كرت المتابعين — Followers Card</h3>
+                  <p class="widget-desc">يعرض صورة الحساب واسم اللايف وإجمالي المتابعين — وكل فولو جديد: صوت + عداد يعدّي بحركة + بادج. الكرت جوه مجموعة نضيف معاها ويدجتس تانية بعدين.</p>
+                  <div class="le-preview"><iframe id="w-follower-card-preview" title="preview" style="width:100%;height:430px;border:0;position:relative;"></iframe></div>
+                  <div class="divider" style="margin:14px 0;"></div>
                   <div class="form-row">
-                    <div class="form-group"><label class="form-label">Alert Message</label><input type="text" class="form-input" id="w-lastliker-message" value="أعجب بالبث"></div>
-                    <div class="form-group"><label class="form-label">Duration (ms)</label><input type="number" class="form-input" id="w-lastliker-duration" value="5000" min="1000" max="30000"></div>
+                    <div class="form-group"><label class="form-label">Account Name</label><input type="text" class="form-input" id="w-follower-name" value="ELDALY STREAM"></div>
+                    <div class="form-group"><label class="form-label">Avatar URL</label><input type="text" class="form-input" id="w-follower-avatar" placeholder="https://... (سيبها فاضية = حرف الاسم)"></div>
                   </div>
                   <div class="form-row">
-                    <div class="form-group"><label class="form-label">Likes Trigger Frequency</label><input type="number" class="form-input" id="w-lastliker-frequency" value="1" min="1"></div>
+                    <div class="form-group"><label class="form-label">Shape</label>
+                      <select class="form-select" id="w-follower-shape">
+                        <option value="classic">🏆 Classic — كرت طولي</option>
+                        <option value="glass">🪞 Glass — أفقي زجاجي</option>
+                        <option value="bar">📏 Bar — شريط نحيف</option>
+                        <option value="neon">🌈 Neon — إطار ملون</option>
+                      </select></div>
+                    <div class="form-group"><label class="form-label">Accent Color</label><input type="color" class="form-input" id="w-follower-color" value="#d4af37"></div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Follow Sound Volume: <span id="w-follower-vol-val">60%</span></label>
+                      <input type="range" class="form-input" id="w-follower-vol" min="0" max="100" value="60" style="width:100%;padding:0;">
+                    </div>
+                    <div class="form-group"><label class="form-label">Custom Sound (URL)</label><input type="text" class="form-input" id="w-follower-sound" placeholder="اختياري — mp3 الخاص بيك"></div>
                   </div>
                   <div class="form-row" style="align-items: flex-end;">
                     <div class="form-group">
-                      <button class="btn btn-primary" id="w-lastliker-apply" style="width:100%;">Apply Settings</button>
+                      <button class="btn btn-primary" id="w-follower-apply" style="width:100%;">Apply Settings</button>
                     </div>
                     <div class="form-group">
-                      <button class="btn btn-ghost btn-test" id="w-lastliker-test" style="width:100%;">🎯 Test</button>
+                      <button class="btn btn-ghost btn-test" id="w-follower-test" style="width:100%;">🎯 Test Follow</button>
                     </div>
                   </div>
                   <div class="url-row">
-                    <input type="text" class="form-input" id="w-lastliker-url" readonly value="http://ELDALYSTREAM.PRO.localhost:2233/widget/alert-last-liker?id=last-liker-alert">
-                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-lastliker-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
-                  </div>
-                </div>
-
-                <!-- New Follower Alert -->
-                <div class="glass-card profile-card" id="card-new-follower">
-                  <h3 class="form-section-title">🌟 New Follower Alert</h3>
-                  <p class="widget-desc">Sci-fi style alert with 3D rotating rings around avatar, orbit particles, and gradient name animation. Greets new followers!</p>
-                  <div class="form-row">
-                    <div class="form-group"><label class="form-label">Welcome Message</label><input type="text" class="form-input" id="w-newfollower-message" value="متابع جديد 🎉"></div>
-                    <div class="form-group"><label class="form-label">Duration (ms)</label><input type="number" class="form-input" id="w-newfollower-duration" value="6000" min="1000" max="30000"></div>
-                  </div>
-                  <div class="form-row" style="align-items: flex-end;">
-                    <div class="form-group">
-                      <button class="btn btn-primary" id="w-newfollower-apply" style="width:100%;">Apply Settings</button>
-                    </div>
-                    <div class="form-group">
-                      <button class="btn btn-ghost btn-test" id="w-newfollower-test" style="width:100%;">🎯 Test</button>
-                    </div>
-                  </div>
-                  <div class="url-row">
-                    <input type="text" class="form-input" id="w-newfollower-url" readonly value="http://ELDALYSTREAM.PRO.localhost:2233/widget/alert-new-follower?id=new-follower-alert">
-                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-newfollower-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
+                    <input type="text" class="form-input" id="w-follower-card-url" readonly value="...">
+                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-follower-card-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
                   </div>
                 </div>
 

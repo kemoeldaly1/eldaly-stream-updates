@@ -1897,6 +1897,8 @@ async function loadOverlayUrls() {
   // ويدجتات آخر الأحداث: لينك حقيقي + معاينة حية جوه الكارت
   const latestIds = ["latest-like", "latest-follow", "latest-join", "latest-share", "latest-gift"];
   for (const lw of latestIds) await setWidgetPreview(lw);
+  // كرت المتابعين: لينك حقيقي + معاينة حية جوه الكارت
+  try { await setWidgetPreview("follower-card"); } catch (err) {}
 }
 async function refreshQueueCounts() {
   try {
@@ -2645,36 +2647,29 @@ document.getElementById("w-tiktok-test")?.addEventListener("click", async () => 
 document.getElementById("w-tiktok-reset")?.addEventListener("click", async () => {
   await api.ext.command("tiktok-goal", "reset", {});
 });
-document.getElementById("w-lastliker-apply")?.addEventListener("click", async () => {
-  const v233 = document.getElementById("w-lastliker-apply");
-  const v234 = v233.textContent;
-  v233.textContent = "Applying...";
-  const vO9 = {
-    message: document.getElementById("w-lastliker-message").value,
-    showDuration: parseInt(document.getElementById("w-lastliker-duration").value) || 5000,
-    frequency: parseInt(document.getElementById("w-lastliker-frequency").value) || 1
+document.getElementById("w-follower-vol")?.addEventListener("input", () => {
+  const v = document.getElementById("w-follower-vol").value;
+  const lbl = document.getElementById("w-follower-vol-val");
+  if (lbl) lbl.textContent = v + "%";
+});
+document.getElementById("w-follower-apply")?.addEventListener("click", async () => {
+  const btn = document.getElementById("w-follower-apply");
+  const old = btn.textContent;
+  btn.textContent = "Applying...";
+  const cfg = {
+    name: document.getElementById("w-follower-name").value || "ELDALY STREAM",
+    avatar: document.getElementById("w-follower-avatar").value.trim(),
+    shape: document.getElementById("w-follower-shape").value,
+    color: document.getElementById("w-follower-color").value,
+    vol: (parseInt(document.getElementById("w-follower-vol").value) || 60) / 100,
+    sound: document.getElementById("w-follower-sound").value.trim()
   };
-  await api.widget.setConfig("last-liker-alert", vO9);
-  v233.textContent = "Applied!";
-  setTimeout(() => v233.textContent = v234, 2000);
+  await api.widget.setConfig("follower-card", cfg);
+  btn.textContent = "Applied!";
+  setTimeout(() => btn.textContent = old, 2000);
 });
-document.getElementById("w-lastliker-test")?.addEventListener("click", async () => {
-  await api.widget.test("last-liker-alert");
-});
-document.getElementById("w-newfollower-apply")?.addEventListener("click", async () => {
-  const v235 = document.getElementById("w-newfollower-apply");
-  const v236 = v235.textContent;
-  v235.textContent = "Applying...";
-  const vO10 = {
-    message: document.getElementById("w-newfollower-message").value,
-    showDuration: parseInt(document.getElementById("w-newfollower-duration").value) || 6000
-  };
-  await api.widget.setConfig("new-follower-alert", vO10);
-  v235.textContent = "Applied!";
-  setTimeout(() => v235.textContent = v236, 2000);
-});
-document.getElementById("w-newfollower-test")?.addEventListener("click", async () => {
-  await api.widget.test("new-follower-alert");
+document.getElementById("w-follower-test")?.addEventListener("click", async () => {
+  await api.widget.test("follower-card");
 });
 let waterImagePath = "";
 document.getElementById("w-waterimg-goaltype")?.addEventListener("change", p201 => {
@@ -3033,30 +3028,30 @@ async function loadWidgetConfigs() {
     }
     await api.widget.setConfig("tiktok-goal", getConfigResult6);
   }
-  const getConfigResult7 = await api.widget.getConfig("last-liker-alert");
+  const getConfigResult7 = await api.widget.getConfig("follower-card");
   if (getConfigResult7) {
     const vF14 = p207 => document.getElementById(p207);
-    if (vF14("w-lastliker-message")) {
-      vF14("w-lastliker-message").value = getConfigResult7.message || "أعجب بالبث";
+    if (vF14("w-follower-name")) {
+      vF14("w-follower-name").value = getConfigResult7.name || "ELDALY STREAM";
     }
-    if (vF14("w-lastliker-duration")) {
-      vF14("w-lastliker-duration").value = getConfigResult7.showDuration || 5000;
+    if (vF14("w-follower-avatar")) {
+      vF14("w-follower-avatar").value = getConfigResult7.avatar || "";
     }
-    if (vF14("w-lastliker-frequency")) {
-      vF14("w-lastliker-frequency").value = getConfigResult7.frequency || 1;
+    if (vF14("w-follower-shape")) {
+      vF14("w-follower-shape").value = getConfigResult7.shape || "classic";
     }
-    await api.widget.setConfig("last-liker-alert", getConfigResult7);
-  }
-  const getConfigResult8 = await api.widget.getConfig("new-follower-alert");
-  if (getConfigResult8) {
-    const vF15 = p208 => document.getElementById(p208);
-    if (vF15("w-newfollower-message")) {
-      vF15("w-newfollower-message").value = getConfigResult8.message || "متابع جديد 🎉";
+    if (vF14("w-follower-color")) {
+      vF14("w-follower-color").value = getConfigResult7.color || "#d4af37";
     }
-    if (vF15("w-newfollower-duration")) {
-      vF15("w-newfollower-duration").value = getConfigResult8.showDuration || 6000;
+    if (vF14("w-follower-vol")) {
+      vF14("w-follower-vol").value = Math.round((getConfigResult7.vol !== undefined ? getConfigResult7.vol : 0.6) * 100);
+      const volLbl = document.getElementById("w-follower-vol-val");
+      if (volLbl) volLbl.textContent = vF14("w-follower-vol").value + "%";
     }
-    await api.widget.setConfig("new-follower-alert", getConfigResult8);
+    if (vF14("w-follower-sound")) {
+      vF14("w-follower-sound").value = getConfigResult7.sound || "";
+    }
+    await api.widget.setConfig("follower-card", getConfigResult7);
   }
   const getConfigResult9 = await api.widget.getConfig("water-image-goal");
   if (getConfigResult9) {
