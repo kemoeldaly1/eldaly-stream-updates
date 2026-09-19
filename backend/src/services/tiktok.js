@@ -50,6 +50,45 @@ class TikTokService extends EventEmitter {
     }
   }
 
+  // جلب بروفايل صاحب الحساب: اسم + صورة + متابعين حقيقيين من صفحة @user/live
+  async fetchStreamerInfo(username) {
+      // استيراد المكتبة بنفس آلية connect (دعم v1 و v2)
+      let TikTokConnection;
+      try {
+        const tiktokModule = require("tiktok-live-connector");
+        TikTokConnection = tiktokModule.TikTokLiveConnection || tiktokModule.WebcastPushConnection;
+        if (typeof TikTokConnection !== "function") throw new Error("no class");
+      } catch (err) {
+        return null;
+      }
+      const uname = String(username || "").replace("@", "").trim();
+      if (!uname) return null;
+      this._profileCache = this._profileCache || new Map();
+      const hit = this._profileCache.get(uname);
+      if (hit && Date.now() - hit.ts < 10 * 60 * 1000) return hit.data;
+      const tmp = new TikTokConnection(uname, { processInitialData: false });
+      const html = await tmp.webClient.getHtmlFromTikTokWebsite("@" + uname + "/live");
+      const m = html.match(/<script id="SIGI_STATE" type="application\/json">(.*?)<\/script>/s);
+      if (!m) return null;
+      const j = JSON.parse(m[1]);
+      const lrUser = (j.LiveRoom && j.LiveRoom.liveRoomUserInfo) || {};
+      const user = lrUser.user || null;
+      const stats = lrUser.stats || {};
+      if (!user) return null;
+      const avatar =
+        this._imgUrl(user.avatarLarger) ||
+        this._imgUrl(user.avatarMedium) ||
+        this._imgUrl(user.avatarThumb) ||
+        "";
+      const info = {
+        nickname: user.nickname || uname,
+        avatar: avatar,
+        followers: (stats && stats.followerCount) || 0
+      };
+      this._profileCache.set(uname, { data: info, ts: Date.now() });
+      return info;
+  }
+
   async connect(username, options = {}) {
     if (this.connected) {
       this.disconnect();
@@ -159,6 +198,16 @@ class TikTokService extends EventEmitter {
         console.log(
           `[TikTok] Streamer: @${this.username} — ${this.streamerInfo.nickname} — ${this.streamerInfo.followers} followers — avatar: ${this.streamerInfo.avatar ? "ok" : "missing"}`
         );
+        // جلب البروفايل الكامل (بمتابعينه الحقيقيين) وبثه للويدجتات
+        this.fetchStreamerInfo(this.username)
+          .then(info => {
+            if (info && (info.followers || info.avatar)) {
+              this.streamerInfo = info;
+              this.emit("tiktok:streamer", info);
+              console.log(`[TikTok] Profile updated: ${info.nickname} — ${info.followers} followers`);
+            }
+          })
+          .catch(() => {});
         return {
           roomId: roomData.roomId,
           viewers:
