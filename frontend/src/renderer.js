@@ -2658,6 +2658,7 @@ document.getElementById("w-follower-apply")?.addEventListener("click", async () 
   btn.textContent = "Applying...";
   const cfg = {
     shape: document.getElementById("w-follower-shape").value,
+    font: document.getElementById("w-follower-font").value,
     color: document.getElementById("w-follower-color").value,
     vol: (parseInt(document.getElementById("w-follower-vol").value) || 60) / 100,
     soundOn: document.getElementById("w-follower-soundon").checked
@@ -3031,6 +3032,9 @@ async function loadWidgetConfigs() {
     const vF14 = p207 => document.getElementById(p207);
     if (vF14("w-follower-shape")) {
       vF14("w-follower-shape").value = getConfigResult7.shape || "classic";
+    }
+    if (vF14("w-follower-font")) {
+      vF14("w-follower-font").value = getConfigResult7.font || "lalezar";
     }
     if (vF14("w-follower-color")) {
       vF14("w-follower-color").value = getConfigResult7.color || "#d4af37";
