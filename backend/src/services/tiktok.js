@@ -191,9 +191,17 @@ class TikTokService extends EventEmitter {
         console.log(
           `[TikTok] Streamer: @${this.username} — ${this.streamerInfo.nickname} — ${this.streamerInfo.followers} followers — avatar: ${this.streamerInfo.avatar ? "ok" : "missing"}`
         );
-        // جلب room info اختياري — فشله مش بيوقف الكونكت
+        // جلب بيانات صاحب اللايف: الأولوية لصفحة الحساب (اسم + صورة + متابعين حقيقيين مع بعض)
         (async () => {
           try {
+            const full = await this.fetchStreamerInfo(this.username);
+            if (full && (full.followers > 0 || full.avatar)) {
+              this.streamerInfo = full;
+              this.emit("tiktok:streamer", full);
+              console.log(`[TikTok] Streamer updated (profile page): ${full.nickname} — ${full.followers} followers`);
+              return;
+            }
+            // fallback: room info (الاسم والعدد بس من غير صورة)
             const ri = await this.client.fetchRoomInfo();
             const d = ri && ri.data ? ri.data : {};
             const user = d.user || {};
@@ -208,10 +216,10 @@ class TikTokService extends EventEmitter {
                 followers: followers
               };
               this.emit("tiktok:streamer", this.streamerInfo);
-              console.log(`[TikTok] Streamer updated: ${nickname} — ${followers} followers`);
+              console.log(`[TikTok] Streamer updated (room info): ${nickname} — ${followers} followers`);
             }
           } catch (e) {
-            console.log("[TikTok] room info fetch skipped:", e.message);
+            console.log("[TikTok] streamer fetch skipped:", e.message);
           }
         })();
         // جلب البروفايل الكامل (بمتابعينه الحقيقيين) وبثه للويدجتات

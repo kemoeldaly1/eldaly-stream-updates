@@ -322,6 +322,30 @@ class OverlayHttpService {
 // بروفايل تيك توك: اسم + صورة + متابعين حقيقيين — جلب مع كاش 15 دقيقة لكل يوزرنيم
 const profileCache = new Map();
 async function getTikTokProfile(username) {
+  // 1) SIGI scrape من صفحة @user/live — الأدق (اسم + صورة + متابعين حقيقيين)
+  try {
+    const { TikTokLiveConnection } = require("tiktok-live-connector");
+    const tmp = new TikTokLiveConnection(username, { processInitialData: false });
+    const html = await tmp.webClient.getHtmlFromTikTokWebsite("@" + username + "/live");
+    const m = html.match(/<script id="SIGI_STATE" type="application\/json">(.*?)<\/script>/s);
+    if (m) {
+      const j = JSON.parse(m[1]);
+      const lru = (j.LiveRoom && j.LiveRoom.liveRoomUserInfo) || {};
+      const user = lru.user || {};
+      const stats = lru.stats || {};
+      const avList = ((user.avatarLarger || user.avatarMedium || user.avatarThumb) || {}).url_list || [];
+      if (user.nickname || avList.length) {
+        const data = {
+          nickname: user.nickname || username,
+          avatar: avList[0] || "",
+          followers: Number(stats.followerCount) || 0
+        };
+        profileCache.set(username, { data, ts: Date.now() });
+        return data;
+      }
+    }
+  } catch (e) {}
+
   if (!username) return null;
   const hit = profileCache.get(username);
   if (hit && Date.now() - hit.ts < 15 * 60 * 1000) return hit.data;
