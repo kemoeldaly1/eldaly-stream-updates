@@ -497,6 +497,22 @@ async function getTikTokProfile(username) {
       serveWidget(req, res, req.params.token, req.params.name, new URL(req.url, "http://x"));
     });
 
+    // تشخيص مؤقت: حالة بيانات صاحب اللايف لهذا التوكن
+    app.get("/api/debug/streamer/:token", (req, res) => {
+      const ctx = this.resolveToken(req.params.token || "");
+      if (!ctx) return res.status(404).json({ ok: false, err: "unknown token" });
+      const ts = ctx.eventRunner && ctx.eventRunner.tiktokService;
+      let stored = null;
+      try { stored = ctx.store.get("streamer_info") || null; } catch (e) {}
+      res.json({
+        ok: true,
+        connected: !!(ts && ts.connected),
+        username: (ts && ts.username) || "",
+        streamerInfo: (ts && ts.streamerInfo) || null,
+        stored: stored
+      });
+    });
+
     // الجذر — مفيش توكن عام بعد تعدد الحسابات؛ الصفحة بتتفتح بتوكنها مباشرة
     app.get("/overlay", (req, res) => res.status(404).end());
   }
