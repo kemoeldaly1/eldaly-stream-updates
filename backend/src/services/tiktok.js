@@ -123,6 +123,29 @@ class TikTokService extends EventEmitter {
           roomData.roomInfo?.owner && typeof roomData.roomInfo.owner === "object"
             ? roomData.roomInfo.owner
             : {};
+        const ownerAvatar =
+          this._imgUrl(owner.profilePictureMedium) ||
+          this._imgUrl(owner.profilePicture) ||
+          this._imgUrl(owner.profilePictureLarge) ||
+          this._imgUrl(owner.avatarThumb) ||
+          this._imgUrl(roomData.roomInfo?.owner?.avatarThumb) ||
+          "";
+        // بيانات صاحب اللايف للويدجتات: اسم + صورة + متابعين حقيقيين من room info
+        this.streamerInfo = {
+          nickname:
+            owner.nickname ||
+            owner.displayId ||
+            owner.uniqueId ||
+            this.username,
+          avatar: ownerAvatar,
+          followers:
+            (owner.followInfo && owner.followInfo.followerCount) ||
+            owner.followerCount ||
+            0
+        };
+        console.log(
+          `[TikTok] Streamer: @${this.username} — ${this.streamerInfo.nickname} — ${this.streamerInfo.followers} followers`
+        );
         return {
           roomId: roomData.roomId,
           viewers:
@@ -131,13 +154,7 @@ class TikTokService extends EventEmitter {
             roomData.roomInfo?.liveRoomUserInfo?.userCount ??
             0,
           title: roomData.roomInfo?.title || "",
-          profilePictureUrl:
-            this._imgUrl(owner.profilePictureMedium) ||
-            this._imgUrl(owner.profilePicture) ||
-            this._imgUrl(owner.profilePictureLarge) ||
-            this._imgUrl(owner.avatarThumb) ||
-            this._imgUrl(roomData.roomInfo?.owner?.avatarThumb) ||
-            "",
+          profilePictureUrl: ownerAvatar,
         };
       } catch (err) {
         lastError = err;

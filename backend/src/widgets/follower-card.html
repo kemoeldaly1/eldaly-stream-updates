@@ -132,8 +132,8 @@ const type   = (params.get("type")   || CONFIG.type   || "follows").toLowerCase(
 const goal   = parseInt(params.get("goal") || params.get("target") || CONFIG.target || 100) || 100;
 const startN = parseInt(params.get("start"));
 const titleOverride = params.get("title") || CONFIG.title || "";
-let NAME_VAL = params.get("name")  || CONFIG.name  || "ELDALY STREAM";
-let AVATAR_URL = params.get("avatar") || CONFIG.avatar || "";
+let NAME_VAL = params.get("name")  || CONFIG.name  || CONFIG.streamerName || "ELDALY STREAM";
+let AVATAR_URL = params.get("avatar") || CONFIG.avatar || CONFIG.streamerAvatar || "";
 let SOUND_URL = params.get("sound") || CONFIG.sound || "";
 let VOL = Math.max(0, Math.min(1, parseFloat(params.get("vol") || CONFIG.vol || "0.6") || 0.6));
 const MUTED = params.get("mute") === "1";
@@ -150,8 +150,11 @@ const LABEL = titleOverride || T.label;
 
 document.body.className = "shape-" + shape;
 
+let BASE_FOLLOWERS = parseInt(CONFIG.streamerFollowers) || 0;
+let sessionZero = null;   /* أول قراءة فولو في الجلسة */
 let cur = 120;
 if (!isNaN(startN)) cur = Math.max(0, startN);
+else if (BASE_FOLLOWERS) cur = BASE_FOLLOWERS;
 let shown = cur;
 let lastSeen = cur;
 function fmt(n) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
@@ -286,7 +289,11 @@ if (evtSource) {
     try { m = JSON.parse(e.data); } catch (_) { return; }
     if (m.type === "stats" && m.stats) {
       const v = m.stats[T.statsKey];
-      if (v !== undefined) { cur = Math.max(0, Number(v) || 0); gotReal = true; }
+      if (v !== undefined) {
+        if (sessionZero === null) sessionZero = Math.max(0, Number(v) || 0);
+        cur = BASE_FOLLOWERS + Math.max(0, (Number(v) || 0) - sessionZero);
+        gotReal = true;
+      }
     } else if (m.type === "config" && m.id === PAGE_ID && m.config) {
       applyLive(m.config);
     } else if (m.type === "test") {

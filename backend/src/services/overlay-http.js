@@ -319,6 +319,42 @@ class OverlayHttpService {
     // الميديا المحلية مش متاحة سحابيًا — رد سريع عشان الصفحة تكمّل
     app.get("/media/*", (req, res) => res.status(404).end("Not found"));
 
+// بروفايل تيك توك: اسم + صورة + متابعين حقيقيين — جلب مع كاش 15 دقيقة لكل يوزرنيم
+const profileCache = new Map();
+async function getTikTokProfile(username) {
+  if (!username) return null;
+  const hit = profileCache.get(username);
+  if (hit && Date.now() - hit.ts < 15 * 60 * 1000) return hit.data;
+  let data = null;
+  try {
+    const res = await fetch("https://www.tikwm.com/api/user/info?unique_id=" + encodeURIComponent(username), { signal: AbortSignal.timeout(6000) });
+    const j = await res.json();
+    const u = j && j.data && j.data.user;
+    const st = j && j.data && j.data.stats;
+    if (u && (u.nickname || u.avatar)) {
+      data = {
+        nickname: u.nickname || username,
+        avatar: u.avatar || "",
+        followers: (st && st.follower_count) || 0
+      };
+    }
+  } catch (e) {}
+  if (!data) {
+    try {
+      const res = await fetch(
+        "https://www.tiktok.com/oembed?url=https://www.tiktok.com/@" + encodeURIComponent(username),
+        { signal: AbortSignal.timeout(5000) }
+      );
+      const j = await res.json();
+      if (j && j.author_name) {
+        data = { nickname: j.author_name, avatar: "", followers: 0 };
+      }
+    } catch (e) {}
+  }
+  if (data) profileCache.set(username, { data, ts: Date.now() });
+  return data;
+}
+
     // صفحة ويدجت مع حقن الكونفج — الكونفج من بيانات صاحب التوكن
     const serveWidget = async (req, res, token, rel, urlObj) => {
       if (!this._rateGate(req, res)) return;
@@ -348,6 +384,27 @@ class OverlayHttpService {
         const widgetId = urlObj.searchParams.get("id") || name;
         let config = {};
         try { config = ctx.store.get("widget_" + widgetId) || {}; } catch (e) { config = {}; }
+        // بيانات صاحب اللايف أوتوماتيك: اسم + صورة + عدد المتابعين الحقيقي
+        try {
+          const ts = ctx.eventRunner && ctx.eventRunner.tiktokService;
+          const streamerUser = (ts && ts.username) || "";
+          if (widgetId === "follower-card" && streamerUser) {
+            // الأولوية لمعلومات الاتصال الحي (room info) — الأدق والأسرع
+            if (ts.streamerInfo && (ts.streamerInfo.nickname || ts.streamerInfo.avatar)) {
+              config.streamerName = ts.streamerInfo.nickname;
+              if (ts.streamerInfo.avatar) config.streamerAvatar = ts.streamerInfo.avatar;
+              if (ts.streamerInfo.followers) config.streamerFollowers = ts.streamerInfo.followers;
+            } else {
+              const prof = await getTikTokProfile(streamerUser);
+              if (prof) {
+                config.streamerName = prof.nickname;
+                if (prof.avatar) config.streamerAvatar = prof.avatar;
+                if (prof.followers) config.streamerFollowers = prof.followers;
+              }
+            }
+            config.uniqueId = streamerUser;
+          }
+        } catch (e) {}
         const injected = JSON.stringify(config)
           .replace(/\\/g, "\\\\")
           .replace(/'/g, "\\'")
