@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>ELDALY STREAM — Goal Potion</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Lemon&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
@@ -16,47 +16,55 @@ body { font-family: 'Cairo', sans-serif; }
 @keyframes gwFloat { 0%,100% { transform: translateY(0) scale(var(--s, 1)); } 50% { transform: translateY(-9px) scale(calc(var(--s, 1) * 1.01)); } }
 .gw svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .pct {
-  position: absolute; z-index: 15; font-family: 'Orbitron', sans-serif; font-weight: 900;
+  position: absolute; z-index: 15; font-family: 'Lemon', 'Cairo', serif; font-weight: 400;
   letter-spacing: .02em; line-height: 1; direction: ltr; white-space: nowrap;
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 0 rgba(0,0,0,.55)) drop-shadow(0 4px 9px rgba(0,0,0,.5));
 }
 .pill {
-  position: absolute; z-index: 20; white-space: nowrap; font-weight: 900; color: #fff;
-  padding: 5px 14px; border-radius: 999px; text-shadow: 0 1px 2px rgba(0,0,0,.5);
+  position: absolute; z-index: 20; white-space: nowrap; font-weight: 400; color: #fff;
+  font-family: 'Lemon', 'Cairo', serif;
+  padding: 4px 12px; border-radius: 999px; text-shadow: 0 1px 2px rgba(0,0,0,.5);
   box-shadow: 0 6px 22px rgba(0,0,0,.45);
 }
 .pill::after { content: ""; position: absolute; width: 0; height: 0; }
-.glow-val { position: absolute; z-index: 20; font-family: 'Orbitron', sans-serif; font-weight: 800;
-  direction: ltr; white-space: nowrap; letter-spacing: 1px; }
+.glow-val { position: absolute; z-index: 20; font-family: 'Lemon', 'Cairo', serif; font-weight: 400;
+  direction: ltr; white-space: nowrap; letter-spacing: .5px; }
 
 /* ================= 1) الزجاجة ================= */
-#shape-bottle .pct { top: 46%; left: 50%; transform: translate(-50%,-50%); font-size: 44px; }
-#shape-bottle .pill { top: 146px; right: 102px; font-size: 19px; }
+#shape-bottle .pct { top: 47%; left: 50%; transform: translate(-45%,-50%); font-size: 42px; }
+#shape-bottle .pill { top: 156px; right: 100px; font-size: 20px; }
 #shape-bottle .pill::after { bottom: -16px; right: 18px; border-left: 17px solid transparent; border-top: 17px solid var(--pill); filter: drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
-#shape-bottle .glow-val { top: 200px; right: 80px; font-size: 21px; color: var(--v-col); text-shadow: 0 1px 0 rgba(0,0,0,.9), 0 0 10px var(--c), 0 0 22px var(--c); }
+#shape-bottle .glow-val { top: 204px; right: 92px; font-size: 21px; color: var(--v-col); text-shadow: 0 1px 0 rgba(0,0,0,.9), 0 0 10px var(--c), 0 0 22px var(--c); }
 
 /* ================= 2) القلب الكرتوني ================= */
 #shape-heart .gw { animation: gwFloat 4.2s ease-in-out infinite; }
-#shape-heart .pill { left: 50%; bottom: -26px; transform: translateX(-50%); font-family: 'Orbitron',sans-serif;
-  font-size: 20px; direction: ltr; color: #fff; background: linear-gradient(180deg,#ffb020,#f97316);
-  border: 2.5px solid #ffedc2; padding: 6px 30px; letter-spacing: 1px;
-  box-shadow: 0 0 16px rgba(255,200,90,.85), 0 0 34px rgba(255,160,40,.5), 0 6px 16px rgba(0,0,0,.45); }
+#shape-heart .pill { left: 50%; bottom: -24px; transform: translateX(-50%); font-family: Arial, sans-serif;
+  font-size: 20px; font-weight: 700; direction: ltr; color: #fff; background: #d4522d;
+  border: 2px solid #ffe5a5; padding: 4px 26px; letter-spacing: .5px;
+  box-shadow: 0 0 12px rgba(255,255,255,.85), 0 4px 14px rgba(0,0,0,.4); }
 .spark { position: absolute; z-index: 6; animation: twinkle 2.2s ease-in-out infinite; }
 @keyframes twinkle { 0%,100% { opacity: .25; transform: scale(.7) rotate(0deg); } 50% { opacity: 1; transform: scale(1.15) rotate(18deg); } }
 
 /* ================= 3) قلب الزجاجة ================= */
 #shape-heartpotion .pct { top: 54%; left: 53%; transform: translate(-50%,-50%); font-size: 40px; }
-#shape-heartpotion .pill { top: 12px; left: 6px; font-size: 16px; }
+#shape-heartpotion .pill { top: auto; bottom: -26px; left: 50%; right: auto; transform: translateX(-50%);
+  font-size: 19px; direction: ltr; padding: 5px 22px;
+  background: linear-gradient(180deg, #e23a3a, #9c1414);
+  border: 3px solid #f7e6c8;
+  box-shadow: 0 0 18px rgba(226,58,58,.55), 0 6px 18px rgba(0,0,0,.5); }
 #shape-heartpotion .pill::after { display: none; }
+#shape-heartpotion .pill .sep { opacity: .65; margin: 0 10px; }
 #shape-heartpotion .glow-val { display: none; }
 
 /* ================= 4) نوتة تيك توك ================= */
-#shape-tik .t-title { position: absolute; z-index: 20; top: 92px; left: 4px;
-  font-family: 'Cairo', sans-serif; font-weight: 900; font-size: 24px; direction: rtl;
-  color: var(--c); text-shadow: 0 0 6px var(--cm), 0 2px 0 rgba(0,0,0,.6); white-space: nowrap; }
-#shape-tik .glow-val { top: 134px; left: 6px; font-size: 19px; color: #fff;
-  text-shadow: 0 0 8px var(--c), 0 2px 3px rgba(0,0,0,.7); }
+#shape-tik .t-title { position: absolute; z-index: 20; top: 88px; left: 4px;
+  font-family: 'Lemon', 'Cairo', serif; font-size: 26px; direction: ltr;
+  white-space: nowrap;
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.5)) drop-shadow(0 0 12px var(--cm)); }
+#shape-tik .glow-val { top: 128px; left: 6px; font-size: 20px; color: var(--v-col);
+  text-shadow: 0 1px 0 rgba(0,0,0,.85), 0 0 12px var(--c); }
 #shape-tik .pct { display: none; }
 </style>
 </head>
@@ -76,17 +84,17 @@ const goal   = parseInt(params.get("goal") || params.get("target") || CONFIG.tar
 const titleOverride = params.get("title") || CONFIG.title || "";
 
 const TYPES = {
-  likes:    { label: "لايكات",    statsKey: "likes",      emoji: "❤️" },
-  follows:  { label: "متابعين",   statsKey: "followers",  emoji: "👥" },
-  coins:    { label: "كوينز",     statsKey: "totalCoins", emoji: "🪙" },
-  gifts:    { label: "هدايا",     statsKey: "gifts",      emoji: "🎁" },
-  shares:   { label: "مشاركات",   statsKey: "shares",     emoji: "🔁" },
+  likes:    { label: "Like Goal",   statsKey: "likes",      emoji: "❤️" },
+  follows:  { label: "Follow Goal", statsKey: "followers",  emoji: "👥" },
+  coins:    { label: "Gift Goal",   statsKey: "totalCoins", emoji: "🪙" },
+  gifts:    { label: "Gift Goal",   statsKey: "gifts",      emoji: "🎁" },
+  shares:   { label: "Share Goal",  statsKey: "shares",     emoji: "🔁" },
 };
 const T = TYPES[type] || TYPES.likes;
-const LABEL = titleOverride || (T.emoji + " هدف " + T.label);
+const LABEL = titleOverride || T.label;
 
-/* الألوان — كل شكل له هوية مغايرة، وباراميتر color بيعدها */
-const DEF_COL = { bottle: "#f43f5e", heart: "#ff4d6d", heartpotion: "#d946ef", tik: "#06b6d4" };
+/* الألوان — قريبة من الهوية المرجعية مع لمسة تغيير بسيطة، وباراميتر color بيعدها */
+const DEF_COL = { bottle: "#ff1f1f", heart: "#f0447a", heartpotion: "#f25fc0", tik: "#0a84ff" };
 const C = (params.get("color") || CONFIG.color || DEF_COL[shape] || "#f43f5e").replace("#", "");
 
 /* أدوات لون */
@@ -344,14 +352,19 @@ function buildHeartPotion() {
   el("circle", { cx: -13, cy: -8, r: 3, fill: "#8a6a38" }, tag);
   el("path", { d: "M -12 4 h 26 M -12 11 h 18", stroke: "rgba(120,90,45,0.55)", "stroke-width": 3, "stroke-linecap": "round" }, tag);
 
-  // نصوص
+  // نصوص — بادج أحمر تحت القلب: "♥ Like Goal | 100 / 100"
   const p = document.createElement("div");
   p.className = "pct"; p.id = "pct";
   p.style.backgroundImage = "linear-gradient(180deg,#fff 0%,#" + C + " 95%)";
   const pill = document.createElement("div");
   pill.className = "pill"; pill.id = "pill";
-  pill.style.background = "linear-gradient(135deg," + shade(0.8) + " 0%,#" + C + " 100%)";
-  pill.textContent = LABEL;
+  const labSpan = document.createElement("span");
+  labSpan.textContent = "❤ " + LABEL;
+  const sepSpan = document.createElement("span");
+  sepSpan.className = "sep"; sepSpan.textContent = "|";
+  const valSpan = document.createElement("span");
+  valSpan.id = "val"; valSpan.textContent = "0 / " + fmt(goal);
+  pill.appendChild(labSpan); pill.appendChild(sepSpan); pill.appendChild(valSpan);
   gw.appendChild(p); gw.appendChild(pill);
 
   startWaves({
@@ -424,11 +437,17 @@ function buildTik() {
   el("path", { d: "M 282 20 C 282 12 288 8 296 8 L 330 8 C 338 8 344 12 344 20 L 344 70 L 282 70 Z", fill: "#c98d4f", stroke: "#7e5228", "stroke-width": 2.5 }, glassG);
   el("ellipse", { cx: 313, cy: 15, rx: 30, ry: 8, fill: "#dfa96c" }, glassG);
   el("path", { d: "M 292 32 h 42 M 290 48 h 46", stroke: "rgba(88,54,20,0.4)", "stroke-width": 2.5, "stroke-linecap": "round" }, glassG);
+  // حبل ملفوف تحت الفلينة
+  el("path", { d: "M 284 76 C 296 88 322 88 342 76", fill: "none", stroke: "#c98a48", "stroke-width": 7, "stroke-linecap": "round" }, glassG);
+  el("path", { d: "M 286 84 C 298 96 320 96 340 84", fill: "none", stroke: "#96602c", "stroke-width": 7, "stroke-linecap": "round" }, glassG);
+  el("circle", { cx: 346, cy: 92, r: 7, fill: "#c98a48", stroke: "#7c4c1e", "stroke-width": 2 }, glassG);
 
-  // نصوص
+  // نصوص — عنوان أزرق لامع + عداد تحته
   const t = document.createElement("div");
   t.className = "t-title"; t.id = "pill"; t.textContent = LABEL;
-  t.style.textShadow = "0 2px 0 rgba(0,0,0,.55), 0 0 12px " + colA(0.45);
+  t.style.backgroundImage = "linear-gradient(180deg,#9fd0ff 0%,#" + C + " 55%,#0a54b0 100%)";
+  t.style.textShadow = "none";
+  t.style.filter = "drop-shadow(0 2px 0 rgba(0,0,0,.55)) drop-shadow(0 0 14px " + colA(0.5) + ")";
   const v = document.createElement("div");
   v.className = "glow-val"; v.id = "val";
   v.style.textShadow = "0 2px 0 rgba(0,0,0,.6), 0 0 10px " + colA(0.5);

@@ -85,10 +85,10 @@ document.documentElement.style.setProperty("--c", "#" + C);
 document.documentElement.style.setProperty("--cm", colA(0.7));
 document.documentElement.style.setProperty("--v-col", (function(){ const [r,g,b] = rgb(C); const m = v => Math.max(0, Math.min(255, Math.round(v*1.25))); return "rgb(" + m(r) + "," + m(g) + "," + m(b) + ")"; })());
 
-/* أبعاد الصورة (بنقرأها من الصورة نفسها) */
-const IMG_W = 1166, IMG_H = 1349;
-const TOP_Y = { tik: 275 };        /* ارتفاع السايل عند 100% لكل صورة */
-const topY = TOP_Y[imgName] || 275;
+/* أبعاد الصورة بتتقرأ من الصورة نفسها عند التحميل */
+let IMG_W = 1166, IMG_H = 1349;
+const TOP_Y_FRAC = { tik: 0.204, bottle: 0.12, heart: 0.138, flask: 0.12 };
+let topY = 275;
 
 let cur = Math.round(goal * 0.42);
 if (!isNaN(startPct)) cur = Math.round(goal * Math.max(0, Math.min(100, startPct)) / 100);
@@ -135,8 +135,8 @@ function paintLiquid() {
 function shade2(f) { const [r,g,b] = rgb(C); const m = v => Math.max(0, Math.min(255, Math.round(v * f))); return "rgb(" + m(r) + "," + m(g) + "," + m(b) + ")"; }
 
 /* موجات سينية */
-const W = IMG_W, H = IMG_H;
 function waveD(yBase, amp, phase, close) {
+  const W = IMG_W, H = IMG_H;
   let d = close ? ("M -40 " + (H + 40) + " L -40 " + (yBase + Math.sin(phase) * amp).toFixed(1)) : "";
   for (let x = -40; x <= W + 40; x += 16) {
     const y = yBase + Math.sin(x / 95 + phase) * amp + Math.sin(x / 34 - phase * 1.7) * amp * 0.32;
@@ -155,23 +155,23 @@ for (let i = 0; i < 10; i++) {
   c.setAttribute("fill", "rgba(255,255,255,0.5)");
   c.setAttribute("opacity", "0");
   bubG.appendChild(c);
-  bubbles.push({ c, x: Math.random() * W, off: Math.random(), v: 0.10 + Math.random() * 0.18, w: 0.5 + Math.random() * 1.4 });
+  bubbles.push({ c, x: Math.random() * IMG_W, off: Math.random(), v: 0.10 + Math.random() * 0.18, w: 0.5 + Math.random() * 1.4 });
 }
 
 let phase = 0;
 function tick(t, dt) {
   phase += dt * 1.6;
   const p = Math.max(0, Math.min(1, shown / goal));
-  const yBase = (H + 12) - p * ((H + 12) - topY);
+  const yBase = (IMG_H + 12) - p * ((IMG_H + 12) - topY);
   document.getElementById("backWave").setAttribute("d", waveD(yBase + 7, 11, phase * 0.82 + 1.4, true));
   document.getElementById("frontWave").setAttribute("d", waveD(yBase, 9, phase, true));
   document.getElementById("surfLine").setAttribute("d", waveD(yBase, 9, phase, false));
   const top = yBase - 8;
   for (const b of bubbles) {
     b.off += dt * b.v;
-    if (b.off > 1) { b.off = 0; b.x = Math.random() * W; }
+    if (b.off > 1) { b.off = 0; b.x = Math.random() * IMG_W; }
     b.c.setAttribute("cx", (b.x + Math.sin(t / 400 * b.w) * 10).toFixed(1));
-    b.c.setAttribute("cy", (H - b.off * (H - top)).toFixed(1));
+    b.c.setAttribute("cy", (IMG_H - b.off * (IMG_H - top)).toFixed(1));
     b.c.setAttribute("opacity", (b.off < 0.12 ? b.off / 0.12 * 0.6 : Math.max(0, 0.6 * (1 - (b.off - 0.12) / 0.88))).toFixed(2));
   }
 }
@@ -207,7 +207,18 @@ shapeImg.src = "img-" + imgName + ".png";
 maskImg.setAttribute("href", "img-" + imgName + "-mask.png");
 titleEl.textContent = LABEL;
 let loaded = 0;
-function onImg() { loaded++; if (loaded >= 1) { fit(); renderHUD(); } }
+function onImg() {
+  loaded++;
+  if (shapeImg.naturalWidth) {
+    IMG_W = shapeImg.naturalWidth;
+    IMG_H = shapeImg.naturalHeight;
+    document.getElementById("liquid").setAttribute("viewBox", "0 0 " + IMG_W + " " + IMG_H);
+    maskImg.setAttribute("width", IMG_W);
+    maskImg.setAttribute("height", IMG_H);
+    topY = IMG_H * (TOP_Y_FRAC[imgName] || 0.2);
+  }
+  fit(); renderHUD();
+}
 shapeImg.onload = onImg;
 shapeImg.onerror = function () { document.getElementById("fallback").style.display = "flex"; };
 fit(); paintLiquid(); renderHUD();

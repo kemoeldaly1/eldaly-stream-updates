@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>ELDALY STREAM — Goal Widgets</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Cairo', sans-serif; background:
+      radial-gradient(900px 500px at 12% -6%, rgba(255,166,60,0.10), transparent 60%), #050508;
+      min-height: 100vh; color: #ece9e1; }
+  .head { text-align: center; padding: 36px 14px 20px; }
+  .head h1 { font-size: 24px; font-weight: 900; color: #f2dc93;
+    text-shadow: 0 0 20px rgba(212,175,55,0.3); margin-bottom: 6px; }
+  .head p { font-size: 13px; color: #6d6960; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px; max-width: 1000px; margin: 0 auto 40px; padding: 0 14px; }
+  .gcard { position: relative; background: #0d0d12; border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 16px; overflow: hidden; transition: border-color .2s, box-shadow .2s; }
+  .gcard:hover { border-color: rgba(212,175,55,0.5); box-shadow: 0 0 30px rgba(212,175,55,0.1); }
+  .gcard.sel { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,0.15), 0 0 40px rgba(212,175,55,0.1); }
+  .gframe { width: 100%; height: 340px; border: 0; pointer-events: none; }
+  .gname { text-align: center; font-size: 14.5px; font-weight: 800; color: #ece9e1;
+    padding: 12px 8px; border-top: 1px solid rgba(255,255,255,0.06); background: #101016; }
+  .gclick { position: absolute; inset: 0; z-index: 5; cursor: pointer; border: none; background: transparent; }
+  .gclick.sel-ring { display: none; }
+  .info { text-align: center; color: #6d6960; font-size: 12.5px; padding: 10px 20px 40px;
+    line-height: 2; direction: rtl; }
+  .info code { color: #ecd28a; background: rgba(212,175,55,0.08); padding: 2px 8px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>🎯 ELDALY STREAM — Goal Widgets</h1>
+  <p>اضغط على أي شكل لتحدده — الشكل المحدد هو اللي هيظهر في OBS</p>
+</div>
+<div class="grid" id="grid"></div>
+<div class="info">
+  لينك OBS للشكل المحدد: <code id="obs-url">—</code><br>
+  اللينك بيتحدث تلقائياً لما تغير الشكل — انسخه وحطه في OBS Browser Source
+</div>
+<script>
+(function() {
+  const LAYOUTS = [
+    { id: "potion",    name: "🧪 قارورة الأحلام" },
+    { id: "heartglass", name: "💜 قلب زجاجي" },
+    { id: "ring",      name: "⭕ حلقة الطاقة" },
+    { id: "royalbar",  name: "👑 الشريط الملكي" },
+    { id: "digital",   name: "🔢 العداد الرقمي" },
+    { id: "smoke",     name: "🌫️ دخان ذهبي" },
+  ];
+  const params = new URLSearchParams(location.search);
+  const DEFAULT = params.get("layout") || "potion";
+  const grid = document.getElementById("grid");
+  let selected = localStorage.getItem("eldaly_goal_layout") || DEFAULT;
+
+  // حط الكروت
+  LAYOUTS.forEach(function(l) {
+    const card = document.createElement("div");
+    card.className = "gcard" + (l.id === selected ? " sel" : "");
+    card.dataset.id = l.id;
+    card.innerHTML = '<iframe class="gframe" src="goal-widget.html?layout=' + l.id + '&v=' + l.id + '"></iframe>'
+      + '<div class="gname">' + l.name + '</div>'
+      + '<button class="gclick" data-l="' + l.id + '"></button>';
+    grid.appendChild(card);
+    card.querySelector(".gclick").onclick = function() {
+      selected = l.id;
+      document.querySelectorAll(".gcard").forEach(function(c) { c.classList.toggle("sel", c.dataset.id === l.id); });
+      document.getElementById("obs-url").textContent = location.origin + "/goal-preview.html?obs=1&layout=" + l.id + "&type=likes&target=100";
+      localStorage.setItem("eldaly_goal_layout", l.id);
+    };
+  });
+  // حدد الافتراضي
+  document.querySelectorAll(".gcard").forEach(function(c) { c.classList.toggle("sel", c.dataset.id === selected); });
+  document.getElementById("obs-url").textContent = location.origin + "/goal-preview.html?obs=1&layout=" + selected + "&type=likes&target=100";
+})();
+</script>
+</body>
+</html>
