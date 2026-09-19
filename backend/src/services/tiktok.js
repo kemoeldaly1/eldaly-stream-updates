@@ -100,6 +100,7 @@ class TikTokService extends EventEmitter {
       processInitialData: true,
       enableExtendedGiftInfo: true,
       enableWebsocketUpgrade: true,
+      fetchRoomInfoOnConnect: true,
       requestPollingIntervalMs: 1000,
       connectWithTimeout: 30000,
     });
@@ -119,10 +120,17 @@ class TikTokService extends EventEmitter {
           `[TikTok] Connected to @${this.username} roomId=${roomData.roomId}`,
         );
         this._setupListeners(options);
+        // بيانات صاحب اللايف: بتيجي في roomInfo.data.user (api-live) أو owner
+        const ri = roomData.roomInfo || {};
         const owner =
-          roomData.roomInfo?.owner && typeof roomData.roomInfo.owner === "object"
-            ? roomData.roomInfo.owner
-            : {};
+          (ri.data && ri.data.user && typeof ri.data.user === "object") ? ri.data.user :
+          (ri.owner && typeof ri.owner === "object") ? ri.owner : {};
+        if (!owner.nickname && !owner.nickName) {
+          try {
+            console.log("[TikTok] roomInfo keys:", Object.keys(ri).join(",") || "(none)",
+              "| data keys:", ri.data ? Object.keys(ri.data).join(",") : "(none)");
+          } catch (e) {}
+        }
         const ownerAvatar =
           this._imgUrl(owner.profilePictureMedium) ||
           this._imgUrl(owner.profilePicture) ||
