@@ -52,41 +52,35 @@ class TikTokService extends EventEmitter {
 
   // جلب بروفايل صاحب الحساب: اسم + صورة + متابعين حقيقيين من صفحة @user/live
   async fetchStreamerInfo(username) {
-      // استيراد المكتبة بنفس آلية connect (دعم v1 و v2)
-      let TikTokConnection;
+    const { TikTokLiveConnection } = require("tiktok-live-connector");
+    const uname = String(username || "").replace("@", "").trim();
+    if (!uname) return null;
+    this._profileCache = this._profileCache || new Map();
+    const hit = this._profileCache.get(uname);
+    if (hit && Date.now() - hit.ts < 5 * 60 * 1000) return hit.data;
+    let nickname = "";
+    let avatar = "";
+    let followers = 0;
+    // 3 محاولات — تيك توك ساعات بيبعت نسخة من غير الإحصائيات
+    for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        const tiktokModule = require("tiktok-live-connector");
-        TikTokConnection = tiktokModule.TikTokLiveConnection || tiktokModule.WebcastPushConnection;
-        if (typeof TikTokConnection !== "function") throw new Error("no class");
-      } catch (err) {
-        return null;
-      }
-      const uname = String(username || "").replace("@", "").trim();
-      if (!uname) return null;
-      this._profileCache = this._profileCache || new Map();
-      const hit = this._profileCache.get(uname);
-      if (hit && Date.now() - hit.ts < 10 * 60 * 1000) return hit.data;
-      const tmp = new TikTokConnection(uname, { processInitialData: false });
-      const html = await tmp.webClient.getHtmlFromTikTokWebsite("@" + uname + "/live");
-      const m = html.match(/<script id="SIGI_STATE" type="application\/json">(.*?)<\/script>/s);
-      if (!m) return null;
-      const j = JSON.parse(m[1]);
-      const lrUser = (j.LiveRoom && j.LiveRoom.liveRoomUserInfo) || {};
-      const user = lrUser.user || null;
-      const stats = lrUser.stats || {};
-      if (!user) return null;
-      const avatar =
-        this._imgUrl(user.avatarLarger) ||
-        this._imgUrl(user.avatarMedium) ||
-        this._imgUrl(user.avatarThumb) ||
-        "";
-      const info = {
-        nickname: user.nickname || uname,
-        avatar: avatar,
-        followers: (stats && stats.followerCount) || 0
-      };
-      this._profileCache.set(uname, { data: info, ts: Date.now() });
-      return info;
+        const tmp = new TikTokLiveConnection(uname, { processInitialData: false });
+        const html = await tmp.webClient.getHtmlFromTikTokWebsite("@" + uname + "/live");
+        // العدد: أول رقم followerCount في الصفحة كلها
+        const fm = html.match(/"followerCount"\s*:\s*(\d+)/) || html.match(/"follower_count"\s*:\s*(\d+)/);
+        if (fm && parseInt(fm[1]) > followers) followers = parseInt(fm[1]);
+        const nm = html.match(/"nickname"\s*:\s*"([^"]+)"/);
+        if (nm && !nickname) nickname = nm[1].replace(/\\u([0-9a-fA-F]{4})/g, (x, c) => String.fromCharCode(parseInt(c, 16)));
+        const av = html.match(/"avatarLarger"\s*:\s*\{[^}]*?"url_list"\s*:\s*\[\s*"([^"]+)"/) || html.match(/"avatarThumb"\s*:\s*\{[^}]*?"url_list"\s*:\s*\[\s*"([^"]+)"/);
+        if (av && !avatar) avatar = av[1].replace(/\\u002F/g, "/");
+        if (followers > 0 && nickname && avatar) break;
+      } catch (e) {}
+      if (attempt < 3) await new Promise(r => setTimeout(r, 700));
+    }
+    if (!nickname) nickname = uname;
+    const info = { nickname, avatar, followers: followers };
+    this._profileCache.set(uname, { data: info, ts: Date.now() });
+    return info;
   }
 
   async connect(username, options = {}) {
