@@ -30,11 +30,33 @@ body { font-family: 'Cairo', sans-serif; }
 .body { display: flex; flex-direction: column; align-items: center; width: 100%; }
 .col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 
+/* زخارف عايمة (بتظهر حسب الشكل) */
+.deco { position: absolute; z-index: 1; pointer-events: none; opacity: 0; display: none;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
+#decoA { top: 9%; left: 7%; font-size: 30px; animation: decoFloat 7s ease-in-out infinite; }
+#decoB { bottom: 13%; right: 8%; font-size: 24px; animation: decoFloat 8s ease-in-out infinite 1.2s; }
+@keyframes decoFloat { 0%,100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-14px) rotate(10deg); } }
+
+/* شارة الفولو الجديد — ستيكر فوق الركن (مش فوق العنوان) */
+.badge { position: absolute; top: -14px; right: 20px; transform: rotate(4deg); z-index: 30;
+  background: linear-gradient(135deg, #d4af37, #f2dc93); color: #1a1408; font-weight: 900; font-size: 15px;
+  padding: 5px 16px; border-radius: 999px; opacity: 0; pointer-events: none; white-space: nowrap;
+  border: 2px solid rgba(255,255,255,0.55);
+  box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.badge.show { animation: badgeIn 1.6s ease; }
+@keyframes badgeIn { 0% { opacity: 0; transform: rotate(4deg) translateY(-14px) scale(.8); } 15% { opacity: 1; transform: rotate(4deg) translateY(0) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: rotate(4deg) translateY(-10px); } }
+
+/* حركة الفولو على العداد */
+.pop { animation: popAnim .7s cubic-bezier(.34,1.56,.64,1); }
+@keyframes popAnim { 0% { transform: scale(1); } 30% { transform: scale(1.22); } 60% { transform: scale(0.94); } 100% { transform: scale(1); } }
+.ring-flash { animation: ringFlash .9s ease-out; }
+@keyframes ringFlash { 0% { box-shadow: 0 0 0 0 var(--acc-glow), 0 0 24px var(--acc-glow); } 100% { box-shadow: 0 0 0 34px transparent, 0 0 24px transparent; } }
+
 /* ================= 1) كلاسيك ================= */
-.shape-classic .card { width: 330px; height: 445px; border-radius: 24px; padding: 12px 10px;
+.shape-classic .card { width: 330px; height: 445px; border-radius: 24px; padding: 14px 10px;
   background: linear-gradient(170deg, #17131f, #0c0a12 70%);
-  border: 1.5px solid var(--acc-soft, rgba(212,175,55,0.4));
-  box-shadow: 0 24px 70px rgba(0,0,0,0.65), 0 0 46px var(--acc-glow, rgba(212,175,55,0.12)), inset 0 1px 0 rgba(255,255,255,0.06); }
+  border: 1.5px solid var(--acc-soft);
+  box-shadow: 0 24px 70px rgba(0,0,0,0.65), 0 0 46px var(--acc-glow), inset 0 1px 0 rgba(255,255,255,0.06); }
 .shape-classic .card-title { margin-bottom: 14px; }
 .shape-classic .card-title .ttl { font-size: 31px; }
 .shape-classic .body { gap: 4px; }
@@ -43,34 +65,34 @@ body { font-family: 'Cairo', sans-serif; }
 .shape-classic .count { font-size: 48px; color: var(--acc); }
 
 /* ================= 2) جلاس ================= */
-.shape-glass .card { width: 610px; height: 248px; border-radius: 26px; flex-direction: column; gap: 4px; padding: 14px 34px;
+.shape-glass .card { width: 610px; height: 250px; border-radius: 26px; flex-direction: column; gap: 4px; padding: 14px 34px;
   background: linear-gradient(120deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.04));
   border: 1.5px solid rgba(255,255,255,0.16);
   box-shadow: 0 22px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12); }
 .shape-glass .card-title { margin-bottom: 0; }
-.shape-glass .card-title .ttl { font-size: 26px; }
+.shape-glass .card-title .ttl { font-size: 25px; }
 .shape-glass .body { flex-direction: row; align-items: center; gap: 26px; }
 .shape-glass .avatar-wrap { width: 132px; height: 132px; }
-.shape-glass .col { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.shape-glass .col { align-items: flex-start; gap: 6px; }
 .shape-glass .name { font-size: 29px; }
 .shape-glass .count { font-size: 44px; color: var(--acc); }
 
-/* ================= 3) بار ================= */
-.shape-bar .card { width: 560px; height: 138px; border-radius: 999px; flex-direction: column; gap: 0; padding: 8px 26px;
+/* ================= 3) بار — نحيف مرتب ================= */
+.shape-bar .card { width: 580px; height: 158px; border-radius: 32px; flex-direction: column; gap: 2px; padding: 10px 26px;
   background: linear-gradient(90deg, #14101d, #0b0912);
-  border: 1.5px solid var(--acc-soft, rgba(212,175,55,0.45));
-  box-shadow: 0 18px 50px rgba(0,0,0,0.6), 0 0 34px var(--acc-glow, rgba(212,175,55,0.10)); }
+  border: 1.5px solid var(--acc-soft);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.6), 0 0 34px var(--acc-glow); }
 .shape-bar .card-title { margin-bottom: 0; }
 .shape-bar .card-title .ttl { font-size: 20px; }
-.shape-bar .card-title .orn { width: 30px; }
+.shape-bar .card-title .orn { width: 26px; }
 .shape-bar .body { flex-direction: row; align-items: center; gap: 18px; }
-.shape-bar .avatar-wrap { width: 80px; height: 80px; }
-.shape-bar .col { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex: 1; }
-.shape-bar .name { font-size: 22px; }
-.shape-bar .count { font-size: 36px; color: var(--acc); }
+.shape-bar .avatar-wrap { width: 84px; height: 84px; }
+.shape-bar .col { align-items: flex-start; gap: 2px; flex: 1; }
+.shape-bar .name { font-size: 23px; }
+.shape-bar .count { font-size: 38px; }
 
 /* ================= 4) نيون ================= */
-.shape-neon .card { width: 345px; height: 462px; padding: 12px; border-radius: 26px;
+.shape-neon .card { width: 345px; height: 465px; padding: 12px; border-radius: 26px;
   background: linear-gradient(#0d0b14, #0d0b14) padding-box,
               linear-gradient(140deg, #ff2d55, var(--acc), #25f4ee, #ff2d55) border-box;
   border: 2.5px solid transparent;
@@ -80,30 +102,57 @@ body { font-family: 'Cairo', sans-serif; }
 @keyframes borderShift { 0% { background-position: 0 0, 0% 50%; } 50% { background-position: 0 0, 100% 50%; } 100% { background-position: 0 0, 0% 50%; } }
 .shape-neon .card-title { margin-bottom: 14px; }
 .shape-neon .card-title .ttl { font-size: 30px;
-  background: linear-gradient(180deg, #ffffff 0%, var(--acc) 100%);
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  background: linear-gradient(180deg, #ffffff 0%, var(--acc) 100%); }
 .shape-neon .body { gap: 2px; }
 .shape-neon .avatar-wrap { width: 146px; height: 146px; margin-bottom: 16px; }
 .shape-neon .name { font-size: 28px; margin-bottom: 4px; }
 .shape-neon .count { font-size: 46px; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.5), 0 3px 10px rgba(0,0,0,.6); }
 
-/* حركة الفولو الجديد */
-.pop { animation: popAnim .7s cubic-bezier(.34,1.56,.64,1); }
-@keyframes popAnim { 0% { transform: scale(1); } 30% { transform: scale(1.22); } 60% { transform: scale(0.94); } 100% { transform: scale(1); } }
-.ring-flash { animation: ringFlash .9s ease-out; }
-@keyframes ringFlash { 0% { box-shadow: 0 0 0 0 rgba(212,175,55,0.9), 0 0 24px rgba(212,175,55,0.7); } 100% { box-shadow: 0 0 0 34px rgba(212,175,55,0), 0 0 24px rgba(212,175,55,0); } }
-.badge { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 30;
-  background: linear-gradient(135deg, #d4af37, #f2dc93); color: #1a1408; font-weight: 900; font-size: 15px;
-  padding: 5px 16px; border-radius: 999px; opacity: 0; pointer-events: none; white-space: nowrap;
-  box-shadow: 0 6px 20px rgba(212,175,55,0.5); }
-.badge.show { animation: badgeIn 1.6s ease; }
-@keyframes badgeIn { 0% { opacity: 0; transform: translateX(-50%) translateY(-14px); } 15% { opacity: 1; transform: translateX(-50%) translateY(0); } 80% { opacity: 1; transform: translateX(-50%) translateY(0); } 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
+/* ================= 5) ساكورا — بناتي وردي ================= */
+.shape-sakura .card { width: 335px; height: 470px; border-radius: 30px; padding: 14px 10px;
+  background: linear-gradient(170deg, rgba(255,214,238,0.14), rgba(60,20,50,0.85) 55%, rgba(35,10,30,0.92));
+  border: 1.5px solid rgba(255,155,205,0.55);
+  box-shadow: 0 24px 70px rgba(0,0,0,0.6), 0 0 55px rgba(255,127,184,0.25), inset 0 1px 0 rgba(255,220,240,0.15); }
+.shape-sakura .card-title { margin-bottom: 14px; }
+.shape-sakura .card-title .ttl { font-size: 28px;
+  background: linear-gradient(180deg, #ffffff 0%, #ffb0d8 60%, #ff7fb8 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)) drop-shadow(0 0 14px rgba(255,127,184,0.6)); }
+.shape-sakura .card-title .orn { background: linear-gradient(90deg, transparent, #ff9ed2); }
+.shape-sakura .card-title .orn.r { background: linear-gradient(270deg, transparent, #ff9ed2); }
+.shape-sakura .body { gap: 4px; }
+.shape-sakura .avatar-wrap { width: 146px; height: 146px; margin-bottom: 14px; }
+.shape-sakura .ring { border-color: #ffb0d8; box-shadow: 0 0 18px rgba(255,155,205,0.5), inset 0 0 12px rgba(255,155,205,0.25); }
+.shape-sakura .name { font-size: 29px; margin-bottom: 6px; }
+.shape-sakura .count { font-size: 47px; color: #ffb0d8; text-shadow: 0 0 18px rgba(255,127,184,0.6), 0 3px 10px rgba(0,0,0,.6); }
+.shape-sakura .deco { display: block; opacity: 1; }
+
+/* ================= 6) برنسيس — بناتي بنفسجي ================= */
+.shape-princess .card { width: 340px; height: 472px; border-radius: 30px; padding: 14px 10px;
+  background: linear-gradient(170deg, rgba(216,180,255,0.13), rgba(40,20,70,0.85) 55%, rgba(25,12,45,0.92));
+  border: 1.5px solid rgba(190,140,255,0.55);
+  box-shadow: 0 24px 70px rgba(0,0,0,0.6), 0 0 55px rgba(180,120,255,0.28), inset 0 1px 0 rgba(240,220,255,0.15); }
+.shape-princess .card-title { margin-bottom: 14px; }
+.shape-princess .card-title .ttl { font-size: 28px;
+  background: linear-gradient(180deg, #ffffff 0%, #d9a8ff 60%, #b47aff 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)) drop-shadow(0 0 14px rgba(180,120,255,0.65)); }
+.shape-princess .card-title .orn { background: linear-gradient(90deg, transparent, #c9a2ff); }
+.shape-princess .card-title .orn.r { background: linear-gradient(270deg, transparent, #c9a2ff); }
+.shape-princess .body { gap: 4px; }
+.shape-princess .avatar-wrap { width: 146px; height: 146px; margin-bottom: 14px; }
+.shape-princess .ring { border-color: #c9a2ff; box-shadow: 0 0 18px rgba(180,120,255,0.55), inset 0 0 12px rgba(180,120,255,0.25); }
+.shape-princess .name { font-size: 29px; margin-bottom: 6px; }
+.shape-princess .count { font-size: 47px; color: #d9a8ff; text-shadow: 0 0 18px rgba(180,120,255,0.6), 0 3px 10px rgba(0,0,0,.6); }
+.shape-princess .deco { display: block; opacity: 1; }
 </style>
 </head>
 <body class="shape-classic">
 <div id="stage">
   <div class="card" id="card">
     <div class="badge" id="badge">+1 New Follower 🎉</div>
+    <div class="deco" id="decoA">🌸</div>
+    <div class="deco" id="decoB">🌸</div>
     <div class="card-title"><span class="orn"></span><span class="ttl" id="label">Total Followers</span><span class="orn r"></span></div>
     <div class="body">
       <div class="avatar-wrap">
@@ -132,8 +181,8 @@ const type   = (params.get("type")   || CONFIG.type   || "follows").toLowerCase(
 const goal   = parseInt(params.get("goal") || params.get("target") || CONFIG.target || 100) || 100;
 const startN = parseInt(params.get("start"));
 const titleOverride = params.get("title") || CONFIG.title || "";
-let NAME_VAL = params.get("name")  || CONFIG.name  || "ELDALY STREAM";
-let AVATAR_URL = params.get("avatar") || CONFIG.avatar || "";
+let NAME_VAL = params.get("name")  || CONFIG.name  || CONFIG.streamerName || "ELDALY STREAM";
+let AVATAR_URL = params.get("avatar") || CONFIG.avatar || CONFIG.streamerAvatar || "";
 let SOUND_URL = params.get("sound") || CONFIG.sound || "";
 let VOL = Math.max(0, Math.min(1, parseFloat(params.get("vol") || CONFIG.vol || "0.6") || 0.6));
 const MUTED = params.get("mute") === "1";
@@ -150,8 +199,11 @@ const LABEL = titleOverride || T.label;
 
 document.body.className = "shape-" + shape;
 
+let BASE_FOLLOWERS = parseInt(CONFIG.streamerFollowers) || 0;
+let sessionZero = null;   /* أول قراءة فولو في الجلسة */
 let cur = 120;
 if (!isNaN(startN)) cur = Math.max(0, startN);
+else if (BASE_FOLLOWERS) cur = BASE_FOLLOWERS;
 let shown = cur;
 let lastSeen = cur;
 function fmt(n) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
@@ -163,6 +215,16 @@ const countEl = document.getElementById("count");
 const badgeEl = document.getElementById("badge");
 const ringEl = document.getElementById("ring");
 const avatarEl = document.getElementById("avatar");
+const decoA = document.getElementById("decoA");
+const decoB = document.getElementById("decoB");
+
+/* زخارف الشكل — بتتغير حسب الثيم */
+function setDecos(sh) {
+  const a = sh === "sakura" ? "🌸" : sh === "princess" ? "✨" : "";
+  decoA.textContent = a || "🌸";
+  decoB.textContent = a || "🌸";
+}
+setDecos(shape);
 
 nameEl.textContent = NAME_VAL;
 labelEl.textContent = LABEL;
@@ -215,6 +277,7 @@ function applyLive(cfg) {
     const cls = "shape-" + cfg.shape.toLowerCase();
     if (document.body.className !== cls) {
       document.body.className = cls;
+      setDecos(cfg.shape.toLowerCase());
       setTimeout(fit, 60);
     }
   }
@@ -286,7 +349,11 @@ if (evtSource) {
     try { m = JSON.parse(e.data); } catch (_) { return; }
     if (m.type === "stats" && m.stats) {
       const v = m.stats[T.statsKey];
-      if (v !== undefined) { cur = Math.max(0, Number(v) || 0); gotReal = true; }
+      if (v !== undefined) {
+        if (sessionZero === null) sessionZero = Math.max(0, Number(v) || 0);
+        cur = BASE_FOLLOWERS + Math.max(0, (Number(v) || 0) - sessionZero);
+        gotReal = true;
+      }
     } else if (m.type === "config" && m.id === PAGE_ID && m.config) {
       applyLive(m.config);
     } else if (m.type === "test") {
