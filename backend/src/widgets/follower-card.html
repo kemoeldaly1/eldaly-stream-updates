@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>ELDALY STREAM — Follower Card</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Lemon&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
@@ -13,60 +13,78 @@ body { font-family: 'Cairo', sans-serif; }
 .card { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; transform-origin: center center; }
 .avatar-wrap { position: relative; flex-shrink: 0; }
 .avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
-.avatar-fallback { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-weight: 900; color: #1a1408; background: linear-gradient(160deg, #f2dc93, #d4af37); }
-.ring { position: absolute; inset: -7px; border-radius: 50%; border: 3px solid rgba(212,175,55,0.85);
-  box-shadow: 0 0 18px rgba(212,175,55,0.4), inset 0 0 12px rgba(212,175,55,0.2); }
+.ring { position: absolute; inset: -7px; border-radius: 50%; border: 3px solid var(--acc, #d4af37);
+  box-shadow: 0 0 18px var(--acc-glow, rgba(212,175,55,0.4)), inset 0 0 12px var(--acc-glow, rgba(212,175,55,0.2)); }
 .name { font-weight: 900; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.7); line-height: 1.25; }
-.label { font-weight: 800; color: #f2dc93; letter-spacing: .5px; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
 .count { font-family: 'Orbitron', sans-serif; font-weight: 900; direction: ltr; line-height: 1;
-  color: #f2dc93; text-shadow: 0 0 18px rgba(212,175,55,0.55), 0 3px 10px rgba(0,0,0,.6); }
+  text-shadow: 0 0 18px var(--acc-glow, rgba(212,175,55,0.55)), 0 3px 10px rgba(0,0,0,.6); }
+
+/* عنوان الويدجت المزخرف */
+.card-title { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; margin-bottom: 4px; z-index: 2; }
+.card-title .ttl { font-family: 'Lemon', 'Cairo', serif; letter-spacing: 1px; line-height: 1.15; white-space: nowrap;
+  background: linear-gradient(180deg, #ffffff 0%, var(--acc) 62%, #6a4a10 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.65)) drop-shadow(0 0 14px var(--acc-glow)); }
+.card-title .orn { height: 2px; width: 52px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--acc)); }
+.card-title .orn.r { background: linear-gradient(270deg, transparent, var(--acc)); }
+.body { display: flex; flex-direction: column; align-items: center; width: 100%; }
+.col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 
 /* ================= 1) كلاسيك ================= */
-.shape-classic .card { width: 320px; height: 400px; border-radius: 24px;
+.shape-classic .card { width: 330px; height: 445px; border-radius: 24px; padding: 12px 10px;
   background: linear-gradient(170deg, #17131f, #0c0a12 70%);
-  border: 1.5px solid rgba(212,175,55,0.4);
-  box-shadow: 0 24px 70px rgba(0,0,0,0.65), 0 0 46px rgba(212,175,55,0.12), inset 0 1px 0 rgba(255,255,255,0.06); }
-.shape-classic .avatar-wrap { width: 148px; height: 148px; margin-bottom: 18px; }
-.shape-classic .name { font-size: 30px; margin-bottom: 2px; }
-.shape-classic .label { font-size: 17px; margin-bottom: 10px; }
-.shape-classic .count { font-size: 48px; }
+  border: 1.5px solid var(--acc-soft, rgba(212,175,55,0.4));
+  box-shadow: 0 24px 70px rgba(0,0,0,0.65), 0 0 46px var(--acc-glow, rgba(212,175,55,0.12)), inset 0 1px 0 rgba(255,255,255,0.06); }
+.shape-classic .card-title { margin-bottom: 14px; }
+.shape-classic .card-title .ttl { font-size: 31px; }
+.shape-classic .body { gap: 4px; }
+.shape-classic .avatar-wrap { width: 146px; height: 146px; margin-bottom: 14px; }
+.shape-classic .name { font-size: 30px; margin-bottom: 6px; }
+.shape-classic .count { font-size: 48px; color: var(--acc); }
 
 /* ================= 2) جلاس ================= */
-.shape-glass .card { width: 600px; height: 210px; border-radius: 26px; flex-direction: row; align-items: center; gap: 28px; padding: 0 36px;
-  background: linear-gradient(120deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02) 45%, rgba(212,175,55,0.07));
+.shape-glass .card { width: 610px; height: 248px; border-radius: 26px; flex-direction: column; gap: 4px; padding: 14px 34px;
+  background: linear-gradient(120deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.04));
   border: 1.5px solid rgba(255,255,255,0.16);
   box-shadow: 0 22px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12); }
-.shape-glass .avatar-wrap { width: 140px; height: 140px; }
-.shape-glass .col { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.shape-glass .name { font-size: 30px; }
-.shape-glass .label { font-size: 16px; }
-.shape-glass .count { font-size: 44px; }
+.shape-glass .card-title { margin-bottom: 0; }
+.shape-glass .card-title .ttl { font-size: 26px; }
+.shape-glass .body { flex-direction: row; align-items: center; gap: 26px; }
+.shape-glass .avatar-wrap { width: 132px; height: 132px; }
+.shape-glass .col { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.shape-glass .name { font-size: 29px; }
+.shape-glass .count { font-size: 44px; color: var(--acc); }
 
 /* ================= 3) بار ================= */
-.shape-bar .card { width: 540px; height: 118px; border-radius: 999px; flex-direction: row; align-items: center; gap: 20px; padding: 0 28px;
+.shape-bar .card { width: 560px; height: 138px; border-radius: 999px; flex-direction: column; gap: 0; padding: 8px 26px;
   background: linear-gradient(90deg, #14101d, #0b0912);
-  border: 1.5px solid rgba(212,175,55,0.45);
-  box-shadow: 0 18px 50px rgba(0,0,0,0.6), 0 0 34px rgba(212,175,55,0.10); }
-.shape-bar .avatar-wrap { width: 82px; height: 82px; }
-.shape-bar .col { display: flex; flex-direction: column; align-items: flex-start; gap: 0; flex: 1; }
-.shape-bar .name { font-size: 23px; }
-.shape-bar .label { font-size: 13.5px; }
-.shape-bar .count { font-size: 38px; margin-right: 8px; }
-.shape-bar .row { display: flex; align-items: center; width: 100%; }
+  border: 1.5px solid var(--acc-soft, rgba(212,175,55,0.45));
+  box-shadow: 0 18px 50px rgba(0,0,0,0.6), 0 0 34px var(--acc-glow, rgba(212,175,55,0.10)); }
+.shape-bar .card-title { margin-bottom: 0; }
+.shape-bar .card-title .ttl { font-size: 20px; }
+.shape-bar .card-title .orn { width: 30px; }
+.shape-bar .body { flex-direction: row; align-items: center; gap: 18px; }
+.shape-bar .avatar-wrap { width: 80px; height: 80px; }
+.shape-bar .col { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex: 1; }
+.shape-bar .name { font-size: 22px; }
+.shape-bar .count { font-size: 36px; color: var(--acc); }
 
 /* ================= 4) نيون ================= */
-.shape-neon .card { width: 340px; height: 430px; padding: 10px; border-radius: 26px;
+.shape-neon .card { width: 345px; height: 462px; padding: 12px; border-radius: 26px;
   background: linear-gradient(#0d0b14, #0d0b14) padding-box,
-              linear-gradient(140deg, #ff2d55, #d4af37, #25f4ee, #ff2d55) border-box;
+              linear-gradient(140deg, #ff2d55, var(--acc), #25f4ee, #ff2d55) border-box;
   border: 2.5px solid transparent;
   background-size: 100% 100%, 300% 300%;
   box-shadow: 0 24px 70px rgba(0,0,0,0.7);
   animation: borderShift 6s linear infinite; }
 @keyframes borderShift { 0% { background-position: 0 0, 0% 50%; } 50% { background-position: 0 0, 100% 50%; } 100% { background-position: 0 0, 0% 50%; } }
-.shape-neon .avatar-wrap { width: 150px; height: 150px; margin-bottom: 18px; }
-.shape-neon .name { font-size: 29px; margin-bottom: 2px; }
-.shape-neon .label { font-size: 16px; margin-bottom: 10px; color: #fff; }
+.shape-neon .card-title { margin-bottom: 14px; }
+.shape-neon .card-title .ttl { font-size: 30px;
+  background: linear-gradient(180deg, #ffffff 0%, var(--acc) 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.shape-neon .body { gap: 2px; }
+.shape-neon .avatar-wrap { width: 146px; height: 146px; margin-bottom: 16px; }
+.shape-neon .name { font-size: 28px; margin-bottom: 4px; }
 .shape-neon .count { font-size: 46px; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.5), 0 3px 10px rgba(0,0,0,.6); }
 
 /* حركة الفولو الجديد */
@@ -86,13 +104,17 @@ body { font-family: 'Cairo', sans-serif; }
 <div id="stage">
   <div class="card" id="card">
     <div class="badge" id="badge">+1 New Follower 🎉</div>
-    <div class="avatar-wrap">
-      <div class="ring" id="ring"></div>
-      <img class="avatar" id="avatar" alt="">
+    <div class="card-title"><span class="orn"></span><span class="ttl" id="label">Total Followers</span><span class="orn r"></span></div>
+    <div class="body">
+      <div class="avatar-wrap">
+        <div class="ring" id="ring"></div>
+        <img class="avatar" id="avatar" alt="">
+      </div>
+      <div class="col">
+        <div class="name" id="name"></div>
+        <div class="count" id="count">0</div>
+      </div>
     </div>
-    <div class="name" id="name"></div>
-    <div class="label" id="label">Total Followers</div>
-    <div class="count" id="count">0</div>
   </div>
 </div>
 <script>
@@ -166,9 +188,10 @@ function hexRGB(hex) { const [r,g,b] = rgb(hex); return "rgb(" + r + "," + g + "
 function colA(hex, a) { const [r,g,b] = rgb(hex); return "rgba(" + r + "," + g + "," + b + "," + a + ")"; }
 let ACCENT = "#" + C;
 function applyAccent() {
-  ringEl.style.borderColor = colA(ACCENT, 0.85);
-  ringEl.style.boxShadow = "0 0 18px " + colA(ACCENT, 0.4) + ", inset 0 0 12px " + colA(ACCENT, 0.2);
-  labelEl.style.color = hexRGB(ACCENT);
+  const root = document.documentElement.style;
+  root.setProperty("--acc", ACCENT);
+  root.setProperty("--acc-glow", colA(ACCENT, 0.45));
+  root.setProperty("--acc-soft", colA(ACCENT, 0.4));
   if (shape !== "neon") countEl.style.color = hexRGB(ACCENT);
 }
 applyAccent();
