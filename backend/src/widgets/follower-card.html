@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>ELDALY STREAM — Follower Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+body { font-family: 'Cairo', sans-serif; }
+#stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+.card { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; transform-origin: center center; }
+.avatar-wrap { position: relative; flex-shrink: 0; }
+.avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.avatar-fallback { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 900; color: #1a1408; background: linear-gradient(160deg, #f2dc93, #d4af37); }
+.ring { position: absolute; inset: -7px; border-radius: 50%; border: 3px solid rgba(212,175,55,0.85);
+  box-shadow: 0 0 18px rgba(212,175,55,0.4), inset 0 0 12px rgba(212,175,55,0.2); }
+.name { font-weight: 900; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.7); line-height: 1.25; }
+.label { font-weight: 800; color: #f2dc93; letter-spacing: .5px; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+.count { font-family: 'Orbitron', sans-serif; font-weight: 900; direction: ltr; line-height: 1;
+  color: #f2dc93; text-shadow: 0 0 18px rgba(212,175,55,0.55), 0 3px 10px rgba(0,0,0,.6); }
+
+/* ================= 1) كلاسيك ================= */
+.shape-classic .card { width: 320px; height: 400px; border-radius: 24px;
+  background: linear-gradient(170deg, #17131f, #0c0a12 70%);
+  border: 1.5px solid rgba(212,175,55,0.4);
+  box-shadow: 0 24px 70px rgba(0,0,0,0.65), 0 0 46px rgba(212,175,55,0.12), inset 0 1px 0 rgba(255,255,255,0.06); }
+.shape-classic .avatar-wrap { width: 148px; height: 148px; margin-bottom: 18px; }
+.shape-classic .name { font-size: 30px; margin-bottom: 2px; }
+.shape-classic .label { font-size: 17px; margin-bottom: 10px; }
+.shape-classic .count { font-size: 48px; }
+
+/* ================= 2) جلاس ================= */
+.shape-glass .card { width: 600px; height: 210px; border-radius: 26px; flex-direction: row; align-items: center; gap: 28px; padding: 0 36px;
+  background: linear-gradient(120deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02) 45%, rgba(212,175,55,0.07));
+  border: 1.5px solid rgba(255,255,255,0.16);
+  box-shadow: 0 22px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12); }
+.shape-glass .avatar-wrap { width: 140px; height: 140px; }
+.shape-glass .col { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.shape-glass .name { font-size: 30px; }
+.shape-glass .label { font-size: 16px; }
+.shape-glass .count { font-size: 44px; }
+
+/* ================= 3) بار ================= */
+.shape-bar .card { width: 540px; height: 118px; border-radius: 999px; flex-direction: row; align-items: center; gap: 20px; padding: 0 28px;
+  background: linear-gradient(90deg, #14101d, #0b0912);
+  border: 1.5px solid rgba(212,175,55,0.45);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.6), 0 0 34px rgba(212,175,55,0.10); }
+.shape-bar .avatar-wrap { width: 82px; height: 82px; }
+.shape-bar .col { display: flex; flex-direction: column; align-items: flex-start; gap: 0; flex: 1; }
+.shape-bar .name { font-size: 23px; }
+.shape-bar .label { font-size: 13.5px; }
+.shape-bar .count { font-size: 38px; margin-right: 8px; }
+.shape-bar .row { display: flex; align-items: center; width: 100%; }
+
+/* ================= 4) نيون ================= */
+.shape-neon .card { width: 340px; height: 430px; padding: 10px; border-radius: 26px;
+  background: linear-gradient(#0d0b14, #0d0b14) padding-box,
+              linear-gradient(140deg, #ff2d55, #d4af37, #25f4ee, #ff2d55) border-box;
+  border: 2.5px solid transparent;
+  background-size: 100% 100%, 300% 300%;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.7);
+  animation: borderShift 6s linear infinite; }
+@keyframes borderShift { 0% { background-position: 0 0, 0% 50%; } 50% { background-position: 0 0, 100% 50%; } 100% { background-position: 0 0, 0% 50%; } }
+.shape-neon .avatar-wrap { width: 150px; height: 150px; margin-bottom: 18px; }
+.shape-neon .name { font-size: 29px; margin-bottom: 2px; }
+.shape-neon .label { font-size: 16px; margin-bottom: 10px; color: #fff; }
+.shape-neon .count { font-size: 46px; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.5), 0 3px 10px rgba(0,0,0,.6); }
+
+/* حركة الفولو الجديد */
+.pop { animation: popAnim .7s cubic-bezier(.34,1.56,.64,1); }
+@keyframes popAnim { 0% { transform: scale(1); } 30% { transform: scale(1.22); } 60% { transform: scale(0.94); } 100% { transform: scale(1); } }
+.ring-flash { animation: ringFlash .9s ease-out; }
+@keyframes ringFlash { 0% { box-shadow: 0 0 0 0 rgba(212,175,55,0.9), 0 0 24px rgba(212,175,55,0.7); } 100% { box-shadow: 0 0 0 34px rgba(212,175,55,0), 0 0 24px rgba(212,175,55,0); } }
+.badge { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 30;
+  background: linear-gradient(135deg, #d4af37, #f2dc93); color: #1a1408; font-weight: 900; font-size: 15px;
+  padding: 5px 16px; border-radius: 999px; opacity: 0; pointer-events: none; white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(212,175,55,0.5); }
+.badge.show { animation: badgeIn 1.6s ease; }
+@keyframes badgeIn { 0% { opacity: 0; transform: translateX(-50%) translateY(-14px); } 15% { opacity: 1; transform: translateX(-50%) translateY(0); } 80% { opacity: 1; transform: translateX(-50%) translateY(0); } 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
+</style>
+</head>
+<body class="shape-classic">
+<div id="stage">
+  <div class="card" id="card">
+    <div class="badge" id="badge">+1 متابع جديد 🎉</div>
+    <div class="avatar-wrap">
+      <div class="ring" id="ring"></div>
+      <img class="avatar" id="avatar" alt="">
+    </div>
+    <div class="name" id="name"></div>
+    <div class="label" id="label">إجمالي المتابعين</div>
+    <div class="count" id="count">0</div>
+  </div>
+</div>
+<script>
+/* إعداد الويدجت — على الباك اند __INITIAL_CONFIG__ بتتعوض بكونفج الحساب */
+let CONFIG = {};
+try { CONFIG = __INITIAL_CONFIG__; } catch (e) {}
+
+const params = new URLSearchParams(location.search);
+const PAGE_ID = params.get("id") || "follower-card";
+const shape  = (params.get("shape")  || CONFIG.shape  || "classic").toLowerCase();
+const type   = (params.get("type")   || CONFIG.type   || "follows").toLowerCase();
+const goal   = parseInt(params.get("goal") || params.get("target") || CONFIG.target || 100) || 100;
+const startN = parseInt(params.get("start"));
+const titleOverride = params.get("title") || CONFIG.title || "";
+const NAME  = params.get("name")  || CONFIG.name  || "ELDALY STREAM";
+const AVATAR = params.get("avatar") || CONFIG.avatar || "";
+const SOUND_URL = params.get("sound") || CONFIG.sound || "";
+const VOL = Math.max(0, Math.min(1, parseFloat(params.get("vol") || CONFIG.vol || "0.6") || 0.6));
+const MUTED = params.get("mute") === "1";
+
+const TYPES = {
+  follows:  { label: "إجمالي المتابعين", statsKey: "followers" },
+  likes:    { label: "إجمالي اللايكات",  statsKey: "likes" },
+  coins:    { label: "إجمالي الكوينز",   statsKey: "totalCoins" },
+  gifts:    { label: "إجمالي الهدايا",   statsKey: "gifts" },
+  shares:   { label: "إجمالي المشاركات", statsKey: "shares" },
+};
+const T = TYPES[type] || TYPES.follows;
+const LABEL = titleOverride || T.label;
+
+document.body.className = "shape-" + shape;
+
+let cur = 120;
+if (!isNaN(startN)) cur = Math.max(0, startN);
+let shown = cur;
+let lastSeen = cur;
+function fmt(n) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+
+const card = document.getElementById("card");
+const nameEl = document.getElementById("name");
+const labelEl = document.getElementById("label");
+const countEl = document.getElementById("count");
+const badgeEl = document.getElementById("badge");
+const ringEl = document.getElementById("ring");
+const avatarEl = document.getElementById("avatar");
+
+nameEl.textContent = NAME;
+labelEl.textContent = LABEL;
+
+/* صورة الحساب — لو مفيش صورة نرسم أول حرف من الاسم */
+if (AVATAR) {
+  avatarEl.src = AVATAR;
+} else {
+  const letter = (NAME.trim()[0] || "E").toUpperCase();
+  avatarEl.src = "data:image/svg+xml;utf8," + encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'>" +
+    "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>" +
+    "<stop offset='0' stop-color='#f2dc93'/><stop offset='1' stop-color='#c99b2a'/>" +
+    "</linearGradient></defs>" +
+    "<rect width='300' height='300' fill='url(#g)'/>" +
+    "<text x='150' y='196' font-family='Cairo,Arial' font-size='150' font-weight='900' fill='#1a1408' text-anchor='middle'>" + letter + "</text></svg>");
+}
+
+/* تحجيم الكرت على مقاس المصدر */
+function fit() {
+  const cw = card.offsetWidth, ch = card.offsetHeight;
+  if (!cw || !ch) return;
+  const s = Math.min(window.innerWidth / cw, window.innerHeight / ch) * 0.96;
+  card.style.transform = "scale(" + s.toFixed(3) + ")";
+}
+window.addEventListener("resize", fit);
+setTimeout(fit, 60); fit();
+
+/* صوت الفولو — نغمة افتراضية أو ملف صوت مخصص */
+let audioCtx = null;
+function playDing() {
+  if (MUTED) return;
+  if (SOUND_URL) {
+    try { const a = new Audio(SOUND_URL); a.volume = VOL; a.play().catch(function(){}); } catch (e) {}
+    return;
+  }
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const t0 = audioCtx.currentTime;
+    [[880, 0], [1318.5, 0.09]].forEach(function (fg) {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine"; o.frequency.value = fg[0];
+      g.gain.setValueAtTime(0.0001, t0 + fg[1]);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.01, VOL), t0 + fg[1] + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + fg[1] + 0.28);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t0 + fg[1]); o.stop(t0 + fg[1] + 0.32);
+    });
+  } catch (e) {}
+}
+/* فتح الصوت أول تفاعل في المتصفح العادي (OBS بيشغلها تلقائي) */
+window.addEventListener("pointerdown", function(){ if (audioCtx && audioCtx.state === "suspended") audioCtx.resume(); }, { once: true });
+window.addEventListener("keydown", function(){ if (audioCtx && audioCtx.state === "suspended") audioCtx.resume(); }, { once: true });
+
+/* حركة الفولو الجديد */
+function followFx() {
+  playDing();
+  countEl.classList.remove("pop"); void countEl.offsetWidth; countEl.classList.add("pop");
+  ringEl.classList.remove("ring-flash"); void ringEl.offsetWidth; ringEl.classList.add("ring-flash");
+  badgeEl.classList.remove("show"); void badgeEl.offsetWidth; badgeEl.classList.add("show");
+}
+
+function render() {
+  countEl.textContent = fmt(shown);
+}
+
+/* ديمو دائم — أول stats حقيقية بتعديها */
+let gotReal = false;
+setInterval(function () {
+  if (gotReal) return;
+  cur += Math.random() < 0.65 ? 1 : 2;
+}, 6500);
+
+/* بيانات لايف */
+let evtSource = null;
+try { evtSource = new EventSource('/widgets/stream'); } catch (e) {}
+if (evtSource) {
+  evtSource.onmessage = (e) => {
+    let m = null;
+    try { m = JSON.parse(e.data); } catch (_) { return; }
+    if (m.type === "stats" && m.stats) {
+      const v = m.stats[T.statsKey];
+      if (v !== undefined) { cur = Math.max(0, Number(v) || 0); gotReal = true; }
+    } else if (m.type === "config" && m.id === PAGE_ID && m.config) {
+      location.reload();
+    } else if (m.type === "test") {
+      cur += 1;
+    }
+  };
+}
+
+render();
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  shown += (cur - shown) * Math.min(1, dt * 4);
+  if (cur > lastSeen) followFx();
+  lastSeen = cur;
+  render();
+  requestAnimationFrame(frame);
+}
+/* منع تكرار صوت أول تحميل */
+lastSeen = cur;
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
