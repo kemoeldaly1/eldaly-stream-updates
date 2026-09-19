@@ -85,17 +85,20 @@ body { font-family: 'Cairo', sans-serif; }
 <body class="shape-classic">
 <div id="stage">
   <div class="card" id="card">
-    <div class="badge" id="badge">+1 متابع جديد 🎉</div>
+    <div class="badge" id="badge">+1 New Follower 🎉</div>
     <div class="avatar-wrap">
       <div class="ring" id="ring"></div>
       <img class="avatar" id="avatar" alt="">
     </div>
     <div class="name" id="name"></div>
-    <div class="label" id="label">إجمالي المتابعين</div>
+    <div class="label" id="label">Total Followers</div>
     <div class="count" id="count">0</div>
   </div>
 </div>
 <script>
+window.onerror = function (msg, src, line, col) {
+  try { document.title = "ERR: " + msg + " @" + line + ":" + col; } catch (e) {}
+};
 /* إعداد الويدجت — على الباك اند __INITIAL_CONFIG__ بتتعوض بكونفج الحساب */
 let CONFIG = {};
 try { CONFIG = __INITIAL_CONFIG__; } catch (e) {}
@@ -107,18 +110,18 @@ const type   = (params.get("type")   || CONFIG.type   || "follows").toLowerCase(
 const goal   = parseInt(params.get("goal") || params.get("target") || CONFIG.target || 100) || 100;
 const startN = parseInt(params.get("start"));
 const titleOverride = params.get("title") || CONFIG.title || "";
-const NAME  = params.get("name")  || CONFIG.name  || "ELDALY STREAM";
-const AVATAR = params.get("avatar") || CONFIG.avatar || "";
-const SOUND_URL = params.get("sound") || CONFIG.sound || "";
-const VOL = Math.max(0, Math.min(1, parseFloat(params.get("vol") || CONFIG.vol || "0.6") || 0.6));
+let NAME_VAL = params.get("name")  || CONFIG.name  || "ELDALY STREAM";
+let AVATAR_URL = params.get("avatar") || CONFIG.avatar || "";
+let SOUND_URL = params.get("sound") || CONFIG.sound || "";
+let VOL = Math.max(0, Math.min(1, parseFloat(params.get("vol") || CONFIG.vol || "0.6") || 0.6));
 const MUTED = params.get("mute") === "1";
 
 const TYPES = {
-  follows:  { label: "إجمالي المتابعين", statsKey: "followers" },
-  likes:    { label: "إجمالي اللايكات",  statsKey: "likes" },
-  coins:    { label: "إجمالي الكوينز",   statsKey: "totalCoins" },
-  gifts:    { label: "إجمالي الهدايا",   statsKey: "gifts" },
-  shares:   { label: "إجمالي المشاركات", statsKey: "shares" },
+  follows:  { label: "Total Followers", statsKey: "followers" },
+  likes:    { label: "Total Likes",     statsKey: "likes" },
+  coins:    { label: "Total Coins",     statsKey: "totalCoins" },
+  gifts:    { label: "Total Gifts",     statsKey: "gifts" },
+  shares:   { label: "Total Shares",    statsKey: "shares" },
 };
 const T = TYPES[type] || TYPES.follows;
 const LABEL = titleOverride || T.label;
@@ -139,14 +142,13 @@ const badgeEl = document.getElementById("badge");
 const ringEl = document.getElementById("ring");
 const avatarEl = document.getElementById("avatar");
 
-nameEl.textContent = NAME;
+nameEl.textContent = NAME_VAL;
 labelEl.textContent = LABEL;
 
 /* صورة الحساب — لو مفيش صورة نرسم أول حرف من الاسم */
-if (AVATAR) {
-  avatarEl.src = AVATAR;
-} else {
-  const letter = (NAME.trim()[0] || "E").toUpperCase();
+function setAvatar() {
+  if (AVATAR_URL) { avatarEl.src = AVATAR_URL; return; }
+  const letter = (NAME_VAL.trim()[0] || "E").toUpperCase();
   avatarEl.src = "data:image/svg+xml;utf8," + encodeURIComponent(
     "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'>" +
     "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>" +
@@ -155,6 +157,46 @@ if (AVATAR) {
     "<rect width='300' height='300' fill='url(#g)'/>" +
     "<text x='150' y='196' font-family='Cairo,Arial' font-size='150' font-weight='900' fill='#1a1408' text-anchor='middle'>" + letter + "</text></svg>");
 }
+setAvatar();
+
+/* لون الويدجت — ذهبي افتراضي وقابل للتغيير لحظيًا */
+const C = (params.get("color") || CONFIG.color || "#d4af37").replace("#", "");
+function rgb(hex) { const p = String(hex).replace("#", ""); return [parseInt(p.slice(0,2),16), parseInt(p.slice(2,4),16), parseInt(p.slice(4,6),16)]; }
+function hexRGB(hex) { const [r,g,b] = rgb(hex); return "rgb(" + r + "," + g + "," + b + ")"; }
+function colA(hex, a) { const [r,g,b] = rgb(hex); return "rgba(" + r + "," + g + "," + b + "," + a + ")"; }
+let ACCENT = "#" + C;
+function applyAccent() {
+  ringEl.style.borderColor = colA(ACCENT, 0.85);
+  ringEl.style.boxShadow = "0 0 18px " + colA(ACCENT, 0.4) + ", inset 0 0 12px " + colA(ACCENT, 0.2);
+  labelEl.style.color = hexRGB(ACCENT);
+  if (shape !== "neon") countEl.style.color = hexRGB(ACCENT);
+}
+applyAccent();
+
+/* تطبيق إعدادات جديدة لحظيًا من السوكت — من غير إعادة تحميل */
+function applyLive(cfg) {
+  if (!cfg || typeof cfg !== "object") return;
+  if (typeof cfg.name === "string" && cfg.name.trim()) {
+    NAME_VAL = cfg.name;
+    nameEl.textContent = NAME_VAL;
+    if (!AVATAR_URL) setAvatar();
+  }
+  if (typeof cfg.avatar === "string") {
+    const nv = cfg.avatar.trim();
+    if (nv !== AVATAR_URL) { AVATAR_URL = nv; setAvatar(); }
+  }
+  if (typeof cfg.sound === "string") SOUND_URL = cfg.sound.trim();
+  if (cfg.vol !== undefined) VOL = Math.max(0, Math.min(1, Number(cfg.vol) || 0));
+  if (typeof cfg.color === "string" && cfg.color) { ACCENT = cfg.color; applyAccent(); }
+  if (typeof cfg.shape === "string" && cfg.shape) {
+    const cls = "shape-" + cfg.shape.toLowerCase();
+    if (document.body.className !== cls) {
+      document.body.className = cls;
+      setTimeout(fit, 60);
+    }
+  }
+}
+window.applyLiveConfig = applyLive;
 
 /* تحجيم الكرت على مقاس المصدر */
 function fit() {
@@ -223,7 +265,7 @@ if (evtSource) {
       const v = m.stats[T.statsKey];
       if (v !== undefined) { cur = Math.max(0, Number(v) || 0); gotReal = true; }
     } else if (m.type === "config" && m.id === PAGE_ID && m.config) {
-      location.reload();
+      applyLive(m.config);
     } else if (m.type === "test") {
       cur += 1;
     }
