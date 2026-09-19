@@ -342,6 +342,22 @@ async function getTikTokProfile(username) {
   if (!data) {
     try {
       const res = await fetch(
+        "https://countik.com/api/exist/" + encodeURIComponent(username),
+        { signal: AbortSignal.timeout(5000) }
+      );
+      const j = await res.json();
+      if (j && (j.followers || j.nickname)) {
+        data = {
+          nickname: j.nickname || username,
+          avatar: j.avatar || "",
+          followers: Number(j.followers) || 0
+        };
+      }
+    } catch (e) {}
+  }
+  if (!data) {
+    try {
+      const res = await fetch(
         "https://www.tiktok.com/oembed?url=https://www.tiktok.com/@" + encodeURIComponent(username),
         { signal: AbortSignal.timeout(5000) }
       );

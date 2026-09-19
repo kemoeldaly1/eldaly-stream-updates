@@ -139,7 +139,6 @@ class TikTokService extends EventEmitter {
       processInitialData: true,
       enableExtendedGiftInfo: true,
       enableWebsocketUpgrade: true,
-      fetchRoomInfoOnConnect: true,
       requestPollingIntervalMs: 1000,
       connectWithTimeout: 30000,
     });
@@ -198,6 +197,29 @@ class TikTokService extends EventEmitter {
         console.log(
           `[TikTok] Streamer: @${this.username} — ${this.streamerInfo.nickname} — ${this.streamerInfo.followers} followers — avatar: ${this.streamerInfo.avatar ? "ok" : "missing"}`
         );
+        // جلب room info اختياري — فشله مش بيوقف الكونكت
+        (async () => {
+          try {
+            const ri = await this.client.fetchRoomInfo();
+            const d = ri && ri.data ? ri.data : {};
+            const user = d.user || {};
+            const stats = d.stats || {};
+            const followers = Number(stats.followerCount) || 0;
+            const nickname = user.nickname || this.streamerInfo.nickname;
+            const avatar = this._imgUrl(user.avatarLarger) || this._imgUrl(user.avatarMedium) || this._imgUrl(user.avatarThumb) || this.streamerInfo.avatar;
+            if (followers > 0 || nickname) {
+              this.streamerInfo = {
+                nickname: nickname,
+                avatar: avatar,
+                followers: followers
+              };
+              this.emit("tiktok:streamer", this.streamerInfo);
+              console.log(`[TikTok] Streamer updated: ${nickname} — ${followers} followers`);
+            }
+          } catch (e) {
+            console.log("[TikTok] room info fetch skipped:", e.message);
+          }
+        })();
         // جلب البروفايل الكامل (بمتابعينه الحقيقيين) وبثه للويدجتات
         this.fetchStreamerInfo(this.username)
           .then(info => {
