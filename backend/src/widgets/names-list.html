@@ -148,12 +148,9 @@
      ============================================================ */
   .nl-box.shape-gold { --nl-radius: 16px; }
   .nl-box.shape-gold .nl-inner {
-    background:
-      linear-gradient(var(--nl-bg), var(--nl-bg)),
-      linear-gradient(160deg, #f7dd8a 0%, #b8860b 30%, #6b4a08 55%, #b8860b 80%, #f7dd8a 100%);
-    background-clip: padding-box, border-box;
-    border: 2px solid transparent;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), inset 0 0 24px rgba(0, 0, 0, 0.45);
+    background: var(--nl-bg);
+    border: 2px solid #d4af37;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), inset 0 0 24px rgba(212, 175, 55, 0.10);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
@@ -184,20 +181,11 @@
      ============================================================ */
   .nl-box.shape-royal { --nl-radius: 20px; }
   .nl-box.shape-royal .nl-inner {
-    background:
-      linear-gradient(var(--nl-bg), var(--nl-bg)) padding-box,
-      linear-gradient(130deg, var(--nl-glow), #ec4899, #8b5cf6, var(--nl-glow)) border-box;
-    background-size: 100% 100%, 300% 300%;
-    animation: nlRoyal 7s linear infinite;
-    border: 2px solid transparent;
-    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+    background: var(--nl-bg);
+    border: 2px solid rgba(var(--nl-glow-rgb), 0.85);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5), 0 0 18px rgba(236, 72, 153, 0.25);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-  }
-  @keyframes nlRoyal {
-    0%   { background-position: 0% 0%, 0% 50%; }
-    50%  { background-position: 0% 0%, 100% 50%; }
-    100% { background-position: 0% 0%, 0% 50%; }
   }
   .nl-box.shape-royal .nl-header {
     border-bottom: 1px solid rgba(236, 72, 153, 0.4);
