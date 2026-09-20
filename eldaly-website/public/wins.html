@@ -7,10 +7,10 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
-body { font-family: "Cairo", sans-serif; }
-.theme-classic { --win: #22c55e; --lose: #ef4444; --bg: rgba(10,10,18,0.85); --border: rgba(212,175,55,0.45); }
-.theme-neon { --win: #00ffe1; --lose: #ff2d55; --bg: rgba(8,8,20,0.85); --border: rgba(0,255,225,0.4); }
-.theme-sakura { --win: #ff7fb8; --lose: #9370db; --bg: rgba(40,15,35,0.85); --border: rgba(255,155,205,0.45); }
+body { font-family: 'Cairo', sans-serif; }
+.t-classic { --win: #22c55e; --lose: #ef4444; --bg: rgba(10,10,18,0.85); --border: rgba(212,175,55,0.45); }
+.t-neon { --win: #00ffe1; --lose: #ff2d55; --bg: rgba(8,8,20,0.85); --border: rgba(0,255,225,0.4); }
+.t-sakura { --win: #ff7fb8; --lose: #9370db; --bg: rgba(40,15,35,0.85); --border: rgba(255,155,205,0.45); }
 .wrap { position: absolute; border-radius: 24px; display: flex; align-items: center;
   justify-content: center; opacity: 0; transition: opacity .5s;
   background: var(--bg); border: 1.5px solid var(--border); }
@@ -26,7 +26,7 @@ body { font-family: "Cairo", sans-serif; }
 .side.l .num { color: var(--lose); }
 </style>
 </head>
-<body class="theme-classic">
+<body class="t-classic">
 <div class="wrap on" id="wrap">
   <div class="side w"><div class="num" id="w">0</div><div class="lbl">WIN</div></div>
   <div class="vs">VS</div>
