@@ -65,12 +65,17 @@ class TikTokService extends EventEmitter {
     try {
       const tmp = new TikTokLiveConnection(uname, { processInitialData: false });
       const html = await tmp.webClient.getHtmlFromTikTokWebsite("@" + uname + "/live");
-      const fm = html.match(/"followerCount"\s*:\s*(\d+)/) || html.match(/"follower_count"\s*:\s*(\d+)/);
-      if (fm) followers = parseInt(fm[1]) || 0;
-      const nm = html.match(/"nickname"\s*:\s*"([^"]+)"/);
-      if (nm) nickname = JSON.parse('"' + nm[1] + '"');
-      const av = html.match(/"avatarLarger"\s*:\s*\{[^}]*?"url_list"\s*:\s*\[\s*"([^"]+)"/) || html.match(/"avatarThumb"\s*:\s*\{[^}]*?"url_list"\s*:\s*\[\s*"([^"]+)"/);
-      if (av) avatar = av[1];
+      const m = html.match(/<script id="SIGI_STATE" type="application\/json">(.*?)<\/script>/s);
+      if (m) {
+        const j = JSON.parse(m[1]);
+        const lru = (j.LiveRoom && j.LiveRoom.liveRoomUserInfo) || {};
+        const user = lru.user || {};
+        const stats = lru.stats || {};
+        nickname = user.nickname || "";
+        const av = user.avatarLarger || user.avatarMedium || user.avatarThumb || "";
+        avatar = (typeof av === "string") ? av : ((av.url_list && av.url_list[0]) || "");
+        followers = Number(stats.followerCount) || 0;
+      }
     } catch (e) {}
     if (!nickname) nickname = uname;
     const info = { nickname, avatar, followers: followers };
