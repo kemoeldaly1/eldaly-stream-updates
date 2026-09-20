@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>ELDALY — WIN / LOSE</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+body { font-family: "Cairo", sans-serif; }
+.theme-classic { --win: #22c55e; --lose: #ef4444; --bg: rgba(10,10,18,0.85); --border: rgba(212,175,55,0.45); }
+.theme-neon { --win: #00ffe1; --lose: #ff2d55; --bg: rgba(8,8,20,0.85); --border: rgba(0,255,225,0.4); }
+.theme-sakura { --win: #ff7fb8; --lose: #9370db; --bg: rgba(40,15,35,0.85); --border: rgba(255,155,205,0.45); }
+.wrap { position: absolute; border-radius: 24px; display: flex; align-items: center;
+  justify-content: center; opacity: 0; transition: opacity .5s;
+  background: var(--bg); border: 1.5px solid var(--border); }
+.wrap.on { opacity: 1; }
+.side { flex: 1; text-align: center; padding: 24px 10px; position: relative; }
+.side .num { font-family: "Orbitron", sans-serif; font-weight: 900; font-size: 64px;
+  line-height: 1; text-shadow: 0 0 20px currentColor; }
+.side .lbl { font-size: 16px; font-weight: 900; color: rgba(255,255,255,0.7); margin-top: 6px;
+  letter-spacing: 2px; text-transform: uppercase; }
+.vs { font-family: "Orbitron", sans-serif; font-weight: 900; font-size: 24px;
+  color: rgba(255,255,255,0.3); padding: 0 8px; }
+.side.w .num { color: var(--win); }
+.side.l .num { color: var(--lose); }
+</style>
+</head>
+<body class="theme-classic">
+<div class="wrap on" id="wrap">
+  <div class="side w"><div class="num" id="w">0</div><div class="lbl">WIN</div></div>
+  <div class="vs">VS</div>
+  <div class="side l"><div class="num" id="l">0</div><div class="lbl">LOSE</div></div>
+</div>
+<script>
+const params = new URLSearchParams(location.search);
+const theme = (params.get("theme") || "classic").toLowerCase();
+document.body.className = "theme-" + theme;
+let w = parseInt(params.get("w")) || 0;
+let l = parseInt(params.get("l")) || 0;
+function render() {
+  document.getElementById("w").textContent = w;
+  document.getElementById("l").textContent = l;
+}
+render();
+window.addEventListener("message", function(e) {
+  try {
+    const d = JSON.parse(e.data);
+    if (d.w !== undefined) { w = d.w; render(); }
+    if (d.l !== undefined) { l = d.l; render(); }
+  } catch (err) {}
+});
+</script>
+</body>
+</html>
