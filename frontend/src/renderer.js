@@ -1878,7 +1878,7 @@ async function setNamesListPreview(n) {
 
 async function setupNamesList(n) {
   const el = (sfx) => document.getElementById("w-names-list-" + n + "-" + sfx);
-  if (!el("apply")) return;
+  if (!el("title")) return;
   let cfg = {};
   try { cfg = (await api.widget.getConfig("names-list-" + n)) || {}; } catch (err) {}
   el("title").value = cfg.title !== undefined && cfg.title !== "" ? cfg.title : (n === 1 ? "TOP FANS" : "TOP GIFTERS");
@@ -1927,24 +1927,27 @@ async function setupNamesList(n) {
     el("opacity-val").textContent = el("opacity").value + "%";
   });
   el("names").addEventListener("input", renderCrowns);
-  el("apply").addEventListener("click", async () => {
-    const btn = el("apply");
-    const old = btn.textContent;
-    try {
-      btn.textContent = "Saving...";
-      await saveNamesConfig(n);
-      btn.textContent = "Saved ✓";
-    } catch (err) {
-      btn.textContent = "Error ✗";
-    }
-    setTimeout(() => { btn.textContent = old; }, 1600);
+  // حفظ لحظي: أي تغيير بيتحفظ فورًا (مع debounce بسيط) وبيتنقل بالسوكيت
+  // للأوفرلاي والمعاينة من غير زرار Apply ولا reload
+  let saveTimer = null;
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      try { await saveNamesConfig(n); } catch (err) {}
+    }, 500);
+  }
+  ["title", "names", "shape", "bg", "opacity", "glow", "badge", "tsize", "nsize", "width", "height"].forEach((sfx) => {
+    const input = el(sfx);
+    if (!input) return;
+    input.addEventListener("input", scheduleSave);
+    input.addEventListener("change", scheduleSave);
   });
   renderCrowns();
 }
 
 async function saveNamesConfig(n) {
   const el = (sfx) => document.getElementById("w-names-list-" + n + "-" + sfx);
-  if (!el("apply")) return;
+  if (!el("title")) return;
   const cfg = {
     title: el("title").value,
     names: el("names").value,
