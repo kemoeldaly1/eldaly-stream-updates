@@ -55,28 +55,23 @@ class TikTokService extends EventEmitter {
     const { TikTokLiveConnection } = require("tiktok-live-connector");
     const uname = String(username || "").replace("@", "").trim();
     if (!uname) return null;
+    // جلب واحد لكل 10 دقايق — من غير ضغط على تيك توك (الضغط بيفصل اللايف)
     this._profileCache = this._profileCache || new Map();
     const hit = this._profileCache.get(uname);
-    if (hit && Date.now() - hit.ts < 5 * 60 * 1000) return hit.data;
+    if (hit && Date.now() - hit.ts < 10 * 60 * 1000) return hit.data;
     let nickname = "";
     let avatar = "";
     let followers = 0;
-    // 3 محاولات — تيك توك ساعات بيبعت نسخة من غير الإحصائيات
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const tmp = new TikTokLiveConnection(uname, { processInitialData: false });
-        const html = await tmp.webClient.getHtmlFromTikTokWebsite("@" + uname + "/live");
-        // العدد: أول رقم followerCount في الصفحة كلها
-        const fm = html.match(/"followerCount"\s*:\s*(\d+)/) || html.match(/"follower_count"\s*:\s*(\d+)/);
-        if (fm && parseInt(fm[1]) > followers) followers = parseInt(fm[1]);
-        const nm = html.match(/"nickname"\s*:\s*"([^"]+)"/);
-        if (nm && !nickname) nickname = nm[1].replace(/\\u([0-9a-fA-F]{4})/g, (x, c) => String.fromCharCode(parseInt(c, 16)));
-        const av = html.match(/"avatarLarger"\s*:\s*\{[^}]*?"url_list"\s*:\s*\[\s*"([^"]+)"/) || html.match(/"avatarThumb"\s*:\s*\{[^}]*?"url_list"\s*:\s*\[\s*"([^"]+)"/);
-        if (av && !avatar) avatar = av[1].replace(/\\u002F/g, "/");
-        if (followers > 0 && nickname && avatar) break;
-      } catch (e) {}
-      if (attempt < 3) await new Promise(r => setTimeout(r, 700));
-    }
+    try {
+      const tmp = new TikTokLiveConnection(uname, { processInitialData: false });
+      const html = await tmp.webClient.getHtmlFromTikTokWebsite("@" + uname + "/live");
+      const fm = html.match(/"followerCount"\s*:\s*(\d+)/) || html.match(/"follower_count"\s*:\s*(\d+)/);
+      if (fm) followers = parseInt(fm[1]) || 0;
+      const nm = html.match(/"nickname"\s*:\s*"([^"]+)"/);
+      if (nm) nickname = JSON.parse('"' + nm[1] + '"');
+      const av = html.match(/"avatarLarger"\s*:\s*\{[^}]*?"url_list"\s*:\s*\[\s*"([^"]+)"/) || html.match(/"avatarThumb"\s*:\s*\{[^}]*?"url_list"\s*:\s*\[\s*"([^"]+)"/);
+      if (av) avatar = av[1];
+    } catch (e) {}
     if (!nickname) nickname = uname;
     const info = { nickname, avatar, followers: followers };
     this._profileCache.set(uname, { data: info, ts: Date.now() });
