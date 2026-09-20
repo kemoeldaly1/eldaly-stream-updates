@@ -1855,6 +1855,113 @@ async function setWidgetPreview(widgetId) {
   } catch (err) {}
 }
 
+/* ===== Names Lists (قائمتين أسماء بأوفرلاي شفاف) ===== */
+async function setNamesListPreview(n) {
+  try {
+    const url = await api.overlay.getWidgetUrl("names-list", "id=names-list-" + n);
+    const urlInput = document.getElementById("w-names-list-" + n + "-url");
+    if (urlInput && url) urlInput.value = url;
+    const frame = document.getElementById("w-names-list-" + n + "-preview");
+    if (!frame || !url) return;
+    let html = null;
+    if (typeof api.widget.fetch === "function") {
+      html = await api.widget.fetch(url + "&preview=1");
+    }
+    if (!html) { frame.src = url; return; }
+    const origin = new URL(url).origin;
+    html = html.split("(location.protocol==='https:'?'wss://':'ws://')+location.host").join('"wss://overlay.eldalystream.com"');
+    html = html.split("location.host").join('"overlay.eldalystream.com"');
+    html = html.replace("<head>", '<head><base href="' + origin + '/">');
+    frame.srcdoc = html;
+  } catch (err) {}
+}
+
+async function setupNamesList(n) {
+  const el = (sfx) => document.getElementById("w-names-list-" + n + "-" + sfx);
+  if (!el("apply")) return;
+  let cfg = {};
+  try { cfg = (await api.widget.getConfig("names-list-" + n)) || {}; } catch (err) {}
+  el("title").value = cfg.title !== undefined && cfg.title !== "" ? cfg.title : (n === 1 ? "TOP FANS" : "TOP GIFTERS");
+  el("names").value = cfg.names || "";
+  el("shape").value = cfg.shape || "glass";
+  el("bg").value = cfg.bgColor || "#0d0f1a";
+  el("opacity").value = (cfg.opacity === undefined || cfg.opacity === null) ? 55 : cfg.opacity;
+  el("opacity-val").textContent = el("opacity").value + "%";
+  el("glow").value = cfg.glow || (n === 1 ? "#00ffe1" : "#ffcc00");
+  el("badge").value = cfg.badge || (n === 1 ? "#ff0055" : "#a855f7");
+  el("tsize").value = cfg.titleSize || 26;
+  el("nsize").value = cfg.nameSize || 19;
+  el("width").value = cfg.width || 285;
+  el("height").value = cfg.maxHeight || 500;
+  window.__namesCrowns = window.__namesCrowns || {};
+  window.__namesCrowns[n] = new Set(Array.isArray(cfg.crowns) ? cfg.crowns : []);
+
+  function renderCrowns() {
+    const names = el("names").value.split("\n").map(s => s.trim()).filter(s => s !== "");
+    const box = el("crowns");
+    box.innerHTML = "";
+    if (!names.length) {
+      const msg = document.createElement("span");
+      msg.className = "nl-crown-chip empty";
+      msg.textContent = "No names yet — add names above";
+      box.appendChild(msg);
+      return;
+    }
+    const crowned = window.__namesCrowns[n];
+    names.forEach((nm, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      const on = crowned.has(i);
+      b.className = "nl-crown-chip" + (on ? " active" : "");
+      b.textContent = (on ? "👑 " : "") + (i + 1) + ". " + nm.slice(0, 20);
+      b.addEventListener("click", async () => {
+        if (crowned.has(i)) crowned.delete(i); else crowned.add(i);
+        renderCrowns();
+        await saveNamesConfig(n);
+      });
+      box.appendChild(b);
+    });
+  }
+
+  el("opacity").addEventListener("input", () => {
+    el("opacity-val").textContent = el("opacity").value + "%";
+  });
+  el("names").addEventListener("input", renderCrowns);
+  el("apply").addEventListener("click", async () => {
+    const btn = el("apply");
+    const old = btn.textContent;
+    try {
+      btn.textContent = "Saving...";
+      await saveNamesConfig(n);
+      btn.textContent = "Saved ✓";
+    } catch (err) {
+      btn.textContent = "Error ✗";
+    }
+    setTimeout(() => { btn.textContent = old; }, 1600);
+  });
+  renderCrowns();
+}
+
+async function saveNamesConfig(n) {
+  const el = (sfx) => document.getElementById("w-names-list-" + n + "-" + sfx);
+  if (!el("apply")) return;
+  const cfg = {
+    title: el("title").value,
+    names: el("names").value,
+    crowns: window.__namesCrowns && window.__namesCrowns[n] ? Array.from(window.__namesCrowns[n]) : [],
+    shape: el("shape").value,
+    bgColor: el("bg").value,
+    opacity: parseInt(el("opacity").value) || 0,
+    glow: el("glow").value,
+    badge: el("badge").value,
+    titleSize: parseInt(el("tsize").value) || 26,
+    nameSize: parseInt(el("nsize").value) || 19,
+    width: parseInt(el("width").value) || 285,
+    maxHeight: parseInt(el("height").value) || 500,
+  };
+  await api.widget.setConfig("names-list-" + n, cfg);
+}
+
 async function loadOverlayUrls() {
   const getUrlsResult = await api.overlay.getUrls();
   const v141 = document.getElementById("overlay-urls-list");
@@ -1901,6 +2008,9 @@ async function loadOverlayUrls() {
   for (const lw of latestIds) await setWidgetPreview(lw);
   // كرت المتابعين: لينك حقيقي + معاينة حية جوه الكارت
   try { await setWidgetPreview("follower-card"); } catch (err) {}
+  // قوايم الأسماء: تحميل الإعدادات + لينك + معاينة حية لكل قائمة
+  try { await setupNamesList(1); await setNamesListPreview(1); } catch (err) {}
+  try { await setupNamesList(2); await setNamesListPreview(2); } catch (err) {}
 }
 async function refreshQueueCounts() {
   try {

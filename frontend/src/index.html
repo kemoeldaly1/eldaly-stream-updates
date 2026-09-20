@@ -1281,6 +1281,137 @@
             </div>
           </details>
 
+          <!-- ── Names Lists ── -->
+          <details class="widget-group" open>
+            <summary class="widget-group-header">
+              <div class="widget-group-icon">📜</div>
+              <span class="widget-group-title">Names Lists</span>
+              <span class="widget-group-count">2</span>
+              <div class="widget-group-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
+            </summary>
+            <div class="widget-group-body">
+              <div class="profile-grid">
+
+                <!-- Names List 1 -->
+                <div class="glass-card profile-card" id="card-names-list-1">
+                  <h3 class="form-section-title">📜 Names List 1</h3>
+                  <div class="le-preview"><iframe id="w-names-list-1-preview" title="preview" style="width:100%;height:430px;border:0;position:relative;"></iframe></div>
+                  <div class="divider" style="margin:14px 0;"></div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-names-list-1-title" value="TOP FANS"></div>
+                  </div>
+                  <div class="form-group" style="margin-top:8px;">
+                    <label class="form-label">Names (one per line)</label>
+                    <textarea class="form-input" id="w-names-list-1-names" rows="5" placeholder="Name 1&#10;Name 2&#10;Name 3" style="resize:vertical;"></textarea>
+                  </div>
+                  <div class="form-group" style="margin-top:8px;">
+                    <label class="form-label">👑 Crown Pick (click a name)</label>
+                    <div id="w-names-list-1-crowns" style="display:flex;flex-wrap:wrap;gap:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 10px;max-height:110px;overflow-y:auto;"></div>
+                  </div>
+                  <div class="form-row" style="margin-top:10px;">
+                    <div class="form-group"><label class="form-label">Shape</label>
+                      <select class="form-select" id="w-names-list-1-shape">
+                        <option value="glass">🪞 Glass</option>
+                        <option value="neon">🌈 Neon</option>
+                        <option value="gold">👑 Gold VIP</option>
+                        <option value="royal">💜 Royal</option>
+                        <option value="minimal">⬜ Minimal</option>
+                        <option value="cyber">🎮 Cyber</option>
+                        <option value="bars">📊 Bars</option>
+                      </select></div>
+                    <div class="form-group"><label class="form-label">Background Color</label><input type="color" class="form-input" id="w-names-list-1-bg" value="#0d0f1a"></div>
+                  </div>
+                  <div class="form-row" style="margin-top:10px;">
+                    <div class="form-group">
+                      <label class="form-label">Transparency: <span id="w-names-list-1-opacity-val">55%</span></label>
+                      <input type="range" class="form-input" id="w-names-list-1-opacity" min="0" max="100" value="55" style="width:100%;padding:0;">
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Glow Color</label><input type="color" class="form-input" id="w-names-list-1-glow" value="#00ffe1"></div>
+                    <div class="form-group"><label class="form-label">Numbers Color</label><input type="color" class="form-input" id="w-names-list-1-badge" value="#ff0055"></div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Title Size (px)</label><input type="number" class="form-input" id="w-names-list-1-tsize" value="26" min="10" max="80"></div>
+                    <div class="form-group"><label class="form-label">Names Size (px)</label><input type="number" class="form-input" id="w-names-list-1-nsize" value="19" min="8" max="60"></div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Width (px)</label><input type="number" class="form-input" id="w-names-list-1-width" value="285" min="100" max="800"></div>
+                    <div class="form-group"><label class="form-label">Height (px)</label><input type="number" class="form-input" id="w-names-list-1-height" value="500" min="150" max="1200"></div>
+                  </div>
+                  <div class="form-row" style="align-items: flex-end;">
+                    <div class="form-group">
+                      <button class="btn btn-primary" id="w-names-list-1-apply" style="width:100%;">Apply Settings</button>
+                    </div>
+                  </div>
+                  <div class="url-row">
+                    <input type="text" class="form-input" id="w-names-list-1-url" readonly value="...">
+                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-names-list-1-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
+                  </div>
+                </div>
+
+                <!-- Names List 2 -->
+                <div class="glass-card profile-card" id="card-names-list-2">
+                  <h3 class="form-section-title">📜 Names List 2</h3>
+                  <div class="le-preview"><iframe id="w-names-list-2-preview" title="preview" style="width:100%;height:430px;border:0;position:relative;"></iframe></div>
+                  <div class="divider" style="margin:14px 0;"></div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="w-names-list-2-title" value="TOP GIFTERS"></div>
+                  </div>
+                  <div class="form-group" style="margin-top:8px;">
+                    <label class="form-label">Names (one per line)</label>
+                    <textarea class="form-input" id="w-names-list-2-names" rows="5" placeholder="Name 1&#10;Name 2&#10;Name 3" style="resize:vertical;"></textarea>
+                  </div>
+                  <div class="form-group" style="margin-top:8px;">
+                    <label class="form-label">👑 Crown Pick (click a name)</label>
+                    <div id="w-names-list-2-crowns" style="display:flex;flex-wrap:wrap;gap:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 10px;max-height:110px;overflow-y:auto;"></div>
+                  </div>
+                  <div class="form-row" style="margin-top:10px;">
+                    <div class="form-group"><label class="form-label">Shape</label>
+                      <select class="form-select" id="w-names-list-2-shape">
+                        <option value="glass">🪞 Glass</option>
+                        <option value="neon">🌈 Neon</option>
+                        <option value="gold">👑 Gold VIP</option>
+                        <option value="royal">💜 Royal</option>
+                        <option value="minimal">⬜ Minimal</option>
+                        <option value="cyber">🎮 Cyber</option>
+                        <option value="bars">📊 Bars</option>
+                      </select></div>
+                    <div class="form-group"><label class="form-label">Background Color</label><input type="color" class="form-input" id="w-names-list-2-bg" value="#0d0f1a"></div>
+                  </div>
+                  <div class="form-row" style="margin-top:10px;">
+                    <div class="form-group">
+                      <label class="form-label">Transparency: <span id="w-names-list-2-opacity-val">55%</span></label>
+                      <input type="range" class="form-input" id="w-names-list-2-opacity" min="0" max="100" value="55" style="width:100%;padding:0;">
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Glow Color</label><input type="color" class="form-input" id="w-names-list-2-glow" value="#ffcc00"></div>
+                    <div class="form-group"><label class="form-label">Numbers Color</label><input type="color" class="form-input" id="w-names-list-2-badge" value="#a855f7"></div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Title Size (px)</label><input type="number" class="form-input" id="w-names-list-2-tsize" value="26" min="10" max="80"></div>
+                    <div class="form-group"><label class="form-label">Names Size (px)</label><input type="number" class="form-input" id="w-names-list-2-nsize" value="19" min="8" max="60"></div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Width (px)</label><input type="number" class="form-input" id="w-names-list-2-width" value="285" min="100" max="800"></div>
+                    <div class="form-group"><label class="form-label">Height (px)</label><input type="number" class="form-input" id="w-names-list-2-height" value="500" min="150" max="1200"></div>
+                  </div>
+                  <div class="form-row" style="align-items: flex-end;">
+                    <div class="form-group">
+                      <button class="btn btn-primary" id="w-names-list-2-apply" style="width:100%;">Apply Settings</button>
+                    </div>
+                  </div>
+                  <div class="url-row">
+                    <input type="text" class="form-input" id="w-names-list-2-url" readonly value="...">
+                    <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('w-names-list-2-url').value); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy URL',2000);">Copy URL</button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </details>
+
           <!-- ── Interactive Effects ── -->
           <details class="widget-group">
             <summary class="widget-group-header" id="hdr-interactive">
