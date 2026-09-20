@@ -6428,3 +6428,22 @@ setInterval(checkSubscriptionBanner, 1800000);
     });
   });
 })();
+
+// رسالة التحديث — لما نسخة جديدة تنزل على GitHub
+try {
+  window.electronAPI?.updates?.onUpdate?.(function (info) {
+    var v = (info && info.version) || "جديد";
+    var banner = document.createElement("div");
+    banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;" +
+      "background:linear-gradient(135deg,#d4af37,#f2dc93);color:#1a1408;" +
+      "font-family:Cairo,sans-serif;font-weight:900;font-size:15px;" +
+      "text-align:center;padding:14px 20px;box-shadow:0 4px 20px rgba(0,0,0,.4);" +
+      "cursor:pointer;direction:rtl;line-height:1.5";
+    banner.innerHTML = "🎉 نسخة جديدة v" + v + " جاهزة — اضغط هنا لتحديث البرنامج";
+    banner.onclick = function () {
+      try { window.electronAPI.updates.installNow(); } catch (e) {}
+    };
+    document.body.appendChild(banner);
+    setTimeout(function () { if (banner.parentNode) banner.remove(); }, 30000);
+  });
+} catch (e) {}
