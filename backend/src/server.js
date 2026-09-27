@@ -39,6 +39,9 @@ const ALLOWED_ORIGINS = new Set([
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "http://127.0.0.1:7330",
+  // واجهة Next.js الجديدة (dev على 3200 — لما الإنتاج يبقى له دومين يتحط هنا)
+  "http://localhost:3200",
+  "http://127.0.0.1:3200",
   "eldaly://app", // تطبيق الديسكتوب — رفع الميديا
   "null",
 ]);
@@ -403,6 +406,8 @@ const PUBLIC_API_PATHS = [
   "/api/auth/state",
   "/api/auth/tier",
   "/api/system/sounds",
+  // كتالوج الألعاب للعرض بس (بيانات الكروت) — التثبيت والأكشنز ورا الجلسة
+  "/api/games",
 ];
 function isPublicApiPath(p) {
   return (
@@ -537,6 +542,14 @@ app.use(async (req, res, next) => {
 // WebSocket clients tracking — عام للحماية والنبض؛ التوجيه لكل حساب في ctx
 const wsClients = new Set();
 
+// رسالة الإدارة — مصدر واحد على السيرفر بيتبث لحظيًا لكل عملاء الـ WS
+const announcement = require("./services/announcement");
+announcement.start((msg) => {
+  for (const client of wsClients) {
+    try { client.send(JSON.stringify(msg)); } catch (e) {}
+  }
+});
+
 function attachGuestClient(ws, req) {
   // زائر ويدجت الأغاني (songs-page في OBS) — بياخد بث الأغاني فقط
   // لو معاه توكن أوفرلاي مطابق لحساب، ومينفعش يبعت غير إشارة انتهاء أغنية
@@ -635,6 +648,12 @@ wss.on("connection", async (ws, req) => {
       },
     }),
   );
+
+  // الإعلان الحالي — العميل الجديد بياخده فورًا من غير ما يستنى الدورة
+  const currentAnnouncement = announcement.get();
+  if (currentAnnouncement) {
+    ws.send(JSON.stringify({ type: "announcement", data: currentAnnouncement }));
+  }
 
   ws.on("message", (raw) => {
     try {
@@ -1779,6 +1798,46 @@ app.post("/api/ext/command", (req, res) => {
 
   ctx.overlayServer.broadcastExtension("ext-" + command, { action: arg1, ...arg2 });
   res.json({ ok: true });
+});
+
+// ==========================================
+// GAMES ROUTES — نظام الألعاب والمودات
+// الكتالوج والخزنة بيتولّدوا بـ scripts/import-games-system.js
+// ==========================================
+const GamesService = require("./services/games-service");
+const ActionsVault = require("./services/actions-vault");
+const gamesService = new GamesService();
+const actionsVault = new ActionsVault();
+
+// كتالوج الألعاب (كروت صفحة الألعاب — من غير مسارات ولا روابط تنزيل)
+app.get("/api/games", (req, res) => {
+  res.json({ ok: true, count: gamesService.size(), games: gamesService.list() });
+});
+
+// بيانات التثبيت لكل لعبة (مسارات الفحص + الريجستري + رابط المود + الإصدار)
+app.get("/api/games/:slug/install-info", (req, res) => {
+  const info = gamesService.installInfo(req.params.slug);
+  if (!info) return res.status(404).json({ ok: false, error: "game not found" });
+  res.json({ ok: true, ...info });
+});
+
+// أكشنز لعبة بالعرض الآمن — أسماء وصور وتريجرات من غير أي أوامر حقيقية
+app.get("/api/games/:slug/actions", (req, res) => {
+  res.json({
+    ok: true,
+    actions: actionsVault.listByGame(req.params.slug),
+  });
+});
+
+// الحل اللحظي (JIT) — الوحيد اللي بيرجّع الأوامر الحقيقية، موقّعة HMAC
+// لحظة التنفيذ بس. العميل ينفذها في الذاكرة وميخزنهاش.
+app.post("/api/games/actions/resolve", (req, res) => {
+  const { actionId, user, giftName, repeatCount } = req.body || {};
+  if (!actionId || !actionsVault.has(actionId)) {
+    return res.status(404).json({ ok: false, error: "action not found" });
+  }
+  const resolved = actionsVault.resolve(actionId, { user, giftName, repeatCount });
+  res.json({ ok: true, ...resolved });
 });
 
 app.get("/api/ext/scoreboard", (req, res) => {
